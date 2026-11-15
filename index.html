@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BACKFIRE — Online 1v1 & 2v2 Arena Combat</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #06070a;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      color: #e2e8f0;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px 32px;
+      z-index: 10;
+    }
+    /* Crosshair */
+    #crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      transition: transform 0.05s ease-out;
+    }
+    .cross-ring {
+      width: 32px;
+      height: 32px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .cross-dot {
+      width: 4px;
+      height: 4px;
+      background: #38bdf8;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #38bdf8;
+    }
+    .cross-tether-icon {
+      position: absolute;
+      bottom: -18px;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #06b6d4;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    .cross-pip {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.75);
+    }
+    .cross-pip.top { top: -6px; left: 14px; width: 2px; height: 5px; }
+    .cross-pip.bottom { bottom: -6px; left: 14px; width: 2px; height: 5px; }
+    .cross-pip.left { left: -6px; top: 14px; width: 5px; height: 2px; }
+    .cross-pip.right { right: -6px; top: 14px; width: 5px; height: 2px; }
+
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      width: 100%;
+    }
+    .game-logo {
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: #fff;
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+    }
+    .game-logo span { color: #38bdf8; }
+    .match-tag {
+      font-size: 11px;
+      color: #94a3b8;
+      letter-spacing: 2px;
+      margin-top: 2px;
+    }
+    .ping-tag {
+      display: inline-block;
+      font-size: 10px;
+      color: #10b981;
+      font-family: monospace;
+      margin-left: 8px;
+    }
+
+    /* MATCH SCOREBOARD */
+    .scoreboard {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+    .team-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 70px;
+    }
+    .team-name {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2px;
+    }
+    .team-name.blue { color: #38bdf8; }
+    .team-name.red { color: #f43f5e; }
+    .team-score {
+      font-size: 36px;
+      font-weight: 900;
+      font-family: monospace;
+      line-height: 1;
+      margin-top: 2px;
+    }
+    .score-divider {
+      font-size: 18px;
+      font-weight: 800;
+      color: #64748b;
+    }
+
+    /* Roster Card */
+    .player-roster {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 12px;
+      text-align: right;
+    }
+    .roster-title {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .roster-pilot {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .pilot-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .pilot-dot.blue { background: #38bdf8; box-shadow: 0 0 6px #38bdf8; }
+    .pilot-dot.red { background: #f43f5e; box-shadow: 0 0 6px #f43f5e; }
+
+    /* Speedometer */
+    .kinetics-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .speedometer {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(8px);
+      border-radius: 10px;
+      padding: 16px 20px;
+      width: 250px;
+    }
+    .speed-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .speed-title {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #94a3b8;
+    }
+    .speed-val {
+      font-size: 34px;
+      font-weight: 900;
+      font-family: monospace;
+      color: #10b981;
+    }
+    .speed-unit {
+      font-size: 12px;
+      color: #64748b;
+      margin-left: 4px;
+    }
+    .speed-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .speed-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+      transition: width 0.05s linear;
+    }
+    .kinetics-status {
+      margin-top: 8px;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      color: #94a3b8;
+    }
+    .tether-indicator {
+      color: #06b6d4;
+      font-weight: 800;
+    }
+
+    /* Weapon Deck */
+    .weapon-deck {
+      display: flex;
+      gap: 12px;
+      align-self: center;
+      margin-bottom: 8px;
+    }
+    .weapon-slot {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 12px 18px;
+      min-width: 155px;
+      text-align: center;
+      backdrop-filter: blur(8px);
+      transition: all 0.15s ease-out;
+      opacity: 0.55;
+    }
+    .weapon-slot.active {
+      border-color: #38bdf8;
+      background: rgba(14, 165, 233, 0.18);
+      opacity: 1;
+      transform: translateY(-6px);
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.3);
+    }
+    .weapon-num {
+      font-size: 10px;
+      color: #64748b;
+      letter-spacing: 1px;
+    }
+    .weapon-name {
+      font-size: 13px;
+      font-weight: 800;
+      color: #f8fafc;
+      margin: 2px 0;
+    }
+    .weapon-type {
+      font-size: 10px;
+      color: #94a3b8;
+    }
+
+    /* Center Feed */
+    #feed-container {
+      position: absolute;
+      top: 28%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .feed-popup {
+      font-size: 24px;
+      font-weight: 900;
+      color: #facc15;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 0 16px rgba(250, 204, 21, 0.8), 2px 2px 0 #000;
+      animation: floatUp 1.4s forwards cubic-bezier(0.1, 0.8, 0.2, 1);
+    }
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translateY(20px) scale(0.85); }
+      15% { opacity: 1; transform: translateY(0px) scale(1.15); }
+      30% { transform: scale(1); }
+      75% { opacity: 1; transform: translateY(-15px); }
+      100% { opacity: 0; transform: translateY(-35px); }
+    }
+
+    #speed-vignette {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      box-shadow: inset 0 0 100px rgba(56, 189, 248, 0);
+      transition: box-shadow 0.1s ease-out;
+      z-index: 5;
+    }
+
+    /* Modal Styling */
+    #start-modal {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(6, 8, 12, 0.94);
+      backdrop-filter: blur(14px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal-box {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 34px 44px;
+      max-width: 660px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+    }
+    .modal-title {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: 5px;
+      color: #fff;
+    }
+    .modal-title span { color: #38bdf8; }
+    .modal-subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 2px;
+      margin-bottom: 20px;
+    }
+
+    /* Tab Switcher */
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tab-btn.active {
+      background: #38bdf8;
+      color: #0f172a;
+      box-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);
+    }
+
+    /* Online Room Card */
+    .room-card {
+      background: rgba(56, 189, 248, 0.06);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .room-header {
+      font-size: 14px;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: 1.5px;
+      margin-bottom: 12px;
+    }
+    .room-input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .room-input {
+      flex: 1;
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: #38bdf8;
+      font-size: 13px;
+      font-family: monospace;
+      outline: none;
+    }
+    .room-input:focus { border-color: #38bdf8; }
+    .action-sub-btn {
+      background: #38bdf8;
+      border: 1px solid #38bdf8;
+      color: #0f172a;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .action-sub-btn:hover {
+      background: #7dd3fc;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+    .connection-status {
+      font-size: 12px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .conn-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #eab308;
+    }
+    .conn-dot.green { background: #10b981; box-shadow: 0 0 8px #10b981; }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      text-align: left;
+      margin-bottom: 24px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 12px 16px;
+      border-radius: 10px;
+    }
+    .ctrl-item {
+      font-size: 11px;
+      color: #cbd5e1;
+    }
+    .ctrl-item b {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-family: monospace;
+      margin-right: 5px;
+    }
+    .start-btn {
+      background: #38bdf8;
+      color: #0f172a;
+      border: none;
+      padding: 14px 44px;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.45);
+      transition: all 0.15s ease;
+    }
+    .start-btn:hover {
+      background: #7dd3fc;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(56, 189, 248, 0.65);
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+
+  <div id="canvas-container"></div>
+  <div id="speed-vignette"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="top-bar">
+      <div>
+        <div class="game-logo">BACK<span>FIRE</span></div>
+        <div id="match-mode-label" class="match-tag">ONLINE MULTIPLAYER ARENA <span id="ping-display" class="ping-tag">P2P</span></div>
+      </div>
+
+      <!-- MATCH SCOREBOARD -->
+      <div class="scoreboard">
+        <div class="team-block">
+          <span class="team-name blue">BLUE</span>
+          <span id="blue-score" class="team-score" style="color: #38bdf8;">0</span>
+        </div>
+        <div class="score-divider">VS</div>
+        <div class="team-block">
+          <span class="team-name red">RED</span>
+          <span id="red-score" class="team-score" style="color: #f43f5e;">0</span>
+        </div>
+      </div>
+
+      <!-- Roster Card -->
+      <div class="player-roster">
+        <div class="roster-title">ACTIVE PILOTS</div>
+        <div id="roster-list">
+          <div class="roster-pilot"><span id="p1-name">YOU (BLUE)</span><div class="pilot-dot blue"></div></div>
+          <div class="roster-pilot"><span id="p2-name">OPPONENT (RED)</span><div class="pilot-dot red"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Crosshair & Combos -->
+    <div id="crosshair">
+      <div class="cross-ring">
+        <div class="cross-dot"></div>
+        <div class="cross-pip top"></div>
+        <div class="cross-pip bottom"></div>
+        <div class="cross-pip left"></div>
+        <div class="cross-pip right"></div>
+        <div id="tether-indicator" class="cross-tether-icon">TETHERED</div>
+      </div>
+    </div>
+    <div id="feed-container"></div>
+
+    <!-- Bottom Panels -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+      <div class="kinetics-panel">
+        <div class="speedometer">
+          <div class="speed-header">
+            <span class="speed-title">VELOCITY</span>
+            <span><span id="speed-val" class="speed-val">0.0</span><span class="speed-unit">M/S</span></span>
+          </div>
+          <div class="speed-bar-bg">
+            <div id="speed-bar" class="speed-bar-fill"></div>
+          </div>
+          <div class="kinetics-status">
+            <span>THRUST: <b id="recoil-thrust" style="color: #10b981;">READY</b></span>
+            <span id="tether-hud-state" class="tether-indicator">HARPOON [R-CLICK]</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weapons Deck -->
+      <div class="weapon-deck">
+        <div id="wep-0" class="weapon-slot active">
+          <div class="weapon-num">[ 1 ]</div>
+          <div class="weapon-name">BREAKER 12G</div>
+          <div class="weapon-type">Twin-Blast Launcher</div>
+        </div>
+        <div id="wep-1" class="weapon-slot">
+          <div class="weapon-num">[ 2 ]</div>
+          <div class="weapon-name">JACKHAMMER</div>
+          <div class="weapon-type">Auto-Thrust Drill</div>
+        </div>
+        <div id="wep-2" class="weapon-slot">
+          <div class="weapon-num">[ 3 ]</div>
+          <div class="weapon-name">RAIL SLUGGER</div>
+          <div class="weapon-type">Concussive Driver</div>
+        </div>
+      </div>
+
+      <div style="width: 250px; text-align: right; color: #64748b; font-size: 11px;">
+        PRESS <b style="color: #e2e8f0;">[ESC]</b> TO PAUSE / COPY INVITE
+      </div>
+    </div>
+  </div>
+
+  <!-- Start / Multiplayer Lobby Modal -->
+  <div id="start-modal">
+    <div class="modal-box">
+      <div class="modal-title">BACK<span>FIRE</span></div>
+      <div class="modal-subtitle">REAL-TIME MULTIPLAYER ARENA</div>
+
+      <!-- Mode Tabs -->
+      <div class="tab-bar">
+        <button id="tab-online" class="tab-btn active" onclick="switchTab('online')">1v1 ONLINE MATCH</button>
+        <button id="tab-solo" class="tab-btn" onclick="switchTab('solo')">OFFLINE VS BOT</button>
+      </div>
+
+      <!-- Online Room Panel -->
+      <div id="online-panel" class="room-card">
+        <div class="room-header">INVITE A FRIEND TO 1v1 DUEL</div>
+
+        <div style="font-size: 12px; color: #cbd5e1; margin-bottom: 8px;">1. Send this live link to your friend:</div>
+        <div class="room-input-row">
+          <input type="text" id="share-link-input" class="room-input" readonly value="">
+          <button class="action-sub-btn" onclick="copyInviteLink()">COPY LINK</button>
+        </div>
+
+        <div style="font-size: 12px; color: #cbd5e1; margin-bottom: 8px;">2. Or join another room code:</div>
+        <div class="room-input-row">
+          <input type="text" id="join-room-input" class="room-input" placeholder="e.g. BF-4821">
+          <button class="action-sub-btn" onclick="joinRoomFromInput()">JOIN ROOM</button>
+        </div>
+
+        <div class="connection-status">
+          <div id="conn-dot" class="conn-dot"></div>
+          <span id="conn-status-text">Initializing P2P connection...</span>
+        </div>
+      </div>
+
+      <!-- Solo Panel -->
+      <div id="solo-panel" class="room-card" style="display: none;">
+        <div class="room-header">OFFLINE PRACTICE (VS AI ACE)</div>
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.5;">
+          Test weapon recoil, harpoon swinging, and spike hazard crunches against a Newtonian AI bot.
+        </p>
+      </div>
+
+      <div class="controls-grid">
+        <div class="ctrl-item"><b>L-CLICK</b> Fire / Recoil Thrust</div>
+        <div class="ctrl-item"><b>R-CLICK</b> Kinetic Harpoon / Tether</div>
+        <div class="ctrl-item"><b>SHOOT DOWN</b> Rocket Jump / Fly</div>
+        <div class="ctrl-item"><b>1, 2, 3 / WHEEL</b> Switch Weapons</div>
+        <div class="ctrl-item"><b>WASD</b> Fine Drift Steering</div>
+        <div class="ctrl-item"><b>SPACE</b> Air-Brake / Stabilize</div>
+      </div>
+
+      <button id="start-button" class="start-btn">DEPLOY INTO MATCH</button>
+    </div>
+  </div>
+
+  <!-- GUARANTEED IMMEDIATE ROOM LINK INJECTION -->
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomFromUrl = urlParams.get('room');
+    // If URL has ?room=X, we are joining. Otherwise generate a new room.
+    let activeRoomId = (roomFromUrl || 'BF-' + Math.floor(1000 + Math.random() * 9000)).toUpperCase();
+    const isJoiner = !!roomFromUrl; // true if we opened someone's invite link
+
+    const fullShareLink = window.location.origin + window.location.pathname + '?room=' + activeRoomId;
+    const shareInput = document.getElementById('share-link-input');
+    if (shareInput) shareInput.value = fullShareLink;
+    const joinInput = document.getElementById('join-room-input');
+    if (joinInput) joinInput.placeholder = 'Current: ' + activeRoomId;
+
+    window.switchTab = function(tab) {
+      document.getElementById('tab-online').classList.toggle('active', tab === 'online');
+      document.getElementById('tab-solo').classList.toggle('active', tab === 'solo');
+      document.getElementById('online-panel').style.display = tab === 'online' ? 'block' : 'none';
+      document.getElementById('solo-panel').style.display = tab === 'solo' ? 'block' : 'none';
+    };
+
+    window.copyInviteLink = function() {
+      const input = document.getElementById('share-link-input');
+      input.select();
+      input.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(input.value).catch(() => {
+        // Fallback for older browsers
+        document.execCommand('copy');
+      });
+      showPopup("INVITE LINK COPIED!", "#38bdf8");
+    };
+
+    window.joinRoomFromInput = function() {
+      const val = document.getElementById('join-room-input').value.trim().toUpperCase();
+      if (val && val !== activeRoomId) {
+        // Navigate to the room URL to join as guest
+        window.location.href = window.location.origin + window.location.pathname + '?room=' + val;
+      }
+    };
+  </script>
+
+  <!-- GAMEPLAY & PEERJS P2P ENGINE -->
+  <script>
+    // --- SYNTHESIZED SOUND ENGINE ---
+    class SoundEngine {
+      constructor() { this.ctx = null; }
+      init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+      playShotgun() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(32, now + 0.35);
+        gain.gain.setValueAtTime(1.0, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.42);
+
+        const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.16, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        const n = this.ctx.createBufferSource(); n.buffer = buf;
+        const f = this.ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1100;
+        const ng = this.ctx.createGain(); ng.gain.setValueAtTime(0.85, now);
+        ng.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+        n.connect(f); f.connect(ng); ng.connect(this.ctx.destination);
+        n.start(now);
+      }
+      playJackhammer() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(240, now);
+        osc.frequency.exponentialRampToValueAtTime(60, now + 0.08);
+        gain.gain.setValueAtTime(0.55, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.09);
+      }
+      playRailgun() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(900, now);
+        osc.frequency.exponentialRampToValueAtTime(75, now + 0.5);
+        gain.gain.setValueAtTime(0.95, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.55);
+      }
+      playHarpoonLaunch() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(950, now + 0.18);
+        gain.gain.setValueAtTime(0.6, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.22);
+      }
+      playHarpoonAttach() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(700, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.15);
+        gain.gain.setValueAtTime(0.7, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.18);
+      }
+      playJumpPad() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(650, now + 0.35);
+        gain.gain.setValueAtTime(0.7, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.38);
+      }
+      playCrunch(volume = 1) {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square'; osc.frequency.setValueAtTime(100, now);
+        osc.frequency.exponentialRampToValueAtTime(25, now + 0.25);
+        gain.gain.setValueAtTime(0.7 * volume, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.28);
+      }
+      playHazardPulverize() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(160, now);
+        osc.frequency.linearRampToValueAtTime(500, now + 0.1);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.45);
+        gain.gain.setValueAtTime(0.85, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.5);
+      }
+    }
+    const audio = new SoundEngine();
+
+    // --- THREE.JS SCENE SETUP ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x07090e);
+    scene.fog = new THREE.FogExp2(0x07090e, 0.011);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 3, 22);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0x2d3748, 0.9); scene.add(ambientLight);
+    const sunLight = new THREE.DirectionalLight(0xffedd5, 1.3);
+    sunLight.position.set(25, 45, 25); sunLight.castShadow = true;
+    scene.add(sunLight);
+
+    const cyanLight = new THREE.PointLight(0x06b6d4, 2.2, 45); cyanLight.position.set(-28, 7, -25); scene.add(cyanLight);
+    const redLight = new THREE.PointLight(0xff4757, 2.5, 55); redLight.position.set(28, 7, -28); scene.add(redLight);
+    const lavaLight = new THREE.PointLight(0xf97316, 3.5, 30); lavaLight.position.set(0, 1.5, 0); scene.add(lavaLight);
+
+    // --- WEAPONS CONFIGURATION ---
+    const WEAPONS = [
+      { name: "BREAKER 12G", recoilImpulse: 27.0, enemyImpulse: 40.0, pellets: 8, spread: 0.075, cooldown: 0.85, shake: 0.35, type: "burst" },
+      { name: "JACKHAMMER", recoilImpulse: 3.9, enemyImpulse: 11.0, pellets: 1, spread: 0.02, cooldown: 0.08, shake: 0.08, type: "auto" },
+      { name: "RAIL SLUGGER", recoilImpulse: 23.0, enemyImpulse: 70.0, pellets: 1, spread: 0.004, cooldown: 1.25, shake: 0.45, type: "rail" }
+    ];
+    let currentWeaponIdx = 0;
+    let weaponCooldownTimer = 0;
+
+    // Viewmodel
+    const weaponRig = new THREE.Group();
+    camera.add(weaponRig); scene.add(camera);
+    const weaponModels = [];
+    const matGunDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.85 });
+    const matGunBlue = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.6 });
+
+    // Wep 0: Shotgun
+    const wep0 = new THREE.Group();
+    const bBody0 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.65), matGunDark);
+    const bBar1 = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.72, 16), matGunDark);
+    bBar1.rotation.x = Math.PI / 2; bBar1.position.set(-0.045, 0.03, -0.45);
+    const bBar2 = bBar1.clone(); bBar2.position.x = 0.045;
+    const bGrip0 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 0.14), matGunDark);
+    bGrip0.position.set(0, -0.2, 0.15); bGrip0.rotation.x = 0.25;
+    const bAccent = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.4), matGunBlue);
+    bAccent.position.set(0, 0.12, -0.1);
+    wep0.add(bBody0, bBar1, bBar2, bGrip0, bAccent);
+    weaponRig.add(wep0); weaponModels.push(wep0);
+
+    // Wep 1: Jackhammer
+    const wep1 = new THREE.Group();
+    const jBody = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.6, 16), matGunDark);
+    jBody.rotation.x = Math.PI / 2;
+    const jGrip = bGrip0.clone();
+    const jPiston = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.5, 12), new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9 }));
+    jPiston.rotation.x = Math.PI / 2; jPiston.position.z = -0.45;
+    const jRing = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.03, 8, 16), matGunBlue);
+    jRing.position.z = -0.2;
+    wep1.add(jBody, jGrip, jPiston, jRing);
+    wep1.visible = false; weaponRig.add(wep1); weaponModels.push(wep1);
+
+    // Wep 2: Rail Slugger
+    const wep2 = new THREE.Group();
+    const rBody = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2, 0.7), matGunDark);
+    const rRailL = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.08, 0.8), matGunBlue);
+    rRailL.position.set(-0.065, 0.02, -0.45);
+    const rRailR = rRailL.clone(); rRailR.position.x = 0.065;
+    const rGrip = bGrip0.clone();
+    wep2.add(rBody, rRailL, rRailR, rGrip);
+    wep2.visible = false; weaponRig.add(wep2); weaponModels.push(wep2);
+
+    weaponRig.position.set(0.32, -0.28, -0.6);
+    let gunKickOffset = 0;
+    let gunKickRot = 0;
+
+    // --- ARENA CONSTRUCTION ---
+    const ARENA_SIZE = 76;
+    const ARENA_HALF = ARENA_SIZE / 2;
+    const colliders = [];
+    const hazards = [];
+    const jumpPads = [];
+
+    // Floor
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(ARENA_SIZE, ARENA_SIZE),
+      new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.7, metalness: 0.3 })
+    );
+    floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+    // Center Molten Pit Hazard
+    const lavaPit = new THREE.Mesh(
+      new THREE.CylinderGeometry(8.5, 8.5, 0.4, 32),
+      new THREE.MeshStandardMaterial({ color: 0xea580c, emissive: 0xf97316, emissiveIntensity: 0.9, roughness: 0.2 })
+    );
+    lavaPit.position.set(0, 0.2, 0); scene.add(lavaPit);
+
+    const bridge = new THREE.Mesh(
+      new THREE.BoxGeometry(3.6, 0.6, 24),
+      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.4 })
+    );
+    bridge.position.set(0, 0.3, 0); bridge.receiveShadow = true; scene.add(bridge);
+
+    hazards.push({
+      type: "MOLTEN_PIT",
+      box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, 0.5, 0), new THREE.Vector3(17, 2, 17)),
+      name: "MOLTEN PIT VAPORIZATION"
+    });
+
+    // Perimeter Walls
+    function createWall(x, z, width, length, height) {
+      const wall = new THREE.Mesh(
+        new THREE.BoxGeometry(width, height, length),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.4 })
+      );
+      wall.position.set(x, height / 2, z);
+      wall.receiveShadow = true; wall.castShadow = true; scene.add(wall);
+      colliders.push({ box: new THREE.Box3().setFromObject(wall), mesh: wall });
+    }
+    const wallH = 16;
+    createWall(0, -ARENA_HALF, ARENA_SIZE, 2, wallH);
+    createWall(0, ARENA_HALF, ARENA_SIZE, 2, wallH);
+    createWall(-ARENA_HALF, 0, 2, ARENA_SIZE, wallH);
+    createWall(ARENA_HALF, 0, 2, ARENA_SIZE, wallH);
+
+    // Spikes (North & South)
+    function createSpikeHazardWall(x, z, width, normalDir) {
+      const baseWall = new THREE.Mesh(new THREE.BoxGeometry(width, 10, 1.5), new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.5 }));
+      baseWall.position.set(x, 5, z); scene.add(baseWall);
+      const spikeGeo = new THREE.ConeGeometry(0.35, 1.8, 8);
+      const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2 });
+      for (let i = -width/2 + 1; i <= width/2 - 1; i += 1.8) {
+        for (let j = 2; j <= 8; j += 2) {
+          const spike = new THREE.Mesh(spikeGeo, spikeMat);
+          spike.position.set(x + i, j, z + (normalDir * 1.0));
+          spike.rotation.x = (normalDir > 0 ? 1 : -1) * (Math.PI / 2);
+          scene.add(spike);
+        }
+      }
+      hazards.push({
+        type: "SPIKES",
+        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, 5, z), new THREE.Vector3(width, 10, 3)),
+        name: "SPIKE WALL IMPALE"
+      });
+    }
+    createSpikeHazardWall(0, -ARENA_HALF + 1.2, 34, 1);
+    createSpikeHazardWall(0, ARENA_HALF - 1.2, 34, -1);
+
+    // Turbine (West Wall)
+    const turbineGroup = new THREE.Group();
+    turbineGroup.position.set(-ARENA_HALF + 1.5, 6, 0);
+    const turbineRing = new THREE.Mesh(new THREE.TorusGeometry(5.5, 0.7, 16, 32), new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xb45309, emissiveIntensity: 0.6 }));
+    turbineRing.rotation.y = Math.PI / 2; turbineGroup.add(turbineRing);
+    const bladesGroup = new THREE.Group();
+    for (let b = 0; b < 6; b++) {
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.12, 5, 0.9), new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85 }));
+      blade.rotation.x = (b * Math.PI) / 3; blade.position.set(0.1, 0, 0); bladesGroup.add(blade);
+    }
+    turbineGroup.add(bladesGroup); scene.add(turbineGroup);
+    hazards.push({
+      type: "TURBINE",
+      box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(-ARENA_HALF + 2, 6, 0), new THREE.Vector3(4, 11, 11)),
+      name: "TURBINE SHRED",
+      blades: bladesGroup
+    });
+
+    // Jump Pads
+    function createJumpPad(x, z) {
+      const padGroup = new THREE.Group();
+      padGroup.add(
+        new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.7, 0.4, 24), new THREE.MeshStandardMaterial({ color: 0x0f172a })),
+        new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 0.45, 24), new THREE.MeshStandardMaterial({ color: 0x06b6d4, emissive: 0x06b6d4, emissiveIntensity: 0.9 }))
+      );
+      padGroup.position.set(x, 0.2, z); scene.add(padGroup);
+      jumpPads.push({ pos: new THREE.Vector3(x, 0.4, z), radius: 2.5, power: 36.0 });
+    }
+    createJumpPad(-24, -24); createJumpPad(24, -24); createJumpPad(-24, 24); createJumpPad(24, 24);
+
+    // Pillars
+    function createPillar(x, z) {
+      const p = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 14, 20), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.6 }));
+      p.position.set(x, 7, z); p.castShadow = true; p.receiveShadow = true; scene.add(p);
+      colliders.push({ box: new THREE.Box3().setFromObject(p), mesh: p });
+    }
+    createPillar(-16, -16); createPillar(16, -16); createPillar(-16, 16); createPillar(16, 16);
+
+    // --- LOCAL HARPOON TETHER ---
+    const tether = { active: false, anchorPoint: new THREE.Vector3(), line: null, maxDistance: 60, stiffness: 14.0 };
+    tether.line = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 })
+    );
+    tether.line.visible = false; scene.add(tether.line);
+
+    // Remote Opponent's Tether Visual
+    const remoteTetherLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
+      new THREE.LineBasicMaterial({ color: 0xf43f5e, linewidth: 2 })
+    );
+    remoteTetherLine.visible = false; scene.add(remoteTetherLine);
+
+    // --- REMOTE OPPONENT 3D ACTOR ---
+    function createOpponentMesh(colorHex) {
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.65, 0.65, 2.0, 16),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.7 })
+      );
+      body.position.y = 1.0; body.castShadow = true;
+
+      const visor = new THREE.Mesh(
+        new THREE.BoxGeometry(0.55, 0.22, 0.35),
+        new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 0.9 })
+      );
+      visor.position.set(0, 1.4, 0.45);
+
+      const thrusterL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 }));
+      thrusterL.position.set(-0.25, 1.1, -0.4);
+      const thrusterR = thrusterL.clone(); thrusterR.position.x = 0.25;
+
+      g.add(body, visor, thrusterL, thrusterR);
+      g.position.set(0, 1.0, -22);
+      scene.add(g);
+      return g;
+    }
+
+    const remoteOpponent = {
+      mesh: createOpponentMesh(0xf43f5e),
+      pos: new THREE.Vector3(0, 1.0, -22),
+      vel: new THREE.Vector3(0, 0, 0),
+      radius: 0.7,
+      alive: true
+    };
+
+    // =============================================
+    //  PEERJS P2P NETWORKING (replaces WebSocket)
+    // =============================================
+    let peer = null;
+    let dataConn = null;  // the active PeerJS DataConnection
+    let isHost = !isJoiner; // if no ?room= in URL, we're the host (creator)
+    let isMultiplayerActive = false;
+    let blueScore = 0;
+    let redScore = 0;
+    const WIN_SCORE = 5;
+
+    // Sanitize room ID for PeerJS (alphanumeric + hyphens only)
+    function peerIdFromRoom(roomId) {
+      return 'backfire-' + roomId.replace(/[^a-zA-Z0-9-]/g, '');
+    }
+
+    function initPeerJS() {
+      const statusEl = document.getElementById('conn-status-text');
+      const dotEl = document.getElementById('conn-dot');
+
+      if (isHost) {
+        // HOST: create a Peer with the room-based ID so the guest can find us
+        const hostPeerId = peerIdFromRoom(activeRoomId);
+        statusEl.innerText = `Creating room ${activeRoomId}...`;
+
+        peer = new Peer(hostPeerId, {
+          debug: 0,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun2.l.google.com:19302' },
+              { urls: 'stun:stun3.l.google.com:19302' },
+              { urls: 'stun:stun4.l.google.com:19302' }
+            ]
+          }
+        });
+
+        peer.on('open', (id) => {
+          console.log('[BACKFIRE] Host peer open:', id);
+          statusEl.innerText = `Room ${activeRoomId} ready! Waiting for friend...`;
+          document.getElementById('p1-name').innerText = "YOU (BLUE)";
+          document.getElementById('p2-name').innerText = "OPPONENT (RED)";
+
+          // Update share link
+          const link = window.location.origin + window.location.pathname + '?room=' + activeRoomId;
+          document.getElementById('share-link-input').value = link;
+        });
+
+        peer.on('connection', (conn) => {
+          console.log('[BACKFIRE] Guest connected!');
+          dataConn = conn;
+          setupDataConnection(conn);
+        });
+
+        peer.on('error', (err) => {
+          console.error('[BACKFIRE] Peer error:', err);
+          if (err.type === 'unavailable-id') {
+            // Room already exists — someone else is hosting with this ID
+            statusEl.innerText = `Room ${activeRoomId} already in use. Generating new room...`;
+            activeRoomId = 'BF-' + Math.floor(1000 + Math.random() * 9000);
+            const link = window.location.origin + window.location.pathname + '?room=' + activeRoomId;
+            document.getElementById('share-link-input').value = link;
+            document.getElementById('join-room-input').placeholder = 'Current: ' + activeRoomId;
+            // Retry with new ID
+            setTimeout(() => {
+              peer.destroy();
+              initPeerJS();
+            }, 500);
+          } else if (err.type === 'peer-unavailable') {
+            statusEl.innerText = `Room not found. Host may not be online yet. Retrying...`;
+            setTimeout(() => connectToHost(), 3000);
+          } else {
+            statusEl.innerText = `Connection error: ${err.type}. Retrying...`;
+            setTimeout(() => {
+              peer.destroy();
+              initPeerJS();
+            }, 3000);
+          }
+        });
+
+        peer.on('disconnected', () => {
+          console.log('[BACKFIRE] Peer disconnected from signaling, reconnecting...');
+          if (!peer.destroyed) peer.reconnect();
+        });
+
+      } else {
+        // GUEST: create a random peer, then connect to the host's room-based ID
+        statusEl.innerText = `Joining room ${activeRoomId}...`;
+
+        peer = new Peer(undefined, {
+          debug: 0,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun2.l.google.com:19302' },
+              { urls: 'stun:stun3.l.google.com:19302' },
+              { urls: 'stun:stun4.l.google.com:19302' }
+            ]
+          }
+        });
+
+        peer.on('open', () => {
+          console.log('[BACKFIRE] Guest peer open, connecting to host...');
+          connectToHost();
+        });
+
+        peer.on('error', (err) => {
+          console.error('[BACKFIRE] Peer error:', err);
+          if (err.type === 'peer-unavailable') {
+            statusEl.innerText = `Host not found for ${activeRoomId}. Retrying in 3s...`;
+            setTimeout(() => connectToHost(), 3000);
+          } else {
+            statusEl.innerText = `Connection error: ${err.type}. Retrying...`;
+            setTimeout(() => {
+              if (!peer.destroyed) {
+                connectToHost();
+              }
+            }, 3000);
+          }
+        });
+
+        peer.on('disconnected', () => {
+          if (!peer.destroyed) peer.reconnect();
+        });
+      }
+    }
+
+    function connectToHost() {
+      const hostPeerId = peerIdFromRoom(activeRoomId);
+      const statusEl = document.getElementById('conn-status-text');
+      statusEl.innerText = `Connecting to room ${activeRoomId}...`;
+
+      const conn = peer.connect(hostPeerId, { reliable: true, serialization: 'json' });
+      dataConn = conn;
+      setupDataConnection(conn);
+    }
+
+    function setupDataConnection(conn) {
+      const statusEl = document.getElementById('conn-status-text');
+      const dotEl = document.getElementById('conn-dot');
+
+      conn.on('open', () => {
+        console.log('[BACKFIRE] Data channel open!');
+        isMultiplayerActive = true;
+        dotEl.classList.add('green');
+        statusEl.innerText = `PILOT CONNECTED! Ready to engage.`;
+        document.getElementById('ping-display').innerText = `LIVE P2P (${activeRoomId})`;
+        showPopup("OPPONENT CONNECTED!", "#10b981");
+
+        if (!isHost) {
+          document.getElementById('p1-name').innerText = "YOU (RED)";
+          document.getElementById('p2-name').innerText = "HOST (BLUE)";
+          player.pos.set(0, 1.8, -22);
+        }
+      });
+
+      conn.on('data', (msg) => {
+        if (!msg || !msg.type) return;
+
+        if (msg.type === 'state') {
+          remoteOpponent.pos.set(msg.pos[0], msg.pos[1], msg.pos[2]);
+          remoteOpponent.vel.set(msg.vel[0], msg.vel[1], msg.vel[2]);
+          remoteOpponent.mesh.rotation.y = msg.yaw;
+          remoteOpponent.mesh.position.copy(remoteOpponent.pos);
+        }
+        else if (msg.type === 'fire') {
+          const start = new THREE.Vector3(msg.origin[0], msg.origin[1], msg.origin[2]);
+          const dir = new THREE.Vector3(msg.dir[0], msg.dir[1], msg.dir[2]);
+          createBulletTracer(start, dir, 70, isHost ? 0xf43f5e : 0x38bdf8);
+
+          if (msg.wep === 0) audio.playShotgun();
+          else if (msg.wep === 1) audio.playJackhammer();
+          else if (msg.wep === 2) audio.playRailgun();
+        }
+        else if (msg.type === 'hit') {
+          const hitVec = new THREE.Vector3(msg.impulse[0], msg.impulse[1], msg.impulse[2]);
+          player.vel.add(hitVec);
+          audio.playCrunch(0.7);
+          createSparks(player.pos, 15, isHost ? 0x38bdf8 : 0xf43f5e, 10);
+        }
+        else if (msg.type === 'tether') {
+          if (msg.active) {
+            remoteTetherLine.visible = true;
+            const posArr = remoteTetherLine.geometry.attributes.position.array;
+            posArr[0] = msg.origin[0]; posArr[1] = msg.origin[1]; posArr[2] = msg.origin[2];
+            posArr[3] = msg.target[0]; posArr[4] = msg.target[1]; posArr[5] = msg.target[2];
+            remoteTetherLine.geometry.attributes.position.needsUpdate = true;
+          } else {
+            remoteTetherLine.visible = false;
+          }
+        }
+        else if (msg.type === 'knockout') {
+          handleKnockoutScore(msg.victimTeam, msg.hazardName);
+        }
+      });
+
+      conn.on('close', () => {
+        console.log('[BACKFIRE] Connection closed');
+        isMultiplayerActive = false;
+        dotEl.classList.remove('green');
+        statusEl.innerText = `Opponent disconnected. Waiting for reconnect...`;
+        showPopup("OPPONENT DISCONNECTED", "#f43f5e");
+        dataConn = null;
+
+        // If we're host, wait for a new connection
+        // If we're guest, try to reconnect
+        if (!isHost) {
+          setTimeout(() => connectToHost(), 3000);
+        }
+      });
+
+      conn.on('error', (err) => {
+        console.error('[BACKFIRE] DataConnection error:', err);
+      });
+    }
+
+    function sendNet(packet) {
+      if (dataConn && dataConn.open) {
+        try {
+          dataConn.send(packet);
+        } catch (e) {
+          // connection may have been torn down
+        }
+      }
+    }
+
+    // Scoring & Knockouts
+    function handleKnockoutScore(victimTeam, hazardName) {
+      audio.playHazardPulverize();
+
+      if (victimTeam === 'blue') {
+        redScore++;
+        document.getElementById('red-score').innerText = redScore;
+        showPopup(`RED SCORED! (BLUE IMPALED IN ${hazardName})`, "#f43f5e");
+      } else {
+        blueScore++;
+        document.getElementById('blue-score').innerText = blueScore;
+        showPopup(`BLUE SCORED! (RED IMPALED IN ${hazardName})`, "#38bdf8");
+      }
+
+      if (blueScore >= WIN_SCORE || redScore >= WIN_SCORE) {
+        const winner = blueScore >= WIN_SCORE ? "BLUE TEAM WINS" : "RED TEAM WINS";
+        showPopup(`MATCH COMPLETE // ${winner}!`, blueScore >= WIN_SCORE ? "#38bdf8" : "#f43f5e");
+        setTimeout(() => {
+          blueScore = 0; redScore = 0;
+          document.getElementById('blue-score').innerText = 0;
+          document.getElementById('red-score').innerText = 0;
+        }, 3500);
+      }
+    }
+
+    function triggerLocalKnockout(hazardName) {
+      const myTeam = isHost ? 'blue' : 'red';
+      createSparks(player.pos, 50, myTeam === 'blue' ? 0x38bdf8 : 0xf43f5e, 18);
+      handleKnockoutScore(myTeam, hazardName);
+
+      sendNet({
+        type: 'knockout',
+        victimTeam: myTeam,
+        hazardName: hazardName
+      });
+
+      setTimeout(() => {
+        player.vel.set(0, 0, 0);
+        player.pos.set(0, 2.0, isHost ? 22 : -22);
+      }, 1500);
+    }
+
+    function showPopup(text, color = "#facc15") {
+      const popup = document.createElement('div');
+      popup.className = 'feed-popup';
+      popup.style.color = color;
+      popup.innerText = text;
+      feedContainer.appendChild(popup);
+      setTimeout(() => popup.remove(), 1400);
+    }
+
+    // --- PLAYER STATE & CONTROLS ---
+    const feedContainer = document.getElementById('feed-container');
+    const player = {
+      pos: new THREE.Vector3(0, 1.8, 22),
+      vel: new THREE.Vector3(0, 0, 0),
+      radius: 0.6,
+      height: 1.8,
+      isGrounded: false,
+      cameraPitch: 0,
+      cameraYaw: 0
+    };
+
+    const keys = { KeyW: false, KeyS: false, KeyA: false, KeyD: false, Space: false };
+    let isPointerLocked = false;
+    let isMouseDown = false;
+    let isRightMouseDown = false;
+
+    const startModal = document.getElementById('start-modal');
+    const startBtn = document.getElementById('start-button');
+
+    startBtn.addEventListener('click', () => {
+      audio.init();
+      document.body.requestPointerLock();
+    });
+
+    document.addEventListener('pointerlockchange', () => {
+      if (document.pointerLockElement === document.body) {
+        isPointerLocked = true;
+        startModal.style.display = 'none';
+      } else {
+        isPointerLocked = false;
+        startModal.style.display = 'flex';
+        releaseTether();
+      }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isPointerLocked) return;
+      const sensitivity = 0.0022;
+      player.cameraYaw -= e.movementX * sensitivity;
+      player.cameraPitch -= e.movementY * sensitivity;
+      player.cameraPitch = Math.max(-Math.PI / 2.05, Math.min(Math.PI / 2.05, player.cameraPitch));
+    });
+
+    document.addEventListener('mousedown', (e) => {
+      if (!isPointerLocked) return;
+      if (e.button === 0) { isMouseDown = true; tryFireWeapon(); }
+      else if (e.button === 2) { isRightMouseDown = true; tryFireTether(); }
+    });
+
+    document.addEventListener('mouseup', (e) => {
+      if (e.button === 0) isMouseDown = false;
+      if (e.button === 2) { isRightMouseDown = false; releaseTether(); }
+    });
+
+    window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    document.addEventListener('wheel', (e) => {
+      if (!isPointerLocked) return;
+      if (e.deltaY > 0) selectWeapon((currentWeaponIdx + 1) % WEAPONS.length);
+      else if (e.deltaY < 0) selectWeapon((currentWeaponIdx - 1 + WEAPONS.length) % WEAPONS.length);
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
+      if (e.code === 'Digit1') selectWeapon(0);
+      if (e.code === 'Digit2') selectWeapon(1);
+      if (e.code === 'Digit3') selectWeapon(2);
+    });
+    window.addEventListener('keyup', (e) => {
+      if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
+    });
+
+    function selectWeapon(idx) {
+      currentWeaponIdx = idx;
+      weaponModels.forEach((m, i) => m.visible = (i === idx));
+      for (let i = 0; i < WEAPONS.length; i++) {
+        document.getElementById(`wep-${i}`).classList.toggle('active', i === idx);
+      }
+    }
+
+    // --- HARPOON TETHER LOGIC ---
+    function tryFireTether() {
+      audio.playHarpoonLaunch();
+      const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.cameraPitch, player.cameraYaw, 0, 'YXZ')).normalize();
+      const origin = camera.position.clone();
+
+      let closestDist = tether.maxDistance;
+      let hitPoint = null;
+
+      const raycaster = new THREE.Raycaster(origin, forward, 0.1, tether.maxDistance);
+      const meshes = colliders.map(c => c.mesh);
+      const intersects = raycaster.intersectObjects(meshes);
+      if (intersects.length > 0) {
+        closestDist = intersects[0].distance;
+        hitPoint = intersects[0].point;
+      }
+
+      const oppCenter = remoteOpponent.pos.clone().add(new THREE.Vector3(0, 1.0, 0));
+      const toOpp = oppCenter.clone().sub(origin);
+      const proj = toOpp.dot(forward);
+      if (proj > 0 && proj < closestDist) {
+        const closest = origin.clone().add(forward.clone().multiplyScalar(proj));
+        if (closest.distanceTo(oppCenter) < remoteOpponent.radius + 0.6) {
+          hitPoint = oppCenter;
+        }
+      }
+
+      if (hitPoint) {
+        tether.active = true;
+        tether.anchorPoint.copy(hitPoint);
+        tether.line.visible = true;
+        audio.playHarpoonAttach();
+        document.getElementById('tether-indicator').style.opacity = '1';
+        document.getElementById('tether-hud-state').innerText = "TETHER: HOOKED";
+        document.getElementById('tether-hud-state').style.color = "#38bdf8";
+
+        sendNet({
+          type: 'tether',
+          active: true,
+          origin: [player.pos.x, player.pos.y + 0.5, player.pos.z],
+          target: [hitPoint.x, hitPoint.y, hitPoint.z]
+        });
+      }
+    }
+
+    function releaseTether() {
+      tether.active = false;
+      tether.line.visible = false;
+      document.getElementById('tether-indicator').style.opacity = '0';
+      document.getElementById('tether-hud-state').innerText = "HARPOON [R-CLICK]";
+      document.getElementById('tether-hud-state').style.color = "#06b6d4";
+
+      sendNet({ type: 'tether', active: false });
+    }
+
+    // --- SHOOTING & RECOIL ---
+    function tryFireWeapon() {
+      if (weaponCooldownTimer > 0) return;
+      const wep = WEAPONS[currentWeaponIdx];
+      weaponCooldownTimer = wep.cooldown;
+
+      if (currentWeaponIdx === 0) audio.playShotgun();
+      else if (currentWeaponIdx === 1) audio.playJackhammer();
+      else if (currentWeaponIdx === 2) audio.playRailgun();
+
+      gunKickOffset = 0.22; gunKickRot = 0.35; screenShake = wep.shake;
+
+      const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.cameraPitch, player.cameraYaw, 0, 'YXZ')).normalize();
+      player.vel.add(forward.clone().multiplyScalar(-wep.recoilImpulse));
+
+      const origin = camera.position.clone();
+
+      sendNet({
+        type: 'fire',
+        origin: [origin.x, origin.y, origin.z],
+        dir: [forward.x, forward.y, forward.z],
+        wep: currentWeaponIdx
+      });
+
+      for (let p = 0; p < wep.pellets; p++) {
+        const dir = forward.clone();
+        if (wep.spread > 0) {
+          dir.x += (Math.random() - 0.5) * wep.spread;
+          dir.y += (Math.random() - 0.5) * wep.spread;
+          dir.z += (Math.random() - 0.5) * wep.spread;
+          dir.normalize();
+        }
+
+        createBulletTracer(origin, dir, 70, currentWeaponIdx === 2 ? 0x38bdf8 : 0xfef08a);
+
+        const oppCenter = remoteOpponent.pos.clone().add(new THREE.Vector3(0, 1.0, 0));
+        const toTarget = oppCenter.clone().sub(origin);
+        const projDist = toTarget.dot(dir);
+
+        if (projDist > 0 && projDist < 70) {
+          const closest = origin.clone().add(dir.clone().multiplyScalar(projDist));
+          if (closest.distanceTo(oppCenter) < remoteOpponent.radius + 0.4) {
+            const hitImpulse = dir.clone().multiplyScalar(wep.enemyImpulse / Math.sqrt(wep.pellets));
+            hitImpulse.y += 3.5;
+
+            remoteOpponent.vel.add(hitImpulse);
+            sendNet({
+              type: 'hit',
+              impulse: [hitImpulse.x, hitImpulse.y, hitImpulse.z]
+            });
+
+            createSparks(closest, 14, 0xf43f5e, 8);
+            audio.playCrunch(0.6);
+          }
+        }
+      }
+    }
+
+    function createBulletTracer(start, dir, range, colorHex) {
+      const end = start.clone().add(dir.clone().multiplyScalar(range));
+      const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([start, end]),
+        new THREE.LineBasicMaterial({ color: colorHex, transparent: true, opacity: 0.85 })
+      );
+      scene.add(line);
+      setTimeout(() => scene.remove(line), 45);
+    }
+
+    // Particles
+    const particles = [];
+    function createSparks(pos, count = 20, colorHex = 0xfacc15, speed = 12) {
+      const pGroup = [];
+      for (let i = 0; i < count; i++) {
+        pGroup.push({
+          pos: pos.clone(),
+          vel: new THREE.Vector3((Math.random() - 0.5) * speed, Math.random() * (speed * 0.8), (Math.random() - 0.5) * speed),
+          life: 0.4 + Math.random() * 0.4
+        });
+      }
+      const pGeom = new THREE.BufferGeometry();
+      const posArray = new Float32Array(count * 3);
+      pGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+      const points = new THREE.Points(pGeom, new THREE.PointsMaterial({ color: colorHex, size: 0.22, transparent: true, blending: THREE.AdditiveBlending }));
+      scene.add(points);
+      particles.push({ points, geometry: pGeom, posArray, items: pGroup, age: 0, maxAge: 0.7 });
+    }
+
+    // Loop
+    let screenShake = 0;
+    let lastTime = performance.now();
+    let netSyncTimer = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const currentTime = performance.now();
+      const dt = Math.min((currentTime - lastTime) / 1000, 0.05);
+      lastTime = currentTime;
+
+      if (weaponCooldownTimer > 0) weaponCooldownTimer -= dt;
+      if (isMouseDown && WEAPONS[currentWeaponIdx].type === "auto") {
+        tryFireWeapon();
+      }
+
+      for (let h of hazards) {
+        if (h.blades) h.blades.rotation.x += dt * 8.5;
+      }
+
+      updatePlayer(dt);
+      updateTether(dt);
+
+      gunKickOffset = THREE.MathUtils.lerp(gunKickOffset, 0, dt * 18);
+      gunKickRot = THREE.MathUtils.lerp(gunKickRot, 0, dt * 18);
+      weaponRig.position.set(0.32, -0.28, -0.6 + gunKickOffset);
+      weaponRig.rotation.x = gunKickRot;
+
+      updateOpponent(dt);
+      updateJumpPads();
+      updateParticles(dt);
+      updateHUD(dt);
+
+      netSyncTimer += dt;
+      if (netSyncTimer >= 0.033) {
+        netSyncTimer = 0;
+        sendNet({
+          type: 'state',
+          pos: [player.pos.x, player.pos.y, player.pos.z],
+          vel: [player.vel.x, player.vel.y, player.vel.z],
+          yaw: player.cameraYaw
+        });
+      }
+
+      if (screenShake > 0) {
+        camera.position.x += (Math.random() - 0.5) * screenShake;
+        camera.position.y += (Math.random() - 0.5) * screenShake;
+        screenShake = THREE.MathUtils.lerp(screenShake, 0, dt * 10);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    function updatePlayer(dt) {
+      const inputDir = new THREE.Vector3();
+      if (keys.KeyW) inputDir.z -= 1;
+      if (keys.KeyS) inputDir.z += 1;
+      if (keys.KeyA) inputDir.x -= 1;
+      if (keys.KeyD) inputDir.x += 1;
+
+      if (inputDir.lengthSq() > 0) {
+        inputDir.normalize().applyEuler(new THREE.Euler(0, player.cameraYaw, 0));
+        const steerPower = player.isGrounded ? 18.0 : 6.5;
+        player.vel.add(inputDir.multiplyScalar(steerPower * dt));
+      }
+
+      if (keys.Space) {
+        player.vel.x *= Math.pow(0.2, dt);
+        player.vel.z *= Math.pow(0.2, dt);
+      }
+
+      player.vel.y -= 26.0 * dt;
+      const groundDrag = Math.pow(0.6, dt);
+      const airDrag = Math.pow(0.965, dt);
+      const currentDrag = player.isGrounded ? groundDrag : airDrag;
+      player.vel.x *= currentDrag;
+      player.vel.z *= currentDrag;
+
+      player.pos.add(player.vel.clone().multiplyScalar(dt));
+
+      if (player.pos.y <= 1.0) {
+        player.pos.y = 1.0;
+        if (player.vel.y < 0) player.vel.y = 0;
+        player.isGrounded = true;
+      } else {
+        player.isGrounded = false;
+      }
+
+      const wallLimit = ARENA_HALF - 2.0;
+      if (Math.abs(player.pos.x) > wallLimit) {
+        player.pos.x = Math.sign(player.pos.x) * wallLimit;
+        player.vel.x = -player.vel.x * 0.35;
+      }
+      if (Math.abs(player.pos.z) > wallLimit) {
+        player.pos.z = Math.sign(player.pos.z) * wallLimit;
+        player.vel.z = -player.vel.z * 0.35;
+      }
+
+      for (let hazard of hazards) {
+        if (hazard.box.containsPoint(player.pos)) {
+          triggerLocalKnockout(hazard.name);
+          break;
+        }
+      }
+
+      camera.position.copy(player.pos);
+      camera.position.y += 0.8;
+      camera.rotation.set(0, 0, 0);
+      camera.rotation.order = 'YXZ';
+      camera.rotation.y = player.cameraYaw;
+      camera.rotation.x = player.cameraPitch;
+    }
+
+    function updateTether(dt) {
+      if (!tether.active) return;
+      const toAnchor = tether.anchorPoint.clone().sub(player.pos);
+      const dist = toAnchor.length();
+      if (dist > 1.5) {
+        toAnchor.normalize();
+        const pullStrength = Math.min(dist * tether.stiffness, 80.0);
+        player.vel.add(toAnchor.clone().multiplyScalar(pullStrength * dt));
+      }
+
+      const positions = tether.line.geometry.attributes.position.array;
+      const handPos = player.pos.clone().add(new THREE.Vector3(0.3, 0.5, 0));
+      positions[0] = handPos.x; positions[1] = handPos.y; positions[2] = handPos.z;
+      positions[3] = tether.anchorPoint.x; positions[4] = tether.anchorPoint.y; positions[5] = tether.anchorPoint.z;
+      tether.line.geometry.attributes.position.needsUpdate = true;
+    }
+
+    function updateOpponent(dt) {
+      if (!isMultiplayerActive) {
+        remoteOpponent.vel.y -= 26.0 * dt;
+        remoteOpponent.vel.x *= Math.pow(0.92, dt);
+        remoteOpponent.vel.z *= Math.pow(0.92, dt);
+        remoteOpponent.pos.add(remoteOpponent.vel.clone().multiplyScalar(dt));
+
+        if (remoteOpponent.pos.y <= 1.0) {
+          remoteOpponent.pos.y = 1.0;
+          if (remoteOpponent.vel.y < 0) remoteOpponent.vel.y = 0;
+        }
+
+        const toPlayer = player.pos.clone().sub(remoteOpponent.pos);
+        remoteOpponent.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+
+        if (remoteOpponent.pos.y <= 1.05 && Math.random() < 0.02) {
+          remoteOpponent.vel.y = 22.0;
+        }
+
+        for (let hazard of hazards) {
+          if (hazard.box.containsPoint(remoteOpponent.pos)) {
+            handleKnockoutScore('red', hazard.name);
+            remoteOpponent.pos.set(0, 2.0, -22);
+            remoteOpponent.vel.set(0, 0, 0);
+            break;
+          }
+        }
+      }
+
+      remoteOpponent.mesh.position.copy(remoteOpponent.pos);
+    }
+
+    function updateJumpPads() {
+      for (let pad of jumpPads) {
+        const pDist = new THREE.Vector2(player.pos.x - pad.pos.x, player.pos.z - pad.pos.z).length();
+        if (pDist < pad.radius && player.pos.y < 2.0) {
+          player.vel.y = pad.power;
+          audio.playJumpPad();
+          createSparks(pad.pos, 25, 0x06b6d4, 14);
+        }
+        const oDist = new THREE.Vector2(remoteOpponent.pos.x - pad.pos.x, remoteOpponent.pos.z - pad.pos.z).length();
+        if (oDist < pad.radius && remoteOpponent.pos.y < 2.0) {
+          remoteOpponent.vel.y = pad.power;
+          audio.playJumpPad();
+          createSparks(pad.pos, 25, 0x06b6d4, 14);
+        }
+      }
+    }
+
+    function updateParticles(dt) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pSys = particles[i];
+        pSys.age += dt;
+        if (pSys.age >= pSys.maxAge) {
+          scene.remove(pSys.points);
+          pSys.geometry.dispose();
+          particles.splice(i, 1);
+          continue;
+        }
+        const positions = pSys.posArray;
+        for (let j = 0; j < pSys.items.length; j++) {
+          const item = pSys.items[j];
+          item.vel.y -= 18.0 * dt;
+          item.pos.add(item.vel.clone().multiplyScalar(dt));
+          positions[j * 3] = item.pos.x;
+          positions[j * 3 + 1] = item.pos.y;
+          positions[j * 3 + 2] = item.pos.z;
+        }
+        pSys.geometry.attributes.position.needsUpdate = true;
+      }
+    }
+
+    function updateHUD(dt) {
+      const speed = player.vel.length();
+      const speedEl = document.getElementById('speed-val');
+      const barEl = document.getElementById('speed-bar');
+      const thrustEl = document.getElementById('recoil-thrust');
+      const vignette = document.getElementById('speed-vignette');
+
+      speedEl.innerText = speed.toFixed(1);
+      if (speed > 25) speedEl.style.color = '#ef4444';
+      else if (speed > 12) speedEl.style.color = '#f59e0b';
+      else speedEl.style.color = '#10b981';
+
+      barEl.style.width = `${Math.min((speed / 40) * 100, 100)}%`;
+      thrustEl.innerText = weaponCooldownTimer <= 0 ? "READY" : "CHARGING";
+      thrustEl.style.color = weaponCooldownTimer <= 0 ? "#10b981" : "#f59e0b";
+
+      if (speed > 16) {
+        const intensity = Math.min((speed - 16) / 24, 0.65);
+        vignette.style.boxShadow = `inset 0 0 120px rgba(56, 189, 248, ${intensity})`;
+      } else {
+        vignette.style.boxShadow = `inset 0 0 100px rgba(56, 189, 248, 0)`;
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    initPeerJS();
+    animate();
+  </script>
+</body>
+</html>
