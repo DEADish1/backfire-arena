@@ -601,6 +601,7 @@
       <div class="tab-bar">
         <button id="tab-online" class="tab-btn active" onclick="switchTab('online')">1v1 ONLINE MATCH</button>
         <button id="tab-solo" class="tab-btn" onclick="switchTab('solo')">OFFLINE VS BOT</button>
+        <button id="tab-settings" class="tab-btn" onclick="switchTab('settings')">SETTINGS</button>
       </div>
 
       <!-- Online Room Panel -->
@@ -633,6 +634,33 @@
         </p>
       </div>
 
+      <!-- Settings Panel -->
+      <div id="settings-panel" class="room-card" style="display: none;">
+        <div class="room-header">GAMEPLAY & SENSITIVITY SETTINGS</div>
+        <div style="margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+            <span>Mouse Sensitivity:</span>
+            <span id="sens-val-display" style="color: #38bdf8; font-family: monospace; font-weight: bold;">2.2</span>
+          </div>
+          <input type="range" id="sens-slider" min="0.8" max="5.0" step="0.1" value="2.2" style="width: 100%; accent-color: #38bdf8;" oninput="updateSensitivity(this.value)">
+        </div>
+        <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+          <span>Invert Y-Axis (Flight Style):</span>
+          <input type="checkbox" id="invert-y-check" style="accent-color: #38bdf8; width: 18px; height: 18px; cursor: pointer;" onchange="updateInvertY(this.checked)">
+        </div>
+        <div style="margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+            <span>Master Audio Volume:</span>
+            <span id="vol-val-display" style="color: #38bdf8; font-family: monospace; font-weight: bold;">80%</span>
+          </div>
+          <input type="range" id="vol-slider" min="0" max="100" step="5" value="80" style="width: 100%; accent-color: #38bdf8;" oninput="updateVolume(this.value)">
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+          <span>Dynamic FOV Speed Warping:</span>
+          <input type="checkbox" id="dynamic-fov-check" checked style="accent-color: #38bdf8; width: 18px; height: 18px; cursor: pointer;" onchange="updateDynamicFov(this.checked)">
+        </div>
+      </div>
+
       <div class="controls-grid">
         <div class="ctrl-item"><b>L-CLICK</b> Fire / Recoil Thrust</div>
         <div class="ctrl-item"><b>R-CLICK</b> Kinetic Harpoon / Tether</div>
@@ -660,11 +688,41 @@
     const joinInput = document.getElementById('join-room-input');
     if (joinInput) joinInput.placeholder = 'Current: ' + activeRoomId;
 
-    window.switchTab = function(tab) {
+        window.switchTab = function(tab) {
       document.getElementById('tab-online').classList.toggle('active', tab === 'online');
       document.getElementById('tab-solo').classList.toggle('active', tab === 'solo');
+      document.getElementById('tab-settings').classList.toggle('active', tab === 'settings');
       document.getElementById('online-panel').style.display = tab === 'online' ? 'block' : 'none';
       document.getElementById('solo-panel').style.display = tab === 'solo' ? 'block' : 'none';
+      document.getElementById('settings-panel').style.display = tab === 'settings' ? 'block' : 'none';
+    };
+
+    window.mouseSensitivity = 0.0022;
+    window.invertYAxis = false;
+    window.dynamicFovEnabled = true;
+
+    window.updateSensitivity = function(val) {
+      window.mouseSensitivity = parseFloat(val) * 0.001;
+      document.getElementById('sens-val-display').innerText = parseFloat(val).toFixed(1);
+    };
+
+    window.updateInvertY = function(checked) {
+      window.invertYAxis = checked;
+    };
+
+    window.updateVolume = function(val) {
+      document.getElementById('vol-val-display').innerText = val + '%';
+      if (window.audio && window.audio.setVolume) {
+        window.audio.setVolume(parseInt(val) / 100);
+      }
+    };
+
+    window.updateDynamicFov = function(checked) {
+      window.dynamicFovEnabled = checked;
+      if (!checked && window.camera) {
+        window.camera.fov = 75;
+        window.camera.updateProjectionMatrix();
+      }
     };
 
     window.copyInviteLink = function() {
@@ -689,10 +747,28 @@
 
   <!-- GAMEPLAY & PEERJS P2P ENGINE -->
   <script>
-    // --- SYNTHESIZED SOUND ENGINE ---
+        // --- SYNTHESIZED SOUND ENGINE ---
     class SoundEngine {
-      constructor() { this.ctx = null; }
-      init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+      constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+        this.volume = 0.8;
+      }
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+          this.masterGain = this.ctx.createGain();
+          this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
+          this.masterGain.connect(this.ctx.destination);
+        }
+      }
+      setVolume(val) {
+        this.volume = val;
+        if (this.masterGain && this.ctx) {
+          this.masterGain.gain.setValueAtTime(val, this.ctx.currentTime);
+        }
+      }
+      dest() { return this.masterGain || this.ctx.destination; }
       playShotgun() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -701,7 +777,7 @@
         osc.type = 'triangle'; osc.frequency.setValueAtTime(160, now);
         osc.frequency.exponentialRampToValueAtTime(32, now + 0.35);
         gain.gain.setValueAtTime(1.0, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.42);
 
         const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.16, this.ctx.sampleRate);
@@ -711,7 +787,7 @@
         const f = this.ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1100;
         const ng = this.ctx.createGain(); ng.gain.setValueAtTime(0.85, now);
         ng.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
-        n.connect(f); f.connect(ng); ng.connect(this.ctx.destination);
+        n.connect(f); f.connect(ng); ng.connect(this.dest());
         n.start(now);
       }
       playJackhammer() {
@@ -722,7 +798,7 @@
         osc.type = 'sawtooth'; osc.frequency.setValueAtTime(240, now);
         osc.frequency.exponentialRampToValueAtTime(60, now + 0.08);
         gain.gain.setValueAtTime(0.55, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.09);
       }
       playRailgun() {
@@ -733,7 +809,7 @@
         osc.type = 'sine'; osc.frequency.setValueAtTime(900, now);
         osc.frequency.exponentialRampToValueAtTime(75, now + 0.5);
         gain.gain.setValueAtTime(0.95, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.55);
       }
       playHarpoonLaunch() {
@@ -744,7 +820,7 @@
         osc.type = 'sine'; osc.frequency.setValueAtTime(400, now);
         osc.frequency.exponentialRampToValueAtTime(950, now + 0.18);
         gain.gain.setValueAtTime(0.6, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.22);
       }
       playHarpoonAttach() {
@@ -755,7 +831,7 @@
         osc.type = 'triangle'; osc.frequency.setValueAtTime(700, now);
         osc.frequency.exponentialRampToValueAtTime(150, now + 0.15);
         gain.gain.setValueAtTime(0.7, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
-        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.18);
       }
       playJumpPad() {
@@ -766,7 +842,7 @@
         osc.type = 'sine'; osc.frequency.setValueAtTime(180, now);
         osc.frequency.exponentialRampToValueAtTime(650, now + 0.35);
         gain.gain.setValueAtTime(0.7, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.38);
       }
       playCrunch(volume = 1) {
@@ -777,7 +853,7 @@
         osc.type = 'square'; osc.frequency.setValueAtTime(100, now);
         osc.frequency.exponentialRampToValueAtTime(25, now + 0.25);
         gain.gain.setValueAtTime(0.7 * volume, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.28);
       }
       playHazardPulverize() {
@@ -789,11 +865,23 @@
         osc.frequency.linearRampToValueAtTime(500, now + 0.1);
         osc.frequency.exponentialRampToValueAtTime(45, now + 0.45);
         gain.gain.setValueAtTime(0.85, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
-        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.5);
+      }
+      playTurbineSurge() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(320, now);
+        osc.frequency.linearRampToValueAtTime(780, now + 0.4);
+        gain.gain.setValueAtTime(0.65, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        osc.connect(gain); gain.connect(this.dest());
+        osc.start(now); osc.stop(now + 0.65);
       }
     }
     const audio = new SoundEngine();
+    window.audio = audio;
 
     // --- THREE.JS SCENE SETUP ---
     const container = document.getElementById('canvas-container');
@@ -1229,9 +1317,28 @@
         else if (msg.type === 'knockout') {
           handleKnockoutScore(msg.victimTeam, msg.hazardName);
         }
+        else if (msg.type === 'ping') {
+          if (dataConn && dataConn.open) dataConn.send({ type: 'pong', t: msg.t });
+        }
+        else if (msg.type === 'pong') {
+          const rtt = Math.max(1, Math.round(performance.now() - msg.t));
+          const pingEl = document.getElementById('ping-display');
+          if (pingEl) pingEl.innerText = `LIVE P2P • ${rtt}ms`;
+        }
+        else if (msg.type === 'hazard_overload') {
+          if (msg.hazard === 'turbine') triggerTurbineOverload(false);
+          else if (msg.hazard === 'lava') triggerLavaSurge(false);
+        }
       });
 
+      let pingTimer = setInterval(() => {
+        if (dataConn && dataConn.open) {
+          dataConn.send({ type: 'ping', t: performance.now() });
+        }
+      }, 1500);
+
       conn.on('close', () => {
+        clearInterval(pingTimer);
         console.log('[BACKFIRE] Connection closed');
         isMultiplayerActive = false;
         dotEl.classList.remove('green');
@@ -1350,9 +1457,10 @@
 
     document.addEventListener('mousemove', (e) => {
       if (!isPointerLocked) return;
-      const sensitivity = 0.0022;
-      player.cameraYaw -= e.movementX * sensitivity;
-      player.cameraPitch -= e.movementY * sensitivity;
+      const sens = window.mouseSensitivity || 0.0022;
+      player.cameraYaw -= e.movementX * sens;
+      const pitchDelta = e.movementY * sens * (window.invertYAxis ? -1 : 1);
+      player.cameraPitch -= pitchDelta;
       player.cameraPitch = Math.max(-Math.PI / 2.05, Math.min(Math.PI / 2.05, player.cameraPitch));
     });
 
@@ -1481,7 +1589,19 @@
           dir.normalize();
         }
 
-        createBulletTracer(origin, dir, 70, currentWeaponIdx === 2 ? 0x38bdf8 : 0xfef08a);
+                createBulletTracer(origin, dir, 70, currentWeaponIdx === 2 ? 0x38bdf8 : 0xfef08a);
+
+        // Check Interactive Hazard Hits
+        for (let hz of hazards) {
+          const ray = new THREE.Ray(origin, dir);
+          if (hz.box.intersectsRay(ray)) {
+            if (hz.type === 'TURBINE' && turbineOverloadTimer <= 0) {
+              triggerTurbineOverload(true);
+            } else if (hz.type === 'MOLTEN_PIT' && lavaSurgeTimer <= 0) {
+              triggerLavaSurge(true);
+            }
+          }
+        }
 
         const oppCenter = remoteOpponent.pos.clone().add(new THREE.Vector3(0, 1.0, 0));
         const toTarget = oppCenter.clone().sub(origin);
@@ -1490,8 +1610,17 @@
         if (projDist > 0 && projDist < 70) {
           const closest = origin.clone().add(dir.clone().multiplyScalar(projDist));
           if (closest.distanceTo(oppCenter) < remoteOpponent.radius + 0.4) {
-            const hitImpulse = dir.clone().multiplyScalar(wep.enemyImpulse / Math.sqrt(wep.pellets));
+            let hitImpulse = dir.clone().multiplyScalar(wep.enemyImpulse / Math.sqrt(wep.pellets));
             hitImpulse.y += 3.5;
+
+            // MOMENTUM MULTIPLIER: Player speed adds kinetic punch!
+            const mySpeed = player.vel.length();
+            const speedBonus = 1.0 + Math.min(mySpeed / 18.0, 1.5); // up to 2.5x kinetic punch!
+            hitImpulse.multiplyScalar(speedBonus);
+
+            if (speedBonus > 1.35) {
+              showPopup(`⚡ KINETIC CRUSH! (+${Math.round((speedBonus - 1) * 100)}% SLAM)`, "#38bdf8");
+            }
 
             remoteOpponent.vel.add(hitImpulse);
             sendNet({
@@ -1499,8 +1628,8 @@
               impulse: [hitImpulse.x, hitImpulse.y, hitImpulse.z]
             });
 
-            createSparks(closest, 14, 0xf43f5e, 8);
-            audio.playCrunch(0.6);
+            createSparks(closest, Math.round(14 * speedBonus), 0xf43f5e, 8 * speedBonus);
+            audio.playCrunch(Math.min(0.6 * speedBonus, 1.0));
           }
         }
       }
@@ -1514,6 +1643,38 @@
       );
       scene.add(line);
       setTimeout(() => scene.remove(line), 45);
+    }
+
+
+    // --- INTERACTIVE HAZARDS & OVERLOADS ---
+    let turbineOverloadTimer = 0;
+    let lavaSurgeTimer = 0;
+
+    function triggerTurbineOverload(broadcast = true) {
+      turbineOverloadTimer = 3.5;
+      audio.playTurbineSurge();
+      showPopup("🌀 TURBINE OVERLOAD! (SUCTION SURGE)", "#f59e0b");
+      createSparks(new THREE.Vector3(-ARENA_HALF + 3, 6, 0), 45, 0xf59e0b, 16);
+      if (broadcast) sendNet({ type: 'hazard_overload', hazard: 'turbine' });
+    }
+
+    function triggerLavaSurge(broadcast = true) {
+      lavaSurgeTimer = 2.5;
+      audio.playHazardPulverize();
+      showPopup("🌋 MOLTEN GEYSER ERUPTION!", "#f97316");
+      createSparks(new THREE.Vector3(0, 1.5, 0), 60, 0xf97316, 22);
+
+      // Kinetic vertical blast to pilots near center
+      const pDist = new THREE.Vector2(player.pos.x, player.pos.z).length();
+      if (pDist < 12.0) {
+        player.vel.y += 22.0;
+        audio.playCrunch(0.8);
+      }
+      const oDist = new THREE.Vector2(remoteOpponent.pos.x, remoteOpponent.pos.z).length();
+      if (oDist < 12.0) {
+        remoteOpponent.vel.y += 22.0;
+      }
+      if (broadcast) sendNet({ type: 'hazard_overload', hazard: 'lava' });
     }
 
     // Particles
@@ -1552,8 +1713,11 @@
         tryFireWeapon();
       }
 
+      if (turbineOverloadTimer > 0) turbineOverloadTimer -= dt;
+      if (lavaSurgeTimer > 0) lavaSurgeTimer -= dt;
+      const spinRpm = (turbineOverloadTimer > 0) ? 28.0 : 8.5;
       for (let h of hazards) {
-        if (h.blades) h.blades.rotation.x += dt * 8.5;
+        if (h.blades) h.blades.rotation.x += dt * spinRpm;
       }
 
       updatePlayer(dt);
@@ -1568,6 +1732,13 @@
       updateJumpPads();
       updateParticles(dt);
       updateHUD(dt);
+
+      if (window.dynamicFovEnabled) {
+        const speed = player.vel.length();
+        const targetFov = 75 + Math.min(speed / 28.0, 1.0) * 17.0; // 75 -> 92 degrees
+        camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, dt * 5.0);
+        camera.updateProjectionMatrix();
+      }
 
       netSyncTimer += dt;
       if (netSyncTimer >= 0.033) {
