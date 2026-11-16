@@ -541,6 +541,59 @@
       box-shadow: 0 6px 24px rgba(56, 189, 248, 0.65);
     }
 
+    .keybind-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 11.5px;
+      color: #cbd5e1;
+    }
+    .keybind-btn {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+      font-family: monospace;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      min-width: 78px;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .keybind-btn:hover {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+    }
+    .keybind-btn.listening {
+      background: #f59e0b !important;
+      color: #0f172a !important;
+      border-color: #fbbf24 !important;
+      box-shadow: 0 0 10px #f59e0b;
+    }
+    .touch-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      font-size: 10px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      touch-action: manipulation;
+    }
+    .touch-btn:active {
+      transform: scale(0.92);
+      opacity: 0.8;
+    }
+
     .hazard-threat-badge {
       display: none;
       position: absolute;
@@ -774,6 +827,21 @@
             <span id="tether-hud-state" class="tether-indicator">HARPOON [R-CLICK]</span>
           </div>
         </div>
+        <!-- Sleek Kinetic Ability Dock -->
+        <div style="display: flex; gap: 6px; margin-top: 8px;">
+          <div id="hud-badge-kick" style="background: rgba(15,23,42,0.85); border: 1px solid rgba(245,158,11,0.5); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; color: #f59e0b; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.4);">
+            <span id="label-kick-key" style="background: rgba(245,158,11,0.2); padding: 1px 4px; border-radius: 3px;">[E]</span>
+            <span id="text-kick-status">BOOT KICK</span>
+          </div>
+          <div id="hud-badge-slide" style="background: rgba(15,23,42,0.85); border: 1px solid rgba(56,189,248,0.5); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.4);">
+            <span id="label-slide-key" style="background: rgba(56,189,248,0.2); padding: 1px 4px; border-radius: 3px;">[SHIFT]</span>
+            <span id="text-slide-status">SLIDE / DASH</span>
+          </div>
+          <div id="hud-badge-jump" style="background: rgba(15,23,42,0.85); border: 1px solid rgba(16,185,129,0.5); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; color: #10b981; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.4);">
+            <span id="label-jump-key" style="background: rgba(16,185,129,0.2); padding: 1px 4px; border-radius: 3px;">[SPACE]</span>
+            <span id="text-jump-status">JUMP / STOMP</span>
+          </div>
+        </div>
       </div>
 
             <!-- Weapon Deck & Heat Gauge -->
@@ -930,9 +998,36 @@
           </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 14px;">
           <span>Dynamic FOV Speed Warping:</span>
           <input type="checkbox" id="dynamic-fov-check" checked style="accent-color: #38bdf8; width: 18px; height: 18px; cursor: pointer;" onchange="updateDynamicFov(this.checked)">
+        </div>
+
+        <!-- Gamepad / Controller Settings -->
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="font-size: 11px; font-weight: 800; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+              <span id="gp-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #64748b;"></span>
+              <span>GAMEPAD / CONTROLLER:</span>
+            </div>
+            <span id="gp-status-text" style="font-size: 10px; font-family: monospace; color: #38bdf8;">DISCONNECTED</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+            <span>Stick Sensitivity:</span>
+            <span id="gp-sens-val" style="color: #38bdf8; font-family: monospace;">2.4</span>
+          </div>
+          <input type="range" id="gp-sens-slider" min="1.0" max="5.0" step="0.2" value="2.4" style="width: 100%; accent-color: #38bdf8;" oninput="updateGamepadSens(this.value)">
+        </div>
+
+        <!-- Custom Keybinding Remapper -->
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 11px; font-weight: 800; color: #94a3b8;">KEYBOARD REMAPPING:</span>
+            <button onclick="resetKeybinds()" style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #94a3b8; font-size: 9px; padding: 2px 6px; border-radius: 4px; cursor: pointer;">RESET DEFAULTS</button>
+          </div>
+          <div id="keybinds-table-container" style="max-height: 180px; overflow-y: auto; padding-right: 4px;">
+            <!-- Rendered dynamically -->
+          </div>
         </div>
       </div>
 
@@ -947,16 +1042,34 @@
       </div>
 
       <div class="controls-grid">
-        <div class="ctrl-item"><b>L-CLICK</b> Fire / Recoil Thrust</div>
-        <div class="ctrl-item"><b>R-CLICK</b> Kinetic Harpoon / Tether</div>
-        <div class="ctrl-item"><b>Q / M-CLICK</b> Weapon Alt-Fire Mode</div>
-        <div class="ctrl-item"><b>SHOOT DOWN</b> Rocket Jump / Fly</div>
-        <div class="ctrl-item"><b>1, 2, 3 / WHEEL</b> Switch Weapons</div>
-        <div class="ctrl-item"><b>WASD</b> Fine Drift Steering</div>
-        <div class="ctrl-item"><b>SPACE</b> Air-Brake / Stabilize</div>
+        <div class="ctrl-item"><b>L-CLICK / RT</b> Fire / Recoil Thrust</div>
+        <div class="ctrl-item"><b>R-CLICK / RB</b> Kinetic Harpoon / Tether</div>
+        <div class="ctrl-item"><b>Q / LT</b> Weapon Alt-Fire Mode</div>
+        <div class="ctrl-item"><b>E / X</b> Concussive Boot Kick</div>
+        <div class="ctrl-item"><b>SHIFT / B</b> Power Slide / Air-Dash</div>
+        <div class="ctrl-item"><b>SPACE / A</b> Pneumatic Jump / Stomp</div>
+        <div class="ctrl-item"><b>1, 2, 3 / Y</b> Switch Weapons</div>
+        <div class="ctrl-item"><b>WASD / L-STICK</b> Movement & Drift</div>
       </div>
 
       <button id="start-button" class="start-btn">DEPLOY INTO MATCH</button>
+    </div>
+  </div>
+
+  <!-- TOUCH CONTROLS (AUTO-ACTIVE ON TOUCH SCREENS) -->
+  <div id="touch-controls" style="display: none; position: fixed; inset: 0; pointer-events: none; z-index: 9999;">
+    <!-- Left Virtual Joystick Zone -->
+    <div id="touch-stick-zone" style="position: absolute; bottom: 35px; left: 35px; width: 140px; height: 140px; border-radius: 50%; background: rgba(15, 23, 42, 0.45); border: 2px solid rgba(56, 189, 248, 0.5); pointer-events: auto; backdrop-filter: blur(4px);">
+      <div id="touch-stick-knob" style="position: absolute; top: 40px; left: 40px; width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, #38bdf8 0%, #0284c7 100%); pointer-events: none; box-shadow: 0 0 14px rgba(56, 189, 248, 0.6); transition: transform 0.04s ease-out;"></div>
+    </div>
+    <!-- Right Action Buttons -->
+    <div style="position: absolute; bottom: 35px; right: 35px; display: grid; grid-template-columns: repeat(3, 56px); gap: 10px; pointer-events: auto;">
+      <button class="touch-btn" id="btn-touch-fire" style="background: #ef4444; color: white;">FIRE</button>
+      <button class="touch-btn" id="btn-touch-jump" style="background: #10b981; color: white;">JUMP</button>
+      <button class="touch-btn" id="btn-touch-kick" style="background: #f59e0b; color: black;">KICK</button>
+      <button class="touch-btn" id="btn-touch-slide" style="background: #06b6d4; color: black;">SLIDE</button>
+      <button class="touch-btn" id="btn-touch-tether" style="background: #3b82f6; color: white;">HOOK</button>
+      <button class="touch-btn" id="btn-touch-alt" style="background: #a855f7; color: white;">ALT</button>
     </div>
   </div>
 
@@ -1033,6 +1146,7 @@
       document.getElementById('online-panel').style.display = tab === 'online' ? 'block' : 'none';
       document.getElementById('solo-panel').style.display = tab === 'solo' ? 'block' : 'none';
       document.getElementById('settings-panel').style.display = tab === 'settings' ? 'block' : 'none';
+      if (tab === 'settings' && window.renderKeybindsUI) window.renderKeybindsUI();
     };
 
     window.mouseSensitivity = 0.0022;
@@ -1424,6 +1538,80 @@
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
         osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.06);
+      }
+      playBootKick() {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.24);
+        gain.gain.setValueAtTime(0.9, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.26);
+        osc.connect(gain); gain.connect(this.dest());
+        osc.start(now); osc.stop(now + 0.28);
+
+        const nBuf = this.createNoiseBuffer(0.14);
+        if (nBuf) {
+          const nSrc = this.ctx.createBufferSource();
+          nSrc.buffer = nBuf;
+          const bpf = this.ctx.createBiquadFilter();
+          bpf.type = 'lowpass'; bpf.frequency.setValueAtTime(1600, now);
+          bpf.frequency.exponentialRampToValueAtTime(220, now + 0.14);
+          const nGain = this.ctx.createGain();
+          nGain.gain.setValueAtTime(0.7, now);
+          nGain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+          nSrc.connect(bpf); bpf.connect(nGain); nGain.connect(this.dest());
+          nSrc.start(now);
+        }
+      }
+      playSlide() {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const nBuf = this.createNoiseBuffer(0.4);
+        if (nBuf) {
+          const nSrc = this.ctx.createBufferSource();
+          nSrc.buffer = nBuf;
+          const bpf = this.ctx.createBiquadFilter();
+          bpf.type = 'bandpass'; bpf.frequency.setValueAtTime(1150, now);
+          bpf.Q.value = 3.5;
+          const nGain = this.ctx.createGain();
+          nGain.gain.setValueAtTime(0.55, now);
+          nGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+          nSrc.connect(bpf); bpf.connect(nGain); nGain.connect(this.dest());
+          nSrc.start(now);
+        }
+      }
+      playAirDash() {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(290, now);
+        osc.frequency.exponentialRampToValueAtTime(55, now + 0.19);
+        gain.gain.setValueAtTime(0.8, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.21);
+        osc.connect(gain); gain.connect(this.dest());
+        osc.start(now); osc.stop(now + 0.23);
+      }
+      playJump() {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(130, now);
+        osc.frequency.exponentialRampToValueAtTime(390, now + 0.15);
+        gain.gain.setValueAtTime(0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+        osc.connect(gain); gain.connect(this.dest());
+        osc.start(now); osc.stop(now + 0.18);
       }
     }
     const audio = new SoundEngine();
@@ -1826,6 +2014,36 @@
     weaponRig.position.set(0.32, -0.28, -0.6);
     let gunKickOffset = 0;
     let gunKickRot = 0;
+
+    // Bulletstorm-Style Armored Combat Boot Rig (First-Person Melee Shove)
+    const bootRig = new THREE.Group();
+    const bootMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.85 });
+    const bootSoleMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.8, metalness: 0.2 });
+    const bootSteelMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.2, metalness: 0.95 });
+    const bootNeonMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 1.0 });
+
+    const bLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.5, 12), bootMat);
+    bLeg.position.set(0, 0.25, 0.05); bLeg.rotation.x = -0.3;
+    const bFoot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.16, 0.42), bootMat);
+    bFoot.position.set(0, 0.06, -0.1);
+    const bSole = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.05, 0.46), bootSoleMat);
+    bSole.position.set(0, -0.04, -0.1);
+    const bToeSteel = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.09, 0.12), bootSteelMat);
+    bToeSteel.position.set(0, 0.04, -0.32);
+    const bChevron1 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, 0.04), bootNeonMat);
+    bChevron1.position.set(0, -0.07, -0.18);
+    const bChevron2 = bChevron1.clone(); bChevron2.position.z = -0.05;
+    bootRig.add(bLeg, bFoot, bSole, bToeSteel, bChevron1, bChevron2);
+    bootRig.position.set(0.12, -0.65, -0.35);
+    bootRig.rotation.set(-0.35, 0.1, -0.08);
+    bootRig.visible = false;
+    camera.add(bootRig);
+
+    let kickCooldownTimer = 0;
+    let kickAnimTimer = 0;
+    let slideTimer = 0;
+    let airDashCooldown = 0;
+    let isSliding = false;
 
     // --- MODULAR ARENA MAP BUILDER ---
     let currentMapId = 1;
@@ -2913,6 +3131,15 @@
           if (msg.hazard === 'turbine') triggerTurbineOverload(false);
           else if (msg.hazard === 'lava') triggerLavaSurge(false);
         }
+        else if (msg.type === 'kick_shove') {
+          const kDir = new THREE.Vector3(msg.dir[0], msg.dir[1], msg.dir[2]);
+          player.vel.add(kDir.multiplyScalar(msg.force || 36.0));
+          player.vel.y += 8.0;
+          screenShake = 0.55;
+          audio.playCrunch(1.2);
+          if (window.triggerRumble) triggerRumble(0.6, 0.9, 250);
+          showPopup("👢 SHOVED BY OPPONENT BOOT KICK!", "#f43f5e");
+        }
       });
 
       let pingTimer = setInterval(() => {
@@ -3059,7 +3286,350 @@
     };
     window.player = player;
 
-    const keys = { KeyW: false, KeyS: false, KeyA: false, KeyD: false, Space: false };
+    // --- KEYBINDINGS & INPUT ENGINE ---
+    const DEFAULT_KEYBINDS = {
+      forward: 'KeyW',
+      backward: 'KeyS',
+      strafeLeft: 'KeyA',
+      strafeRight: 'KeyD',
+      jump: 'Space',
+      slideDash: 'ShiftLeft',
+      kick: 'KeyE',
+      altFire: 'KeyQ',
+      weapon1: 'Digit1',
+      weapon2: 'Digit2',
+      weapon3: 'Digit3'
+    };
+    let keyBinds = Object.assign({}, DEFAULT_KEYBINDS);
+    try {
+      const saved = localStorage.getItem('backfire_keybinds_v2');
+      if (saved) Object.assign(keyBinds, JSON.parse(saved));
+    } catch(e) {}
+
+    const activeKeys = {};
+    const keys = activeKeys; // backwards compatibility alias
+    let rebindingAction = null;
+
+    function isActionActive(action) {
+      const bind = keyBinds[action];
+      if (!bind) return false;
+      return !!activeKeys[bind];
+    }
+
+    const KEY_LABELS = {
+      forward: 'Move Forward',
+      backward: 'Move Backward',
+      strafeLeft: 'Strafe Left',
+      strafeRight: 'Strafe Right',
+      jump: 'Pneumatic Jump / Stomp',
+      slideDash: 'Power Slide / Air-Dash',
+      kick: 'Concussive Boot Kick',
+      altFire: 'Weapon Alt-Fire',
+      weapon1: 'Slot 1 (Breaker 12G)',
+      weapon2: 'Slot 2 (Jackhammer)',
+      weapon3: 'Slot 3 (Rail Slugger)'
+    };
+
+    function formatKeyDisplay(code) {
+      if (!code) return 'NONE';
+      return code.replace('Key', '').replace('Digit', '').replace('Left', ' L').replace('Right', ' R');
+    }
+
+    window.renderKeybindsUI = function() {
+      const container = document.getElementById('keybinds-table-container');
+      if (!container) return;
+      container.innerHTML = '';
+      for (const [action, label] of Object.entries(KEY_LABELS)) {
+        const row = document.createElement('div');
+        row.className = 'keybind-row';
+        const nameSpan = document.createElement('span');
+        nameSpan.innerText = label;
+        const btn = document.createElement('button');
+        btn.className = 'keybind-btn' + (rebindingAction === action ? ' listening' : '');
+        btn.innerText = rebindingAction === action ? 'PRESS KEY...' : formatKeyDisplay(keyBinds[action]);
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          rebindingAction = action;
+          renderKeybindsUI();
+        };
+        row.appendChild(nameSpan);
+        row.appendChild(btn);
+        container.appendChild(row);
+      }
+      updateHUDKeyLabels();
+    };
+
+    window.resetKeybinds = function() {
+      keyBinds = Object.assign({}, DEFAULT_KEYBINDS);
+      rebindingAction = null;
+      try { localStorage.removeItem('backfire_keybinds_v2'); } catch(e) {}
+      renderKeybindsUI();
+      showPopup("KEYBINDINGS RESET TO DEFAULTS", "#10b981");
+    };
+
+    function updateHUDKeyLabels() {
+      const kKick = document.getElementById('label-kick-key');
+      const kSlide = document.getElementById('label-slide-key');
+      const kJump = document.getElementById('label-jump-key');
+      if (kKick) kKick.innerText = `[${formatKeyDisplay(keyBinds.kick)}]`;
+      if (kSlide) kSlide.innerText = `[${formatKeyDisplay(keyBinds.slideDash)}]`;
+      if (kJump) kJump.innerText = `[${formatKeyDisplay(keyBinds.jump)}]`;
+    }
+
+    // --- GAMEPAD & CONTROLLER ENGINE ---
+    let gamepadConnected = false;
+    let prevGpState = {};
+    window.gamepadDeadzone = 0.15;
+    window.gamepadSensitivity = 2.4;
+
+    window.updateGamepadSens = function(val) {
+      window.gamepadSensitivity = parseFloat(val);
+      const disp = document.getElementById('gp-sens-val');
+      if (disp) disp.innerText = parseFloat(val).toFixed(1);
+    };
+
+    window.addEventListener("gamepadconnected", (e) => {
+      gamepadConnected = true;
+      showPopup(`🎮 CONTROLLER CONNECTED: ${e.gamepad.id.slice(0, 24)}`, "#10b981");
+      updateGamepadStatusUI(true, e.gamepad.id);
+    });
+
+    window.addEventListener("gamepaddisconnected", () => {
+      gamepadConnected = false;
+      showPopup("🎮 CONTROLLER DISCONNECTED", "#f43f5e");
+      updateGamepadStatusUI(false);
+    });
+
+    function updateGamepadStatusUI(connected, id = '') {
+      const dot = document.getElementById('gp-status-dot');
+      const text = document.getElementById('gp-status-text');
+      if (dot) dot.style.background = connected ? '#10b981' : '#64748b';
+      if (text) text.innerText = connected ? `CONNECTED: ${id.slice(0, 26)}` : 'DISCONNECTED (Plug in or press any button)';
+
+      const kKick = document.getElementById('label-kick-key');
+      const kSlide = document.getElementById('label-slide-key');
+      const kJump = document.getElementById('label-jump-key');
+      if (connected) {
+        if (kKick) kKick.innerText = '(X)';
+        if (kSlide) kSlide.innerText = '(B)';
+        if (kJump) kJump.innerText = '(A)';
+      } else {
+        updateHUDKeyLabels();
+      }
+    }
+
+    function triggerRumble(weak = 0.4, strong = 0.7, durationMs = 150) {
+      if (!navigator.getGamepads) return;
+      const gamepads = navigator.getGamepads();
+      for (const gp of gamepads) {
+        if (gp && gp.vibrationActuator && gp.vibrationActuator.playEffect) {
+          gp.vibrationActuator.playEffect('dual-rumble', {
+            startDelay: 0,
+            duration: durationMs,
+            weakMagnitude: weak,
+            strongMagnitude: strong
+          }).catch(() => {});
+        }
+      }
+    }
+    window.triggerRumble = triggerRumble;
+
+    function pollGamepad(dt) {
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      let gp = null;
+      for (let g of gamepads) {
+        if (g && g.connected) { gp = g; break; }
+      }
+      if (!gp) return;
+
+      const deadzone = window.gamepadDeadzone || 0.15;
+      const stickSens = (window.gamepadSensitivity || 2.4) * dt * 2.2;
+
+      // Left Stick (Movement)
+      let lx = gp.axes[0];
+      let ly = gp.axes[1];
+      if (Math.abs(lx) < deadzone) lx = 0;
+      if (Math.abs(ly) < deadzone) ly = 0;
+
+      if (lx !== 0 || ly !== 0) {
+        const stickDir = new THREE.Vector3(lx, 0, ly).normalize().applyEuler(new THREE.Euler(0, player.cameraYaw, 0));
+        const steerPower = player.isGrounded ? 20.0 : 7.0;
+        player.vel.add(stickDir.multiplyScalar(steerPower * dt));
+      }
+
+      // Right Stick (Aim / Look)
+      let rx = gp.axes[2];
+      let ry = gp.axes[3];
+      if (Math.abs(rx) < deadzone) rx = 0;
+      if (Math.abs(ry) < deadzone) ry = 0;
+
+      if (rx !== 0 || ry !== 0) {
+        player.cameraYaw -= rx * stickSens;
+        const pitchDelta = ry * stickSens * (window.invertYAxis ? -1 : 1);
+        player.cameraPitch -= pitchDelta;
+        player.cameraPitch = Math.max(-Math.PI / 2.05, Math.min(Math.PI / 2.05, player.cameraPitch));
+      }
+
+      // Triggers & Buttons
+      const btnA = gp.buttons[0] && gp.buttons[0].pressed;
+      const btnB = gp.buttons[1] && gp.buttons[1].pressed;
+      const btnX = gp.buttons[2] && gp.buttons[2].pressed;
+      const btnY = gp.buttons[3] && gp.buttons[3].pressed;
+      const btnLB = gp.buttons[4] && gp.buttons[4].pressed;
+      const btnRB = gp.buttons[5] && gp.buttons[5].pressed;
+      const btnLT = (gp.buttons[6] && gp.buttons[6].value > 0.4) || (gp.buttons[6] && gp.buttons[6].pressed);
+      const btnRT = (gp.buttons[7] && gp.buttons[7].value > 0.4) || (gp.buttons[7] && gp.buttons[7].pressed);
+      const btnR3 = gp.buttons[11] && gp.buttons[11].pressed;
+
+      // Jump / Stomp
+      if (btnA && !prevGpState.btnA) {
+        if (player.isGrounded) {
+          player.vel.y = 15.5;
+          player.isGrounded = false;
+          audio.playJump();
+          triggerRumble(0.2, 0.3, 100);
+        } else if (player.cameraPitch < -0.75 && !player.isStomping) {
+          player.isStomping = true;
+          player.vel.x = 0; player.vel.z = 0;
+          player.vel.y = -42.0;
+          audio.playCrunch(0.8);
+          triggerRumble(0.4, 0.8, 150);
+        }
+      }
+
+      // Slide / Air-Dash
+      if ((btnB && !prevGpState.btnB) || (btnLB && !prevGpState.btnLB)) {
+        trySlideOrDash();
+      }
+
+      // Boot Kick
+      if ((btnX && !prevGpState.btnX) || (btnR3 && !prevGpState.btnR3)) {
+        tryBootKick();
+      }
+
+      // Cycle Weapon
+      if (btnY && !prevGpState.btnY) {
+        selectWeapon((currentWeaponIdx + 1) % WEAPONS.length);
+      }
+
+      // D-Pad Weapon Select
+      if (gp.buttons[12] && gp.buttons[12].pressed && !prevGpState.dUp) selectWeapon(0);
+      if (gp.buttons[13] && gp.buttons[13].pressed && !prevGpState.dDown) selectWeapon(1);
+      if (gp.buttons[14] && gp.buttons[14].pressed && !prevGpState.dLeft) selectWeapon(2);
+      if (gp.buttons[15] && gp.buttons[15].pressed && !prevGpState.dRight) selectWeapon(0);
+
+      // Primary Fire
+      if (btnRT) {
+        if (WEAPONS[currentWeaponIdx].type === 'auto') {
+          tryFireWeapon();
+        } else if (!prevGpState.btnRT) {
+          tryFireWeapon();
+        }
+      }
+
+      // Alt-Fire
+      if (btnLT && !prevGpState.btnLT) {
+        tryFireAltWeapon();
+      }
+
+      // Tether Harpoon
+      if (btnRB && !prevGpState.btnRB) {
+        tryFireTether();
+      } else if (!btnRB && prevGpState.btnRB) {
+        releaseTether();
+      }
+
+      prevGpState = {
+        btnA, btnB, btnX, btnY, btnLB, btnRB, btnLT, btnRT, btnR3,
+        dUp: gp.buttons[12] && gp.buttons[12].pressed,
+        dDown: gp.buttons[13] && gp.buttons[13].pressed,
+        dLeft: gp.buttons[14] && gp.buttons[14].pressed,
+        dRight: gp.buttons[15] && gp.buttons[15].pressed
+      };
+    }
+
+    // --- BULLETSTORM POWER SLIDE, AIR-DASH & BOOT KICK ---
+    function trySlideOrDash() {
+      if (player.isGrounded) {
+        if (slideTimer > 0) return;
+        slideTimer = 0.75;
+        isSliding = true;
+        audio.playSlide();
+        triggerRumble(0.3, 0.4, 180);
+
+        const fwd = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, player.cameraYaw, 0)).normalize();
+        player.vel.add(fwd.multiplyScalar(14.0));
+        createSparks(player.pos, 15, 0x38bdf8, 12);
+        showPopup("🛝 POWER SLIDE!", "#38bdf8");
+      } else {
+        if (airDashCooldown > 0) return;
+        airDashCooldown = 1.1;
+        audio.playAirDash();
+        triggerRumble(0.5, 0.8, 180);
+
+        let dashDir = new THREE.Vector3();
+        if (isActionActive('forward')) dashDir.z -= 1;
+        if (isActionActive('backward')) dashDir.z += 1;
+        if (isActionActive('strafeLeft')) dashDir.x -= 1;
+        if (isActionActive('strafeRight')) dashDir.x += 1;
+
+        if (dashDir.lengthSq() > 0) {
+          dashDir.normalize().applyEuler(new THREE.Euler(0, player.cameraYaw, 0));
+        } else {
+          dashDir = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, player.cameraYaw, 0));
+        }
+
+        player.vel.add(dashDir.multiplyScalar(22.0));
+        emitThrusterParticles(player.pos, dashDir.clone().negate(), 20, 0x06b6d4);
+        screenShake = 0.25;
+        showPopup("💨 THRUSTER AIR-DASH!", "#06b6d4");
+      }
+    }
+
+    function tryBootKick() {
+      if (kickCooldownTimer > 0) return;
+      kickCooldownTimer = 0.65;
+      kickAnimTimer = 0.32;
+      bootRig.visible = true;
+      audio.playBootKick();
+      triggerRumble(0.4, 0.8, 180);
+
+      const fwd = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, player.cameraYaw, 0)).normalize();
+
+      // Check kick against Opponent
+      const toOpp = remoteOpponent.pos.clone().sub(player.pos);
+      const dist = toOpp.length();
+      const dot = toOpp.clone().normalize().dot(fwd);
+
+      if (dist < 4.2 && dot > 0.45) {
+        const kickImpulse = fwd.clone().multiplyScalar(36.0);
+        kickImpulse.y = 8.5;
+        remoteOpponent.vel.add(kickImpulse);
+        audio.playCrunch(1.3);
+        audio.playHitMarker(true);
+        screenShake = 0.55;
+        showPopup("👢 BRUTAL BOOT SHOT! [+36 M/S SHOVEMASTER]", "#f59e0b");
+        triggerRumble(0.7, 1.0, 260);
+        createSparks(remoteOpponent.pos.clone().add(new THREE.Vector3(0, 1.0, 0)), 35, 0xf59e0b, 18);
+
+        sendNet({
+          type: 'kick_shove',
+          dir: [fwd.x, 0.22, fwd.z],
+          force: 36.0
+        });
+      }
+
+      // Check kick against Destructible Cover Pillars
+      for (let pObj of arenaPillars) {
+        if (!pObj.destroyed && pObj.collider.box.distanceToPoint(player.pos) < 2.5) {
+          damagePillar(pObj.idx, 2, true);
+          screenShake = 0.4;
+          showPopup("💥 BOOT SHATTERED PILLAR!", "#f59e0b");
+          break;
+        }
+      }
+    }
+
     let isPointerLocked = false;
     let isMouseDown = false;
     let isRightMouseDown = false;
@@ -3118,15 +3688,116 @@
     });
 
     window.addEventListener('keydown', (e) => {
-      if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
-      if (e.code === 'Digit1') selectWeapon(0);
-      if (e.code === 'Digit2') selectWeapon(1);
-      if (e.code === 'Digit3') selectWeapon(2);
-      if (e.code === 'KeyQ') tryFireAltWeapon();
+      if (rebindingAction) {
+        e.preventDefault();
+        keyBinds[rebindingAction] = e.code;
+        try { localStorage.setItem('backfire_keybinds_v2', JSON.stringify(keyBinds)); } catch(err) {}
+        const actionToUpdate = rebindingAction;
+        rebindingAction = null;
+        renderKeybindsUI();
+        showPopup(`KEY BOUND: ${actionToUpdate.toUpperCase()} ➔ [${formatKeyDisplay(e.code)}]`, "#10b981");
+        return;
+      }
+
+      activeKeys[e.code] = true;
+
+      // Quick Action Triggers
+      if (e.code === keyBinds.weapon1) selectWeapon(0);
+      if (e.code === keyBinds.weapon2) selectWeapon(1);
+      if (e.code === keyBinds.weapon3) selectWeapon(2);
+      if (e.code === keyBinds.altFire) tryFireAltWeapon();
+      if (e.code === keyBinds.kick || e.code === 'KeyF') tryBootKick();
+      if (e.code === keyBinds.slideDash || e.code === 'KeyC') trySlideOrDash();
     });
+
     window.addEventListener('keyup', (e) => {
-      if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
+      activeKeys[e.code] = false;
     });
+
+    // Mobile / Touch Screen Controls Initialization
+    let touchMoveId = null;
+    let touchMoveOrigin = { x: 0, y: 0 };
+    const touchStickKnob = document.getElementById('touch-stick-knob');
+    const touchStickZone = document.getElementById('touch-stick-zone');
+    const touchControlsElem = document.getElementById('touch-controls');
+
+    function checkTouchDevice() {
+      if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        if (touchControlsElem) touchControlsElem.style.display = 'block';
+      }
+    }
+    window.addEventListener('touchstart', checkTouchDevice, { once: true });
+    checkTouchDevice();
+
+    if (touchStickZone) {
+      touchStickZone.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.changedTouches[0];
+        touchMoveId = t.identifier;
+        const rect = touchStickZone.getBoundingClientRect();
+        touchMoveOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      }, { passive: false });
+
+      touchStickZone.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        for (let t of e.changedTouches) {
+          if (t.identifier === touchMoveId) {
+            const dx = t.clientX - touchMoveOrigin.x;
+            const dy = t.clientY - touchMoveOrigin.y;
+            const dist = Math.min(50, Math.hypot(dx, dy));
+            const angle = Math.atan2(dy, dx);
+            const kx = Math.cos(angle) * dist;
+            const ky = Math.sin(angle) * dist;
+            if (touchStickKnob) touchStickKnob.style.transform = `translate(${kx}px, ${ky}px)`;
+
+            activeKeys[keyBinds.forward] = (ky < -12);
+            activeKeys[keyBinds.backward] = (ky > 12);
+            activeKeys[keyBinds.strafeLeft] = (kx < -12);
+            activeKeys[keyBinds.strafeRight] = (kx > 12);
+          }
+        }
+      }, { passive: false });
+
+      const resetStick = (e) => {
+        for (let t of e.changedTouches) {
+          if (t.identifier === touchMoveId) {
+            touchMoveId = null;
+            if (touchStickKnob) touchStickKnob.style.transform = `translate(0px, 0px)`;
+            activeKeys[keyBinds.forward] = false;
+            activeKeys[keyBinds.backward] = false;
+            activeKeys[keyBinds.strafeLeft] = false;
+            activeKeys[keyBinds.strafeRight] = false;
+          }
+        }
+      };
+      touchStickZone.addEventListener('touchend', resetStick);
+      touchStickZone.addEventListener('touchcancel', resetStick);
+    }
+
+    const tFire = document.getElementById('btn-touch-fire');
+    const tJump = document.getElementById('btn-touch-jump');
+    const tKick = document.getElementById('btn-touch-kick');
+    const tSlide = document.getElementById('btn-touch-slide');
+    const tHook = document.getElementById('btn-touch-tether');
+    const tAlt = document.getElementById('btn-touch-alt');
+    if (tFire) tFire.addEventListener('touchstart', (e) => { e.preventDefault(); tryFireWeapon(); });
+    if (tJump) {
+      tJump.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (player.isGrounded) {
+          player.vel.y = 15.5; player.isGrounded = false; audio.playJump();
+        } else {
+          player.isStomping = true; player.vel.x = 0; player.vel.z = 0; player.vel.y = -42.0; audio.playCrunch(0.8);
+        }
+      });
+    }
+    if (tKick) tKick.addEventListener('touchstart', (e) => { e.preventDefault(); tryBootKick(); });
+    if (tSlide) tSlide.addEventListener('touchstart', (e) => { e.preventDefault(); trySlideOrDash(); });
+    if (tHook) {
+      tHook.addEventListener('touchstart', (e) => { e.preventDefault(); tryFireTether(); });
+      tHook.addEventListener('touchend', (e) => { e.preventDefault(); releaseTether(); });
+    }
+    if (tAlt) tAlt.addEventListener('touchstart', (e) => { e.preventDefault(); tryFireAltWeapon(); });
 
     function selectWeapon(idx) {
       if (currentWeaponIdx !== idx) {
@@ -3561,6 +4232,70 @@
       weaponRig.position.set(0.32, -0.28, -0.6 + gunKickOffset);
       weaponRig.rotation.x = gunKickRot;
 
+      // Bulletstorm First-Person Boot Kick Animation
+      if (kickCooldownTimer > 0) kickCooldownTimer -= dt;
+      if (kickAnimTimer > 0) {
+        kickAnimTimer -= dt;
+        const progress = 1.0 - (kickAnimTimer / 0.32);
+        if (progress < 0.35) {
+          const t = progress / 0.35;
+          bootRig.visible = true;
+          bootRig.position.set(
+            THREE.MathUtils.lerp(0.12, -0.02, t),
+            THREE.MathUtils.lerp(-0.65, -0.12, t),
+            THREE.MathUtils.lerp(-0.35, -1.05, t)
+          );
+          bootRig.rotation.set(
+            THREE.MathUtils.lerp(-0.35, 0.35, t),
+            THREE.MathUtils.lerp(0.1, -0.05, t),
+            -0.08
+          );
+        } else {
+          const t = (progress - 0.35) / 0.65;
+          bootRig.position.set(
+            THREE.MathUtils.lerp(-0.02, 0.12, t),
+            THREE.MathUtils.lerp(-0.12, -0.65, t),
+            THREE.MathUtils.lerp(-1.05, -0.35, t)
+          );
+          bootRig.rotation.set(
+            THREE.MathUtils.lerp(0.35, -0.35, t),
+            THREE.MathUtils.lerp(-0.05, 0.1, t),
+            -0.08
+          );
+          if (progress >= 1.0) bootRig.visible = false;
+        }
+      } else {
+        bootRig.visible = false;
+      }
+
+      // Dynamic Ability Deck HUD Status Updates
+      const kickStatus = document.getElementById('text-kick-status');
+      const slideStatus = document.getElementById('text-slide-status');
+      const bKick = document.getElementById('hud-badge-kick');
+      const bSlide = document.getElementById('hud-badge-slide');
+
+      if (kickStatus && bKick) {
+        if (kickCooldownTimer > 0) {
+          kickStatus.innerText = `KICK (${kickCooldownTimer.toFixed(1)}s)`;
+          bKick.style.opacity = '0.5';
+        } else {
+          kickStatus.innerText = 'BOOT KICK';
+          bKick.style.opacity = '1.0';
+        }
+      }
+      if (slideStatus && bSlide) {
+        if (airDashCooldown > 0 && !player.isGrounded) {
+          slideStatus.innerText = `DASH (${airDashCooldown.toFixed(1)}s)`;
+          bSlide.style.opacity = '0.5';
+        } else if (isSliding) {
+          slideStatus.innerText = 'SLIDING...';
+          bSlide.style.opacity = '1.0';
+        } else {
+          slideStatus.innerText = player.isGrounded ? 'POWER SLIDE' : 'AIR-DASH';
+          bSlide.style.opacity = '1.0';
+        }
+      }
+
       updateOpponent(dt);
       updateJumpPads();
       updateParticles(dt);
@@ -3685,35 +4420,82 @@ updateHUD(dt);
     }
 
     function updatePlayer(dt) {
+      if (airDashCooldown > 0) airDashCooldown -= dt;
+
+      // Poll Gamepad Controller
+      pollGamepad(dt);
+
       const inputDir = new THREE.Vector3();
-      if (keys.KeyW) inputDir.z -= 1;
-      if (keys.KeyS) inputDir.z += 1;
-      if (keys.KeyA) inputDir.x -= 1;
-      if (keys.KeyD) inputDir.x += 1;
+      if (isActionActive('forward')) inputDir.z -= 1;
+      if (isActionActive('backward')) inputDir.z += 1;
+      if (isActionActive('strafeLeft')) inputDir.x -= 1;
+      if (isActionActive('strafeRight')) inputDir.x += 1;
 
       if (inputDir.lengthSq() > 0) {
         inputDir.normalize().applyEuler(new THREE.Euler(0, player.cameraYaw, 0));
-        const steerPower = player.isGrounded ? 18.0 : 6.5;
+        const steerPower = player.isGrounded ? (isSliding ? 8.0 : 18.0) : 6.5;
         player.vel.add(inputDir.multiplyScalar(steerPower * dt));
       }
 
-      if (keys.Space) {
-        // Air-Brake Shockwave Stomp (Space while airborne + looking steeply down)
-        if (!player.isGrounded && player.cameraPitch < -0.75 && !player.isStomping) {
-          player.isStomping = true;
-          player.vel.x = 0;
-          player.vel.z = 0;
-          player.vel.y = -42.0; // Slam down violently
-          createSparks(player.pos, 15, 0x06b6d4, 14);
-          audio.playCrunch(0.8);
+      if (isActionActive('jump')) {
+        if (player.isGrounded) {
+          player.vel.y = 15.5;
+          player.isGrounded = false;
+          audio.playJump();
+          createSparks(player.pos, 12, 0x94a3b8, 10);
+          triggerRumble(0.2, 0.3, 100);
         } else {
-          player.vel.x *= Math.pow(0.2, dt);
-          player.vel.z *= Math.pow(0.2, dt);
+          // Air-Brake Shockwave Stomp (Space while airborne + looking steeply down)
+          if (player.cameraPitch < -0.75 && !player.isStomping) {
+            player.isStomping = true;
+            player.vel.x = 0;
+            player.vel.z = 0;
+            player.vel.y = -42.0; // Slam down violently
+            createSparks(player.pos, 15, 0x06b6d4, 14);
+            audio.playCrunch(0.8);
+            triggerRumble(0.4, 0.8, 150);
+          } else {
+            player.vel.x *= Math.pow(0.2, dt);
+            player.vel.z *= Math.pow(0.2, dt);
+          }
+        }
+      }
+
+      // Power Slide physics & low friction
+      if (isSliding) {
+        slideTimer -= dt;
+        player.vel.x *= Math.pow(0.92, dt);
+        player.vel.z *= Math.pow(0.92, dt);
+
+        if (Math.random() < 0.45) {
+          const sideOffset = (Math.random() - 0.5) * 0.8;
+          createSparks(player.pos.clone().add(new THREE.Vector3(sideOffset, 0.1, 0)), 3, 0x38bdf8, 12);
+        }
+
+        // Slide trip check onto opponent
+        const toOpp = remoteOpponent.pos.clone().sub(player.pos);
+        if (toOpp.length() < 2.2) {
+          remoteOpponent.vel.y += 18.0;
+          const fwd = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, player.cameraYaw, 0)).normalize();
+          remoteOpponent.vel.add(fwd.multiplyScalar(15.0));
+          audio.playCrunch(1.0);
+          showPopup("🛝 SLIDE TRIP JUGGLE!", "#38bdf8");
+          screenShake = 0.35;
+          triggerRumble(0.5, 0.6, 180);
+          sendNet({
+            type: 'kick_shove',
+            dir: [fwd.x, 0.9, fwd.z],
+            force: 18.0
+          });
+        }
+
+        if (slideTimer <= 0 || !player.isGrounded) {
+          isSliding = false;
         }
       }
 
       player.vel.y -= 26.0 * dt;
-      const groundDrag = Math.pow(0.6, dt);
+      const groundDrag = isSliding ? Math.pow(0.92, dt) : Math.pow(0.6, dt);
       const airDrag = Math.pow(0.965, dt);
       const currentDrag = player.isGrounded ? groundDrag : airDrag;
       player.vel.x *= currentDrag;
@@ -3730,6 +4512,7 @@ updateHUD(dt);
           audio.playCrunch(1.0);
           screenShake = 0.55;
           showPopup("💥 RETRO-STOMP SHOCKWAVE!", "#38bdf8");
+          triggerRumble(0.7, 1.0, 250);
 
           // Radial blast onto opponent
           const toOpp = remoteOpponent.pos.clone().sub(player.pos);
@@ -3781,7 +4564,7 @@ updateHUD(dt);
       }
 
       camera.position.copy(player.pos);
-      camera.position.y += 0.8;
+      camera.position.y += isSliding ? 0.35 : 0.8;
       camera.rotation.set(0, 0, 0);
       camera.rotation.order = 'YXZ';
       camera.rotation.y = player.cameraYaw;
@@ -3888,6 +4671,19 @@ updateHUD(dt);
           moveForce.add(toPlayerDir.clone().multiplyScalar(-14.0));
         }
         moveForce.add(strafeVec.clone().multiplyScalar(13.0));
+
+        // Close-quarters Bot Counter-Boot Kick
+        if (distToPlayer < 3.2 && (!botAI.kickTimer || botAI.kickTimer <= 0)) {
+          botAI.kickTimer = 2.4;
+          player.vel.add(toPlayerDir.clone().multiplyScalar(30.0));
+          player.vel.y += 8.0;
+          screenShake = 0.5;
+          audio.playBootKick();
+          audio.playCrunch(1.1);
+          triggerRumble(0.6, 0.9, 220);
+          showPopup("👢 BOT COUNTER-BOOTED YOU!", "#f43f5e");
+        }
+        if (botAI.kickTimer > 0) botAI.kickTimer -= dt;
 
         // Hazard Avoidance: Spikes & Lava Pit
         if (currentMapId === 1) {
