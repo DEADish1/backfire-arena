@@ -4373,7 +4373,7 @@
         // Check Interactive Hazard Hits
         for (let hz of hazards) {
           const ray = new THREE.Ray(origin, dir);
-          if (hz.box.intersectsRay(ray)) {
+          if (hz.box && ray.intersectsBox(hz.box)) {
             if (hz.type === 'TURBINE' && turbineOverloadTimer <= 0) {
               triggerTurbineOverload(true);
             } else if (hz.type === 'MOLTEN_PIT' && lavaSurgeTimer <= 0) {
