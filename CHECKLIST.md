@@ -45,7 +45,21 @@ This master checklist tracks everything built so far and all remaining features 
 
 ---
 
-## 🟢 3. Combat Variety & Mechanics (Completed & Overhauled)
+## 🟢 3. Combat Variety, Scoring & Objective Rules (Completed & Live)
+- [x] **Core Objective & Trap Avoidance Scoring Rules**:
+  - **Zero Direct Weapon Damage**: Weapons act as pure recoil thrusters and kinetic concussive knockback tools; damage occurs exclusively through environmental traps.
+  - **Hitting Traps Gives Other Team +1 Point**: When a pilot hits spikes, lava, or the meatgrinder, exactly 1 point is awarded to the opposing team (`victimTeam === 'blue' ? redScore++ : blueScore++`).
+  - **Differentiated Knockout Feedback (Victim vs Killer)**:
+    - *When Local Pilot Hits a Trap*: Flashes intense hazard red banner (`💀 YOU HIT A TRAP! +1 POINT TO OPPONENT`), triggers deep concussive crunch audio, violent screen shake (`0.85`), and red visor splatter. Zero celebratory skillshots awarded to the victim.
+    - *When Opponent Hits a Trap*: Flashes glowing emerald victory banner (`💥 ENEMY HIT A TRAP! +1 POINT TO YOUR TEAM`), plays celebratory fanfare, triggers controller rumble, awards Bulletstorm Skillshot points, and spawns 3D world-space floating badges over the kill site.
+  - **Persistent HUD Mission Goal Banner**:
+    - Central badge under scoreboard: `🎯 GOAL: AVOID ALL TRAPS — HITTING A TRAP GIVES +1 PT TO OPPONENT (FIRST TO 5 WINS)`.
+  - **Dynamic Scoreboard Team Identification**:
+    - Labels show `BLUE (YOU) vs RED (BOT)` in solo practice, `BLUE (YOU) vs RED (ENEMY)` for host, and `BLUE (HOST) vs RED (YOU)` for guests.
+  - **Lobby Start Modal Objective Card**:
+    - High-visibility golden callout card detailing that hitting traps gives the opponent points and explaining the physics-only win condition.
+  - **Map 1 Bridge Hazard Collision Fix**:
+    - Safe traversal across the central steel crossing bridge over the molten slag pit without phantom lava collision triggers.
 - [x] **Full Combat Overhaul & Kinetic Feedback**:
   - **Dynamic Crosshair Hitmarkers & Audio Ticks**: 4-tick rotated hitmarker with crisp audio synthesis (1850Hz standard / 2600Hz critical) confirming connected shots
   - **Opponent Hit Flash VFX**: High-contrast white/red emissive flash on opponent chassis upon kinetic impact
