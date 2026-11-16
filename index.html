@@ -535,10 +535,23 @@
       box-shadow: 0 4px 20px rgba(56, 189, 248, 0.45);
       transition: all 0.15s ease;
     }
-    .start-btn:hover {
+    .start-btn:hover:not(:disabled):not(.waiting) {
       background: #7dd3fc;
       transform: translateY(-2px);
       box-shadow: 0 6px 24px rgba(56, 189, 248, 0.65);
+    }
+    .start-btn:disabled, .start-btn.waiting {
+      background: rgba(30, 41, 59, 0.85) !important;
+      color: #94a3b8 !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
+      transform: none !important;
+      border: 1px dashed rgba(245, 158, 11, 0.6) !important;
+      animation: pulseWaitBtn 1.8s infinite ease-in-out;
+    }
+    @keyframes pulseWaitBtn {
+      0%, 100% { opacity: 0.9; box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+      50% { opacity: 0.6; box-shadow: 0 0 20px rgba(245, 158, 11, 0.5); }
     }
 
     .keybind-row {
@@ -1071,6 +1084,12 @@
           <button class="action-sub-btn" onclick="joinRoomFromInput()">JOIN ROOM</button>
         </div>
 
+        <div style="margin-top: 10px; margin-bottom: 6px;">
+          <div id="host-role-badge" style="display: inline-block; padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: 1px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8;">
+            👑 ROOM HOST (YOU CONTROL MATCH LAUNCH)
+          </div>
+        </div>
+
         <div class="connection-status">
           <div id="conn-dot" class="conn-dot"></div>
           <span id="conn-status-text">Initializing P2P connection...</span>
@@ -1244,10 +1263,97 @@
       }
     };
 
-    window.restartMatch = function() {
+    window.matchStarted = false;
+    window.currentTab = 'online';
+
+    window.updateRoleBadge = function() {
+      const badge = document.getElementById('host-role-badge');
+      if (!badge) return;
+      if (window.isHost) {
+        badge.innerHTML = `👑 ROOM HOST (YOU CONTROL MATCH LAUNCH)`;
+        badge.style.background = 'rgba(56, 189, 248, 0.15)';
+        badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+        badge.style.color = '#38bdf8';
+      } else {
+        badge.innerHTML = `🛡️ GUEST PILOT (WAITING FOR HOST TO LAUNCH)`;
+        badge.style.background = 'rgba(245, 158, 11, 0.15)';
+        badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        badge.style.color = '#fbbf24';
+      }
+    };
+
+    window.updateStartButtonState = function() {
+      const startBtn = document.getElementById('start-button');
+      if (!startBtn) return;
+      const tab = window.currentTab || 'online';
+
+      if (tab === 'solo') {
+        startBtn.innerText = "DEPLOY INTO SOLO MATCH";
+        startBtn.disabled = false;
+        startBtn.classList.remove('waiting');
+        startBtn.style.background = '#38bdf8';
+        startBtn.style.color = '#0f172a';
+        startBtn.style.cursor = 'pointer';
+        return;
+      }
+
+      if (tab === 'settings') {
+        startBtn.innerText = "SAVE & CLOSE SETTINGS";
+        startBtn.disabled = false;
+        startBtn.classList.remove('waiting');
+        startBtn.style.background = '#38bdf8';
+        startBtn.style.color = '#0f172a';
+        startBtn.style.cursor = 'pointer';
+        return;
+      }
+
+      // Online tab
+      if (window.isHost) {
+        startBtn.classList.remove('waiting');
+        startBtn.disabled = false;
+        startBtn.style.cursor = 'pointer';
+        if (window.matchStarted) {
+          startBtn.innerText = "RESUME MATCH";
+          startBtn.style.background = '#38bdf8';
+          startBtn.style.color = '#0f172a';
+        } else if (window.peerConnections && window.peerConnections.size > 0) {
+          startBtn.innerText = "🚀 START MATCH (LAUNCH ALL PILOTS)";
+          startBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+          startBtn.style.color = '#ffffff';
+        } else {
+          startBtn.innerText = "START MATCH (WAITING FOR OPPONENT)";
+          startBtn.style.background = '#38bdf8';
+          startBtn.style.color = '#0f172a';
+        }
+      } else {
+        // Guest
+        if (window.matchStarted) {
+          startBtn.innerText = "JOIN ACTIVE MATCH";
+          startBtn.disabled = false;
+          startBtn.classList.remove('waiting');
+          startBtn.style.background = '#38bdf8';
+          startBtn.style.color = '#0f172a';
+          startBtn.style.cursor = 'pointer';
+        } else {
+          startBtn.innerText = "⏳ WAITING FOR HOST TO START MATCH...";
+          startBtn.disabled = true;
+          startBtn.classList.add('waiting');
+          startBtn.style.cursor = 'not-allowed';
+        }
+      }
+    };
+
+    window.restartMatch = function(broadcast = true) {
+      if (window.currentTab === 'online' && !window.isHost && broadcast) {
+        showPopup("⏳ ONLY THE HOST CAN START A REMATCH", "#f59e0b");
+        return;
+      }
       document.getElementById('mvp-modal').style.display = 'none';
+      window.matchStarted = true;
       window.blueScore = 0;
       window.redScore = 0;
+      if (typeof blueScore !== 'undefined') blueScore = 0;
+      if (typeof redScore !== 'undefined') redScore = 0;
       document.getElementById('blue-score').innerText = 0;
       document.getElementById('red-score').innerText = 0;
       window.matchStats = { maxSpeed: 0, hazardKills: 0, maxTetherDist: 0, stompImpacts: 0 };
@@ -1255,10 +1361,14 @@
         window.player.pos.set(0, 1.8, window.isHost ? 22 : -22);
         window.player.vel.set(0, 0, 0);
       }
+      if (window.isHost && broadcast && window.sendNet) {
+        window.sendNet({ type: 'rematch' });
+      }
       if (document.body.requestPointerLock) document.body.requestPointerLock();
     };
 
     window.switchTab = function(tab) {
+      window.currentTab = tab;
       document.getElementById('tab-online').classList.toggle('active', tab === 'online');
       document.getElementById('tab-solo').classList.toggle('active', tab === 'solo');
       document.getElementById('tab-settings').classList.toggle('active', tab === 'settings');
@@ -1266,7 +1376,13 @@
       document.getElementById('solo-panel').style.display = tab === 'solo' ? 'block' : 'none';
       document.getElementById('settings-panel').style.display = tab === 'settings' ? 'block' : 'none';
       if (tab === 'settings' && window.renderKeybindsUI) window.renderKeybindsUI();
+      window.updateStartButtonState();
     };
+
+    setTimeout(() => {
+      window.updateRoleBadge();
+      window.updateStartButtonState();
+    }, 100);
 
     window.mouseSensitivity = 0.0022;
     window.invertYAxis = false;
@@ -3068,8 +3184,12 @@
     let peer = null;
     let dataConn = null;  // primary PeerJS DataConnection
     const peerConnections = new Map(); // peerId -> DataConnection (2v2 mesh support)
+    window.peerConnections = peerConnections;
     let hostReconnectAttempts = 0;
     let isHost = !isJoiner; // if no ?room= in URL, we're the host (creator)
+    window.isHost = isHost;
+    let matchStarted = false;
+    window.matchStarted = matchStarted;
     let isMultiplayerActive = false;
     let blueScore = 0;
     let redScore = 0;
@@ -3077,6 +3197,8 @@
 
     // Dynamic 2v2 / Multi-Pilot Roster UI
     function updateRosterUI() {
+      if (window.updateRoleBadge) window.updateRoleBadge();
+      if (window.updateStartButtonState) window.updateStartButtonState();
       const rosterEl = document.getElementById('roster-list');
       if (!rosterEl) return;
       const count = peerConnections.size;
@@ -3104,11 +3226,14 @@
     function triggerHostMigration() {
       console.log('[BACKFIRE] Host migration triggered: promoting client to room host');
       isHost = true;
+      window.isHost = true;
       hostReconnectAttempts = 0;
       showPopup("👑 HOST MIGRATION: YOU ARE NOW ROOM HOST!", "#fbbf24");
       const statusEl = document.getElementById('conn-status-text');
       if (statusEl) statusEl.innerText = `Host migrated. You are now the room host! Waiting for pilots...`;
       updateRosterUI();
+      if (window.updateRoleBadge) window.updateRoleBadge();
+      if (window.updateStartButtonState) window.updateStartButtonState();
       try { if (peer && !peer.destroyed) peer.destroy(); } catch (e) {}
       setTimeout(() => {
         initPeerJS();
@@ -3270,6 +3395,7 @@
           try {
             conn.send({
               type: 'sync_match',
+              matchStarted: matchStarted,
               blueScore: blueScore,
               redScore: redScore,
               currentMapId: currentMapId,
@@ -3281,6 +3407,8 @@
           document.getElementById('p2-name').innerText = "HOST (BLUE)";
           player.pos.set(0, 1.8, -22);
         }
+        if (window.updateRoleBadge) window.updateRoleBadge();
+        if (window.updateStartButtonState) window.updateStartButtonState();
       });
 
       conn.on('data', (msg) => {
@@ -3383,7 +3511,31 @@
         else if (msg.type === 'tactical_ping') {
           renderTacticalPingBeacon(msg.pingText, msg.color, new THREE.Vector3(msg.origin[0], msg.origin[1], msg.origin[2]));
         }
+        else if (msg.type === 'start_match') {
+          matchStarted = true;
+          window.matchStarted = true;
+          if (typeof msg.currentMapId === 'number' && msg.currentMapId !== currentMapId) {
+            selectArenaMap(msg.currentMapId, false);
+          }
+          if (window.updateStartButtonState) window.updateStartButtonState();
+          showPopup("🚀 HOST HAS LAUNCHED THE MATCH! COMBAT ENGAGED!", "#10b981");
+          audio.playTurbineSurge();
+          startModal.style.display = 'none';
+          isPointerLocked = true;
+          try {
+            const p = document.body.requestPointerLock();
+            if (p && p.catch) p.catch(() => {});
+          } catch (e) {}
+        }
+        else if (msg.type === 'rematch') {
+          showPopup("🔄 HOST INITIATED REMATCH!", "#38bdf8");
+          if (window.restartMatch) window.restartMatch(false);
+        }
         else if (msg.type === 'sync_match') {
+          if (msg.matchStarted) {
+            matchStarted = true;
+            window.matchStarted = true;
+          }
           blueScore = msg.blueScore || 0;
           redScore = msg.redScore || 0;
           document.getElementById('blue-score').innerText = blueScore;
@@ -3398,6 +3550,7 @@
               }
             });
           }
+          if (window.updateStartButtonState) window.updateStartButtonState();
           showPopup("MATCH STATE RECOVERED & SYNCED!", "#10b981");
         }
       });
@@ -3959,22 +4112,56 @@
     const startBtn = document.getElementById('start-button');
 
     startBtn.addEventListener('click', () => {
+      const tab = window.currentTab || 'online';
+      if (tab === 'online' && !isHost && !matchStarted) {
+        showPopup("⏳ WAITING FOR HOST TO START THE MATCH", "#f59e0b");
+        if (window.audio && window.audio.playCrunch) audio.playCrunch(0.5);
+        return;
+      }
+
       if (window.audio && window.audio.init) window.audio.init();
+
+      if (tab === 'online' && isHost) {
+        if (!matchStarted) {
+          matchStarted = true;
+          window.matchStarted = true;
+          sendNet({
+            type: 'start_match',
+            currentMapId: currentMapId
+          });
+          showPopup("🚀 HOST STARTED MATCH! COMBAT ENGAGED!", "#10b981");
+          audio.playTurbineSurge();
+        }
+      } else if (tab === 'solo') {
+        matchStarted = true;
+        window.matchStarted = true;
+      }
+
       try {
         const p = document.body.requestPointerLock();
         if (p && p.catch) p.catch(() => {});
       } catch (err) {}
       startModal.style.display = 'none';
       isPointerLocked = true;
+      if (window.updateStartButtonState) window.updateStartButtonState();
     });
 
     document.addEventListener('pointerlockchange', () => {
+      const tab = window.currentTab || 'online';
       if (document.pointerLockElement === document.body) {
+        if (tab === 'online' && !isHost && !matchStarted) {
+          document.exitPointerLock();
+          startModal.style.display = 'flex';
+          isPointerLocked = false;
+          showPopup("⏳ WAITING FOR HOST TO START THE MATCH", "#f59e0b");
+          return;
+        }
         isPointerLocked = true;
         startModal.style.display = 'none';
       } else {
         isPointerLocked = false;
         startModal.style.display = 'flex';
+        if (window.updateStartButtonState) window.updateStartButtonState();
         releaseTether();
       }
     });
