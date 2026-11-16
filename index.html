@@ -631,13 +631,38 @@
         </div>
       </div>
 
-      <!-- Weapons Deck -->
-      <div class="weapon-deck">
-        <div id="wep-0" class="weapon-slot active">
-          <div class="weapon-num">[ 1 ]</div>
-          <div class="weapon-name">BREAKER 12G</div>
-          <div class="weapon-type">Twin-Blast Launcher</div>
+            <!-- Weapon Deck & Heat Gauge -->
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <div class="weapon-deck" style="margin-bottom: 6px;">
+          <div id="wep-0" class="weapon-slot active">
+            <div class="weapon-num">[ 1 ]</div>
+            <div class="weapon-name">BREAKER 12G</div>
+            <div class="weapon-type">Twin-Blast Launcher</div>
+            <div style="font-size: 9px; color: #38bdf8; font-weight: 800; margin-top: 2px;">ALT [Q]: BLAST WALL</div>
+          </div>
+          <div id="wep-1" class="weapon-slot">
+            <div class="weapon-num">[ 2 ]</div>
+            <div class="weapon-name">JACKHAMMER</div>
+            <div class="weapon-type">Auto-Thrust Drill</div>
+            <div style="font-size: 9px; color: #06b6d4; font-weight: 800; margin-top: 2px;">ALT [Q]: JET HOVER</div>
+          </div>
+          <div id="wep-2" class="weapon-slot">
+            <div class="weapon-num">[ 3 ]</div>
+            <div class="weapon-name">RAIL SLUGGER</div>
+            <div class="weapon-type">Concussive Driver</div>
+            <div style="font-size: 9px; color: #f59e0b; font-weight: 800; margin-top: 2px;">ALT [Q]: PIERCING BEAM</div>
+          </div>
         </div>
+
+        <div style="width: 100%; max-width: 500px; background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 6px 14px; display: flex; align-items: center; gap: 12px; backdrop-filter: blur(8px);">
+          <span style="font-size: 10px; font-weight: 800; letter-spacing: 1.5px; color: #94a3b8; white-space: nowrap;">CORE HEAT</span>
+          <div style="flex: 1; height: 7px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;">
+            <div id="heat-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #f59e0b, #ef4444); transition: width 0.05s linear;"></div>
+          </div>
+          <span id="heat-val-display" style="font-size: 11px; font-family: monospace; font-weight: 800; color: #38bdf8; min-width: 38px; text-align: right;">0%</span>
+          <span id="overheat-badge" style="display: none; font-size: 9px; font-weight: 900; letter-spacing: 1px; color: #ef4444; background: rgba(239, 68, 68, 0.2); padding: 2px 6px; border-radius: 4px; border: 1px solid #ef4444;">SUPERCHARGED</span>
+        </div>
+      </div>
         <div id="wep-1" class="weapon-slot">
           <div class="weapon-num">[ 2 ]</div>
           <div class="weapon-name">JACKHAMMER</div>
@@ -729,6 +754,7 @@
       <div class="controls-grid">
         <div class="ctrl-item"><b>L-CLICK</b> Fire / Recoil Thrust</div>
         <div class="ctrl-item"><b>R-CLICK</b> Kinetic Harpoon / Tether</div>
+        <div class="ctrl-item"><b>Q / M-CLICK</b> Weapon Alt-Fire Mode</div>
         <div class="ctrl-item"><b>SHOOT DOWN</b> Rocket Jump / Fly</div>
         <div class="ctrl-item"><b>1, 2, 3 / WHEEL</b> Switch Weapons</div>
         <div class="ctrl-item"><b>WASD</b> Fine Drift Steering</div>
@@ -1106,6 +1132,21 @@
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.65);
         osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.7);
+      }
+            playChargeUp() {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(350, now);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.32);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.linearRampToValueAtTime(0.85, now + 0.3);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.connect(gain); gain.connect(this.dest());
+        osc.start(now); osc.stop(now + 0.36);
       }
       playWeaponSwitch() {
         if (!this.ctx) return;
@@ -1571,11 +1612,27 @@
       );
       visor.position.set(0, 1.4, 0.45);
 
-      const thrusterL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 }));
+            const thrusterL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 }));
       thrusterL.position.set(-0.25, 1.1, -0.4);
       const thrusterR = thrusterL.clone(); thrusterR.position.x = 0.25;
 
-      g.add(body, visor, thrusterL, thrusterR);
+      // 3D Animated Thruster Jet Exhaust Flames
+      const flameGeo = new THREE.ConeGeometry(0.13, 0.65, 10);
+      flameGeo.rotateX(-Math.PI / 2);
+      flameGeo.translate(0, 0, -0.32);
+      const flameMat = new THREE.MeshBasicMaterial({
+        color: 0x06b6d4,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending
+      });
+      const flameL = new THREE.Mesh(flameGeo, flameMat);
+      flameL.position.set(-0.25, 0.9, -0.65);
+      const flameR = flameL.clone(); flameR.position.x = 0.25;
+
+      g.add(body, visor, thrusterL, thrusterR, flameL, flameR);
+      g.userData.flameL = flameL;
+      g.userData.flameR = flameR;
       g.position.set(0, 1.0, -22);
       scene.add(g);
       return g;
@@ -1989,6 +2046,7 @@
     document.addEventListener('mousedown', (e) => {
       if (!isPointerLocked) return;
       if (e.button === 0) { isMouseDown = true; tryFireWeapon(); }
+      else if (e.button === 1) { tryFireAltWeapon(); }
       else if (e.button === 2) { isRightMouseDown = true; tryFireTether(); }
     });
 
@@ -2010,6 +2068,7 @@
       if (e.code === 'Digit1') selectWeapon(0);
       if (e.code === 'Digit2') selectWeapon(1);
       if (e.code === 'Digit3') selectWeapon(2);
+      if (e.code === 'KeyQ') tryFireAltWeapon();
     });
     window.addEventListener('keyup', (e) => {
       if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
@@ -2085,11 +2144,125 @@
       sendNet({ type: 'tether', active: false });
     }
 
+
+    // --- CORE HEAT & ALT-FIRE COMBAT STATE ---
+    let weaponHeat = 0; // 0 to 100
+    let altCooldownTimer = 0;
+    let isHoverModeActive = false;
+
+    // Thruster Particle Exhaust System
+    function emitThrusterParticles(pos, dir, count = 3, colorHex = 0x38bdf8) {
+      for (let i = 0; i < count; i++) {
+        const pVel = dir.clone().multiplyScalar(-8.0 - Math.random() * 6.0);
+        pVel.x += (Math.random() - 0.5) * 3.0;
+        pVel.z += (Math.random() - 0.5) * 3.0;
+        createSparks(pos, 1, colorHex, 4);
+      }
+    }
+
     // --- SHOOTING & RECOIL ---
+
+    function tryFireAltWeapon() {
+      if (altCooldownTimer > 0) return;
+      const origin = camera.position.clone();
+      const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.cameraPitch, player.cameraYaw, 0, 'YXZ')).normalize();
+
+      // Overheat Momentum Multiplier
+      const isOverheated = weaponHeat >= 75;
+      const heatThrustMult = isOverheated ? 1.25 : 1.0;
+
+      if (currentWeaponIdx === 0) {
+        // Breaker 12G Alt-Fire: CONCUSSIVE BLAST WALL
+        altCooldownTimer = 1.4;
+        weaponHeat = Math.min(100, weaponHeat + 32);
+        audio.playShotgun();
+        screenShake = 0.5;
+
+        // Massive backward impulse (+44 m/s super-jump!)
+        const recoilImpulse = 44.0 * heatThrustMult;
+        player.vel.add(forward.clone().multiplyScalar(-recoilImpulse));
+        showPopup("💥 CONCUSSIVE BLAST WALL! (+44 M/S)", "#38bdf8");
+
+        // 16-pellet horizontal fan
+        for (let i = -8; i <= 8; i++) {
+          const spreadDir = forward.clone();
+          const angle = (i / 8) * 0.38;
+          spreadDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+          createBulletTracer(origin, spreadDir, 75, 0x38bdf8);
+
+          // Raycast check opponent
+          const oppCenter = remoteOpponent.pos.clone().add(new THREE.Vector3(0, 1.0, 0));
+          const toTarget = oppCenter.clone().sub(origin);
+          const projDist = toTarget.dot(spreadDir);
+          if (projDist > 0 && projDist < 75) {
+            const closest = origin.clone().add(spreadDir.clone().multiplyScalar(projDist));
+            if (closest.distanceTo(oppCenter) < remoteOpponent.radius + 0.6) {
+              const hitImpulse = spreadDir.clone().multiplyScalar(16.0);
+              hitImpulse.y += 4.0;
+              remoteOpponent.vel.add(hitImpulse);
+              sendNet({ type: 'hit', impulse: [hitImpulse.x, hitImpulse.y, hitImpulse.z] });
+              createSparks(closest, 12, 0x38bdf8, 10);
+            }
+          }
+        }
+
+        sendNet({ type: 'fire', origin: [origin.x, origin.y, origin.z], dir: [forward.x, forward.y, forward.z], wep: 0 });
+
+      } else if (currentWeaponIdx === 1) {
+        // Jackhammer Alt-Fire: JET HOVER ENGAGE
+        isHoverModeActive = true;
+        weaponHeat = Math.min(100, weaponHeat + 8);
+        altCooldownTimer = 0.2;
+        player.vel.y = 1.2;
+        player.vel.x *= 0.92;
+        player.vel.z *= 0.92;
+        audio.playJackhammer();
+        showPopup("🚀 RETRO-JET HOVER ACTIVE", "#06b6d4");
+        emitThrusterParticles(player.pos, new THREE.Vector3(0, -1, 0), 8, 0x06b6d4);
+
+      } else if (currentWeaponIdx === 2) {
+        // Rail Slugger Alt-Fire: PIERCING OVERCHARGE BEAM (Punches through pillars!)
+        altCooldownTimer = 2.2;
+        weaponHeat = Math.min(100, weaponHeat + 45);
+        audio.playChargeUp();
+
+        setTimeout(() => {
+          audio.playRailgun();
+          screenShake = 0.6;
+          const beamForward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.cameraPitch, player.cameraYaw, 0, 'YXZ')).normalize();
+          player.vel.add(beamForward.clone().multiplyScalar(-34.0 * heatThrustMult));
+          showPopup("⚡ PIERCING RAIL BEAM (WALL PENETRATING)", "#f59e0b");
+
+          // Thick piercing tracer beam
+          createBulletTracer(origin, beamForward, 120, 0xf59e0b);
+
+          // Direct distance-to-line hit check (ignores pillar obstruction!)
+          const oppCenter = remoteOpponent.pos.clone().add(new THREE.Vector3(0, 1.0, 0));
+          const toTarget = oppCenter.clone().sub(origin);
+          const projDist = toTarget.dot(beamForward);
+          if (projDist > 0 && projDist < 120) {
+            const closest = origin.clone().add(beamForward.clone().multiplyScalar(projDist));
+            if (closest.distanceTo(oppCenter) < remoteOpponent.radius + 1.2) {
+              const hitImpulse = beamForward.clone().multiplyScalar(85.0);
+              hitImpulse.y += 6.0;
+              remoteOpponent.vel.add(hitImpulse);
+              sendNet({ type: 'hit', impulse: [hitImpulse.x, hitImpulse.y, hitImpulse.z] });
+              createSparks(closest, 35, 0xf59e0b, 16);
+              audio.playCrunch(1.0);
+            }
+          }
+
+          sendNet({ type: 'fire', origin: [origin.x, origin.y, origin.z], dir: [beamForward.x, beamForward.y, beamForward.z], wep: 2 });
+        }, 220);
+      }
+    }
+
     function tryFireWeapon() {
       if (weaponCooldownTimer > 0) return;
       const wep = WEAPONS[currentWeaponIdx];
       weaponCooldownTimer = wep.cooldown;
+      const heatGain = (currentWeaponIdx === 0) ? 16 : (currentWeaponIdx === 1) ? 3.5 : 28;
+      weaponHeat = Math.min(100, weaponHeat + heatGain);
 
       if (currentWeaponIdx === 0) audio.playShotgun();
       else if (currentWeaponIdx === 1) audio.playJackhammer();
@@ -2302,6 +2475,37 @@
       updateOpponent(dt);
       updateJumpPads();
       updateParticles(dt);
+      // Heat Dissipation & Overheat State
+      if (altCooldownTimer > 0) altCooldownTimer -= dt;
+      weaponHeat = Math.max(0, weaponHeat - dt * 20.0);
+      const heatBar = document.getElementById('heat-bar');
+      const heatDisplay = document.getElementById('heat-val-display');
+      const overheatBadge = document.getElementById('overheat-badge');
+      if (heatBar) heatBar.style.width = Math.round(weaponHeat) + '%';
+      if (heatDisplay) heatDisplay.innerText = Math.round(weaponHeat) + '%';
+      if (overheatBadge) overheatBadge.style.display = (weaponHeat >= 75) ? 'inline-block' : 'none';
+
+      // Jackhammer Hover Mode physics
+      if (isHoverModeActive) {
+        player.vel.y = THREE.MathUtils.lerp(player.vel.y, 0.5, dt * 8);
+        player.vel.x *= Math.pow(0.85, dt);
+        player.vel.z *= Math.pow(0.85, dt);
+        if (Math.random() < 0.3) {
+          emitThrusterParticles(player.pos, new THREE.Vector3(0, -1, 0), 2, 0x06b6d4);
+        }
+        if (!keys.KeyQ) isHoverModeActive = false;
+      }
+
+      // Update Remote Opponent 3D Jet Thruster Plumes
+      if (remoteOpponent && remoteOpponent.mesh && remoteOpponent.mesh.userData.flameL) {
+        const oppSpeed = remoteOpponent.vel.length();
+        const fScale = Math.max(0.1, Math.min(oppSpeed / 12.0, 1.6));
+        remoteOpponent.mesh.userData.flameL.scale.set(1, 1, fScale);
+        remoteOpponent.mesh.userData.flameR.scale.set(1, 1, fScale);
+        remoteOpponent.mesh.userData.flameL.visible = (oppSpeed > 1.5);
+        remoteOpponent.mesh.userData.flameR.visible = (oppSpeed > 1.5);
+      }
+
       updateShockwaves(dt);
 updateHUD(dt);
       updateAtmosphericEmbers(dt);
