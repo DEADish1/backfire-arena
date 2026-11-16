@@ -3760,20 +3760,20 @@
       rUpperArm.rotation.set(0.70, -0.22, -0.32);
       rUpperArm.position.set(0.32, -0.32, 0.42);
 
-      // Armored Forearm Gauntlet
-      const rForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.085, 0.36, 12), matArmCarbon);
-      rForearm.rotation.set(0.62, -0.16, -0.20);
-      rForearm.position.set(0.20, -0.20, 0.22);
+      // Armored Forearm Gauntlet Chassis
+      const rForearm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.32), matArmCarbon);
+      rForearm.position.set(0.18, -0.18, 0.18);
+      rForearm.rotation.set(0.25, 0.35, -0.18);
 
       // Gauntlet Top Strike Plate
-      const rGauntletPlate = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.28, 0.035), matArmSteel);
-      rGauntletPlate.position.set(0.19, -0.18, 0.21);
-      rGauntletPlate.rotation.set(0.62, -0.16, -0.20);
+      const rGauntletPlate = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.025, 0.26), matArmSteel);
+      rGauntletPlate.position.set(0, 0.05, 0);
+      rForearm.add(rGauntletPlate);
 
       // Glowing Neon Energy Conduit Line
-      const rConduit = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.26, 0.015), matArmNeon);
-      rConduit.position.set(0.20, -0.17, 0.23);
-      rConduit.rotation.set(0.62, -0.16, -0.20);
+      const rConduit = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.24), matArmNeon);
+      rConduit.position.set(0.06, 0.045, 0);
+      rForearm.add(rConduit);
 
       // Right Tactical Combat Glove Group
       const rGlove = new THREE.Group();
@@ -3802,7 +3802,7 @@
       rThumb.position.set(-0.04, 0.04, 0.02);
 
       rGlove.add(rPalm, rKnuckles, rFingers, rTrigFinger, rThumb);
-      rArmGroup.add(rUpperArm, rForearm, rGauntletPlate, rConduit, rGlove);
+      rArmGroup.add(rUpperArm, rForearm, rGlove);
       armGroup.add(rArmGroup);
 
       // --- LEFT ARM (Holding Foregrip / Shotgun Pump) ---
@@ -3813,19 +3813,25 @@
       lUpperArm.rotation.set(0.55, 0.32, 0.38);
       lUpperArm.position.set(-0.32, -0.34, 0.28);
 
-      // Armored Left Forearm Gauntlet
-      const lForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.085, 0.38, 12), matArmCarbon);
-      lForearm.rotation.set(0.48, 0.25, 0.28);
-      lForearm.position.set(-0.16, -0.18, 0.02);
+      // Armored Left Forearm Gauntlet Chassis
+      const lForearm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.34), matArmCarbon);
+      lForearm.position.set(-0.16, -0.16, -0.10);
+      lForearm.rotation.set(0.18, -0.42, 0.15);
 
       // Gauntlet Top Strike Plate
-      const lGauntletPlate = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.26, 0.035), matArmSteel);
-      lGauntletPlate.position.set(-0.15, -0.16, 0.01);
-      lGauntletPlate.rotation.set(0.48, 0.25, 0.28);
+      const lGauntletPlate = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.025, 0.28), matArmSteel);
+      lGauntletPlate.position.set(0, 0.05, 0);
+      lForearm.add(lGauntletPlate);
 
       // Holographic Wrist HUD Mini-Terminal
-      const lWristHud = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.035, 0.07), matArmNeon);
-      lWristHud.position.set(-0.13, -0.13, 0.02);
+      const lWristHud = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.025, 0.08), matArmNeon);
+      lWristHud.position.set(0, 0.065, -0.10);
+      lForearm.add(lWristHud);
+
+      // Neon Conduit Line
+      const lConduit = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.26), matArmNeon);
+      lConduit.position.set(-0.06, 0.045, 0);
+      lForearm.add(lConduit);
 
       // Left Tactical Glove Group (Holding Pump Handle / Underbarrel)
       const lGlove = new THREE.Group();
@@ -3842,17 +3848,15 @@
       lThumb.position.set(-0.05, 0.035, 0.02);
 
       lGlove.add(lPalm, lKnuckles, lFingers, lThumb);
-      lArmGroup.add(lUpperArm, lForearm, lGauntletPlate, lWristHud, lGlove);
+      lArmGroup.add(lUpperArm, lForearm, lGlove);
       armGroup.add(lArmGroup);
 
       return {
         group: armGroup,
         lGlove: lGlove,
         lForearm: lForearm,
-        lGauntletPlate: lGauntletPlate,
-        lUpperArm: lUpperArm,
-        lWristHud: lWristHud,
         rGlove: rGlove,
+        rForearm: rForearm,
         update: function(dt, wepIdx, pumpZ) {
           if (wepIdx === 0) {
             // Shotgun: Left hand tracks pump handle smoothly!
@@ -3872,11 +3876,9 @@
           }
 
           // Smoothly connect forearm to the hand position
-          lForearm.position.x = lGlove.position.x * 0.4 - 0.16;
-          lForearm.position.y = lGlove.position.y * 0.5 - 0.14;
-          lForearm.position.z = lGlove.position.z * 0.5 + 0.12;
-          lGauntletPlate.position.copy(lForearm.position).add(new THREE.Vector3(0.01, 0.02, -0.01));
-          lWristHud.position.copy(lForearm.position).add(new THREE.Vector3(0.03, 0.05, 0));
+          lForearm.position.x = lGlove.position.x * 0.4 - 0.14;
+          lForearm.position.y = lGlove.position.y * 0.5 - 0.12;
+          lForearm.position.z = lGlove.position.z * 0.5 + 0.06;
         }
       };
     }
