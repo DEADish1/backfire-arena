@@ -848,6 +848,37 @@
       border-color: #38bdf8;
       background: rgba(56, 189, 248, 0.12);
     }
+
+    #visor-splatter {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 45;
+      background: radial-gradient(circle at 50% 50%, transparent 50%, rgba(244, 63, 94, 0.35) 90%, rgba(245, 158, 11, 0.5) 100%);
+      mix-blend-mode: screen;
+      transition: opacity 0.12s ease-out;
+    }
+    #visor-splatter.active {
+      opacity: 1;
+    }
+
+    #match-countdown {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 110px;
+      font-weight: 950;
+      letter-spacing: 6px;
+      color: #fbbf24;
+      text-shadow: 0 0 50px #f59e0b, 0 0 100px rgba(245, 158, 11, 0.9);
+      z-index: 300;
+      pointer-events: none;
+      text-align: center;
+      text-transform: uppercase;
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -857,6 +888,8 @@
   <div id="canvas-container"></div>
   <div id="speed-vignette"></div>
   <div id="damage-flash"></div>
+  <div id="visor-splatter"></div>
+  <div id="match-countdown"></div>
 
   <!-- HUD -->
   <div id="hud">
@@ -1220,6 +1253,7 @@
     const isJoiner = !!roomFromUrl; // true if we opened someone's invite link
     window.activeRoomId = activeRoomId;
     window.isJoiner = isJoiner;
+    window.isHost = !isJoiner;
 
     const fullShareLink = window.location.origin + window.location.pathname + '?room=' + activeRoomId;
     const shareInput = document.getElementById('share-link-input');
@@ -1227,7 +1261,6 @@
     const joinInput = document.getElementById('join-room-input');
     if (joinInput) joinInput.placeholder = 'Current: ' + activeRoomId;
 
-        
     // Match Lifetime Stats
     window.matchStats = {
       maxSpeed: 0,
@@ -1265,6 +1298,63 @@
 
     window.matchStarted = false;
     window.currentTab = 'online';
+
+    window.triggerVisorSplatter = function() {
+      const vs = document.getElementById('visor-splatter');
+      if (!vs) return;
+      vs.classList.add('active');
+      clearTimeout(window.visorSplatterTimer);
+      window.visorSplatterTimer = setTimeout(() => {
+        vs.classList.remove('active');
+      }, 450);
+    };
+
+    window.startMatchCountdown = function(onComplete) {
+      const cdEl = document.getElementById('match-countdown');
+      const startModal = document.getElementById('start-modal');
+      if (startModal) startModal.style.display = 'none';
+      if (!cdEl) {
+        window.matchStarted = true;
+        if (typeof matchStarted !== 'undefined') matchStarted = true;
+        try { document.body.requestPointerLock(); } catch(e){}
+        if (onComplete) onComplete();
+        return;
+      }
+      cdEl.style.display = 'block';
+
+      let count = 3;
+      function tick() {
+        if (count > 0) {
+          cdEl.innerText = count;
+          cdEl.style.color = '#fbbf24';
+          cdEl.style.textShadow = '0 0 50px #f59e0b, 0 0 100px rgba(245, 158, 11, 0.9)';
+          if (window.audio && window.audio.playPing) audio.playPing();
+          if (typeof screenShake !== 'undefined') screenShake = 0.25;
+          count--;
+          setTimeout(tick, 900);
+        } else {
+          cdEl.innerText = 'ENGAGE!';
+          cdEl.style.color = '#38bdf8';
+          cdEl.style.textShadow = '0 0 60px #38bdf8, 0 0 120px rgba(56, 189, 248, 0.95)';
+          if (window.audio && window.audio.playTurbineSurge) audio.playTurbineSurge();
+          if (typeof screenShake !== 'undefined') screenShake = 0.6;
+          showPopup("⚡ COMBAT ENGAGED! FIGHT!", "#38bdf8");
+          window.matchStarted = true;
+          if (typeof matchStarted !== 'undefined') matchStarted = true;
+          if (typeof isPointerLocked !== 'undefined') isPointerLocked = true;
+          try {
+            const p = document.body.requestPointerLock();
+            if (p && p.catch) p.catch(() => {});
+          } catch (e) {}
+          if (window.updateStartButtonState) window.updateStartButtonState();
+          setTimeout(() => {
+            cdEl.style.display = 'none';
+            if (onComplete) onComplete();
+          }, 750);
+        }
+      }
+      tick();
+    };
 
     window.updateRoleBadge = function() {
       const badge = document.getElementById('host-role-badge');
@@ -1309,21 +1399,25 @@
 
       // Online tab
       if (window.isHost) {
-        startBtn.classList.remove('waiting');
-        startBtn.disabled = false;
-        startBtn.style.cursor = 'pointer';
         if (window.matchStarted) {
           startBtn.innerText = "RESUME MATCH";
+          startBtn.disabled = false;
+          startBtn.classList.remove('waiting');
           startBtn.style.background = '#38bdf8';
           startBtn.style.color = '#0f172a';
+          startBtn.style.cursor = 'pointer';
         } else if (window.peerConnections && window.peerConnections.size > 0) {
           startBtn.innerText = "🚀 START MATCH (LAUNCH ALL PILOTS)";
+          startBtn.disabled = false;
+          startBtn.classList.remove('waiting');
           startBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
           startBtn.style.color = '#ffffff';
+          startBtn.style.cursor = 'pointer';
         } else {
-          startBtn.innerText = "START MATCH (WAITING FOR OPPONENT)";
-          startBtn.style.background = '#38bdf8';
-          startBtn.style.color = '#0f172a';
+          startBtn.innerText = "⏳ WAITING FOR OPPONENT TO JOIN...";
+          startBtn.disabled = true;
+          startBtn.classList.add('waiting');
+          startBtn.style.cursor = 'not-allowed';
         }
       } else {
         // Guest
@@ -1349,7 +1443,6 @@
         return;
       }
       document.getElementById('mvp-modal').style.display = 'none';
-      window.matchStarted = true;
       window.blueScore = 0;
       window.redScore = 0;
       if (typeof blueScore !== 'undefined') blueScore = 0;
@@ -1364,7 +1457,7 @@
       if (window.isHost && broadcast && window.sendNet) {
         window.sendNet({ type: 'rematch' });
       }
-      if (document.body.requestPointerLock) document.body.requestPointerLock();
+      window.startMatchCountdown();
     };
 
     window.switchTab = function(tab) {
@@ -2267,6 +2360,7 @@
     const weaponModels = [];
     const matGunDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.85 });
     const matGunBlue = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.6 });
+    const matBarrelHeat = new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x000000, roughness: 0.2, metalness: 0.95 });
 
     // Wep 0: Shotgun
     const wep0 = new THREE.Group();
@@ -2278,7 +2372,9 @@
     bGrip0.position.set(0, -0.2, 0.15); bGrip0.rotation.x = 0.25;
     const bAccent = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.4), matGunBlue);
     bAccent.position.set(0, 0.12, -0.1);
-    wep0.add(bBody0, bBar1, bBar2, bGrip0, bAccent);
+    const heatRing0 = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.016, 8, 16), matBarrelHeat);
+    heatRing0.position.set(0, 0.03, -0.38);
+    wep0.add(bBody0, bBar1, bBar2, bGrip0, bAccent, heatRing0);
     weaponRig.add(wep0); weaponModels.push(wep0);
 
     // Wep 1: Jackhammer
@@ -2300,7 +2396,9 @@
     rRailL.position.set(-0.065, 0.02, -0.45);
     const rRailR = rRailL.clone(); rRailR.position.x = 0.065;
     const rGrip = bGrip0.clone();
-    wep2.add(rBody, rRailL, rRailR, rGrip);
+    const heatRail0 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.5), matBarrelHeat);
+    heatRail0.position.set(0, 0.09, -0.4);
+    wep2.add(rBody, rRailL, rRailR, rGrip, heatRail0);
     wep2.visible = false; weaponRig.add(wep2); weaponModels.push(wep2);
 
     weaponRig.position.set(0.32, -0.28, -0.6);
@@ -3032,18 +3130,23 @@
       }
     }
 
-    // --- LOCAL HARPOON TETHER ---
+    // --- BULLETSTORM ELECTRIC KINETIC LEASH ---
+    const TETHER_SEGMENTS = 16;
+    const tetherPts = [];
+    for (let i = 0; i < TETHER_SEGMENTS; i++) tetherPts.push(new THREE.Vector3());
     const tether = { active: false, anchorPoint: new THREE.Vector3(), targetIsOpponent: false, line: null, maxDistance: 60, stiffness: 18.0 };
     tether.line = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
-      new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 })
+      new THREE.BufferGeometry().setFromPoints(tetherPts),
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 3 })
     );
     tether.line.visible = false; scene.add(tether.line);
 
     // Remote Opponent's Tether Visual
+    const remoteTetherPts = [];
+    for (let i = 0; i < TETHER_SEGMENTS; i++) remoteTetherPts.push(new THREE.Vector3());
     const remoteTetherLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
-      new THREE.LineBasicMaterial({ color: 0xf43f5e, linewidth: 2 })
+      new THREE.BufferGeometry().setFromPoints(remoteTetherPts),
+      new THREE.LineBasicMaterial({ color: 0xf43f5e, linewidth: 3 })
     );
     remoteTetherLine.visible = false; scene.add(remoteTetherLine);
 
@@ -3162,12 +3265,14 @@
     let damageFlashTimer = null;
     function triggerDamageFlash() {
       const df = document.getElementById('damage-flash');
-      if (!df) return;
-      df.classList.add('active');
-      clearTimeout(damageFlashTimer);
-      damageFlashTimer = setTimeout(() => {
-        df.classList.remove('active');
-      }, 140);
+      if (df) {
+        df.classList.add('active');
+        clearTimeout(damageFlashTimer);
+        damageFlashTimer = setTimeout(() => {
+          df.classList.remove('active');
+        }, 140);
+      }
+      if (window.triggerVisorSplatter) window.triggerVisorSplatter();
     }
 
     // --- SOLO MODE TACTICAL BOT AI STATE ---
@@ -3441,8 +3546,22 @@
           if (msg.active) {
             remoteTetherLine.visible = true;
             const posArr = remoteTetherLine.geometry.attributes.position.array;
-            posArr[0] = msg.origin[0]; posArr[1] = msg.origin[1]; posArr[2] = msg.origin[2];
-            posArr[3] = msg.target[0]; posArr[4] = msg.target[1]; posArr[5] = msg.target[2];
+            const o = new THREE.Vector3(msg.origin[0], msg.origin[1], msg.origin[2]);
+            const t = new THREE.Vector3(msg.target[0], msg.target[1], msg.target[2]);
+            for (let i = 0; i < TETHER_SEGMENTS; i++) {
+              const f = i / (TETHER_SEGMENTS - 1);
+              const idx = i * 3;
+              if (i === 0) {
+                posArr[idx] = o.x; posArr[idx+1] = o.y; posArr[idx+2] = o.z;
+              } else if (i === TETHER_SEGMENTS - 1) {
+                posArr[idx] = t.x; posArr[idx+1] = t.y; posArr[idx+2] = t.z;
+              } else {
+                const j = (Math.sin(performance.now() * 0.04 + i * 2.5) + (Math.random() - 0.5)) * 0.2;
+                posArr[idx] = THREE.MathUtils.lerp(o.x, t.x, f) + j;
+                posArr[idx+1] = THREE.MathUtils.lerp(o.y, t.y, f) + (Math.random() - 0.5) * 0.2;
+                posArr[idx+2] = THREE.MathUtils.lerp(o.z, t.z, f) + (Math.random() - 0.5) * 0.2;
+              }
+            }
             remoteTetherLine.geometry.attributes.position.needsUpdate = true;
           } else {
             remoteTetherLine.visible = false;
@@ -3511,21 +3630,12 @@
         else if (msg.type === 'tactical_ping') {
           renderTacticalPingBeacon(msg.pingText, msg.color, new THREE.Vector3(msg.origin[0], msg.origin[1], msg.origin[2]));
         }
-        else if (msg.type === 'start_match') {
-          matchStarted = true;
-          window.matchStarted = true;
+        else if (msg.type === 'start_match_countdown' || msg.type === 'start_match') {
           if (typeof msg.currentMapId === 'number' && msg.currentMapId !== currentMapId) {
             selectArenaMap(msg.currentMapId, false);
           }
-          if (window.updateStartButtonState) window.updateStartButtonState();
-          showPopup("🚀 HOST HAS LAUNCHED THE MATCH! COMBAT ENGAGED!", "#10b981");
-          audio.playTurbineSurge();
-          startModal.style.display = 'none';
-          isPointerLocked = true;
-          try {
-            const p = document.body.requestPointerLock();
-            if (p && p.catch) p.catch(() => {});
-          } catch (e) {}
+          showPopup("🚀 HOST HAS INITIATED MATCH LAUNCH!", "#10b981");
+          window.startMatchCountdown();
         }
         else if (msg.type === 'rematch') {
           showPopup("🔄 HOST INITIATED REMATCH!", "#38bdf8");
@@ -3621,6 +3731,42 @@
     let isRespawning = false;
     let lastKnockoutTime = 0;
 
+    const activeWorldBadges = [];
+    function createWorldSkillshotBadge(pos, text, points) {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(10, 10, 492, 108, 16);
+        else ctx.rect(10, 10, 492, 108);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = '900 36px Segoe UI, sans-serif';
+        ctx.fillStyle = '#fbbf24';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, 256, 54);
+
+        ctx.font = '900 30px monospace';
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`+${points} PTS`, 256, 98);
+
+        const tex = new THREE.CanvasTexture(canvas);
+        const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 1.0 });
+        const sprite = new THREE.Sprite(spriteMat);
+        sprite.scale.set(6.8, 1.7, 1.0);
+        sprite.position.copy(pos).add(new THREE.Vector3(0, 3.0, 0));
+        scene.add(sprite);
+
+        activeWorldBadges.push({ sprite, age: 0, maxAge: 2.4 });
+      } catch (e) {}
+    }
+
     function handleKnockoutScore(victimTeam, hazardName) {
       const now = performance.now();
       if (now - lastKnockoutTime < 1400) return; // Strict debouncing: exactly 1 score per event
@@ -3631,6 +3777,7 @@
       // Punchy, controlled impact slow-mo (0.5s at 0.5x speed)
       slowMoTimer = 0.5;
       timeDilation = 0.5;
+      if (window.triggerVisorSplatter) window.triggerVisorSplatter();
 
       const banner = document.getElementById('knockout-banner');
       if (banner) {
@@ -3659,6 +3806,9 @@
       if (skillshot) {
         audio.playSkillshot();
         if (window.triggerRumble) triggerRumble(0.8, 1.0, 350);
+
+        const victimPos = (victimTeam === (isHost ? 'blue' : 'red')) ? player.pos : remoteOpponent.pos;
+        createWorldSkillshotBadge(victimPos, skillshot.name, skillshot.points);
 
         const skBanner = document.getElementById('skillshot-banner');
         const skTitle = document.getElementById('skillshot-title');
@@ -4022,6 +4172,7 @@
 
     // --- BULLETSTORM POWER SLIDE, AIR-DASH & BOOT KICK ---
     function trySlideOrDash() {
+      if (!matchStarted) return;
       if (player.isGrounded) {
         if (slideTimer > 0) return;
         slideTimer = 0.75;
@@ -4060,7 +4211,7 @@
     }
 
     function tryBootKick() {
-      if (kickCooldownTimer > 0) return;
+      if (!matchStarted || kickCooldownTimer > 0) return;
       kickCooldownTimer = 0.65;
       kickAnimTimer = 0.32;
       lastPlayerAction = { type: 'KICK', time: performance.now() };
@@ -4123,18 +4274,23 @@
 
       if (tab === 'online' && isHost) {
         if (!matchStarted) {
-          matchStarted = true;
-          window.matchStarted = true;
+          if (peerConnections.size === 0) {
+            showPopup("⚠️ WAITING FOR OPPONENT TO JOIN ROOM FIRST!", "#f59e0b");
+            if (window.audio && window.audio.playCrunch) audio.playCrunch(0.5);
+            return;
+          }
           sendNet({
-            type: 'start_match',
+            type: 'start_match_countdown',
             currentMapId: currentMapId
           });
-          showPopup("🚀 HOST STARTED MATCH! COMBAT ENGAGED!", "#10b981");
-          audio.playTurbineSurge();
+          window.startMatchCountdown();
+          return;
         }
       } else if (tab === 'solo') {
-        matchStarted = true;
-        window.matchStarted = true;
+        if (!matchStarted) {
+          window.startMatchCountdown();
+          return;
+        }
       }
 
       try {
@@ -4331,6 +4487,7 @@
 
     // --- HARPOON TETHER LOGIC ---
     function tryFireTether() {
+      if (!matchStarted) return;
       audio.playHarpoonLaunch();
       const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.cameraPitch, player.cameraYaw, 0, 'YXZ')).normalize();
       const origin = camera.position.clone();
@@ -4408,7 +4565,7 @@
     // --- SHOOTING & RECOIL ---
 
     function tryFireAltWeapon() {
-      if (altCooldownTimer > 0) return;
+      if (!matchStarted || altCooldownTimer > 0) return;
       const origin = camera.position.clone();
       const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.cameraPitch, player.cameraYaw, 0, 'YXZ')).normalize();
 
@@ -4520,7 +4677,7 @@
     }
 
     function tryFireWeapon() {
-      if (weaponCooldownTimer > 0) return;
+      if (!matchStarted || weaponCooldownTimer > 0) return;
       const wep = WEAPONS[currentWeaponIdx];
       weaponCooldownTimer = wep.cooldown;
       const heatGain = (currentWeaponIdx === 0) ? 16 : (currentWeaponIdx === 1) ? 3.5 : 28;
@@ -4846,6 +5003,7 @@
     let screenShake = 0;
     let lastTime = performance.now();
     let netSyncTimer = 0;
+    let steamVentTimer = 2.0;
 
     function animate() {
       requestAnimationFrame(animate);
@@ -4875,6 +5033,33 @@
           const rz = (Math.random() < 0.5) ? -ARENA_HALF + 1.5 : ARENA_HALF - 1.5;
           createSparks(new THREE.Vector3(rx, ry, rz), 4, 0x38bdf8, 14);
         }
+      }
+
+      // Animate 3D World-Space Floating Skillshot Badges
+      for (let i = activeWorldBadges.length - 1; i >= 0; i--) {
+        const wb = activeWorldBadges[i];
+        wb.age += dt;
+        wb.sprite.position.y += dt * 2.2;
+        const progress = wb.age / wb.maxAge;
+        wb.sprite.material.opacity = Math.max(0, 1.0 - progress);
+        if (wb.age >= wb.maxAge) {
+          scene.remove(wb.sprite);
+          activeWorldBadges.splice(i, 1);
+        }
+      }
+
+      // Atmospheric Stygian steam pipe venting & lava bubbling
+      steamVentTimer -= dt;
+      if (steamVentTimer <= 0) {
+        steamVentTimer = 2.4 + Math.random() * 2.2;
+        const vx = (Math.random() < 0.5 ? -1 : 1) * (ARENA_HALF - 1.5);
+        const vz = (Math.random() - 0.5) * 38;
+        createSparks(new THREE.Vector3(vx, 7.5, vz), 15, 0xe2e8f0, 6);
+      }
+      if (Math.random() < 0.28 && currentMapId === 1) {
+        const lx = (Math.random() - 0.5) * 16;
+        const lz = (Math.random() - 0.5) * 16;
+        createSparks(new THREE.Vector3(lx, 1.2, lz), 4, 0xf97316, 7);
       }
 
       // Update Tactical Ping Beacons
@@ -5091,6 +5276,18 @@ updateHUD(dt);
     }
 
     function updatePlayer(dt) {
+      if (!matchStarted) {
+        player.vel.set(0, 0, 0);
+        player.pos.set(0, 1.8, isHost ? 22 : -22);
+        camera.position.copy(player.pos);
+        camera.position.y += 0.8;
+        camera.rotation.set(0, 0, 0);
+        camera.rotation.order = 'YXZ';
+        camera.rotation.y = player.cameraYaw;
+        camera.rotation.x = player.cameraPitch;
+        return;
+      }
+
       if (airDashCooldown > 0) airDashCooldown -= dt;
 
       // Poll Gamepad Controller
@@ -5290,20 +5487,38 @@ updateHUD(dt);
 
       const positions = tether.line.geometry.attributes.position.array;
       const handPos = player.pos.clone().add(new THREE.Vector3(0.3, 0.5, 0));
-      positions[0] = handPos.x; positions[1] = handPos.y; positions[2] = handPos.z;
-      positions[3] = tether.anchorPoint.x; positions[4] = tether.anchorPoint.y; positions[5] = tether.anchorPoint.z;
+      const anchor = tether.anchorPoint;
+      for (let i = 0; i < TETHER_SEGMENTS; i++) {
+        const f = i / (TETHER_SEGMENTS - 1);
+        const idx = i * 3;
+        if (i === 0) {
+          positions[idx] = handPos.x; positions[idx+1] = handPos.y; positions[idx+2] = handPos.z;
+        } else if (i === TETHER_SEGMENTS - 1) {
+          positions[idx] = anchor.x; positions[idx+1] = anchor.y; positions[idx+2] = anchor.z;
+        } else {
+          const jitter = (Math.sin(performance.now() * 0.04 + i * 2.5) + (Math.random() - 0.5)) * 0.22;
+          positions[idx] = THREE.MathUtils.lerp(handPos.x, anchor.x, f) + jitter;
+          positions[idx+1] = THREE.MathUtils.lerp(handPos.y, anchor.y, f) + (Math.random() - 0.5) * 0.25;
+          positions[idx+2] = THREE.MathUtils.lerp(handPos.z, anchor.z, f) + (Math.random() - 0.5) * 0.22;
+        }
+      }
       tether.line.geometry.attributes.position.needsUpdate = true;
+      if (Math.random() < 0.25) {
+        createSparks(handPos.clone().lerp(anchor, Math.random()), 2, 0x38bdf8, 6);
+      }
     }
 
     function updateOpponent(dt) {
-      if (isMultiplayerActive) {
+      if (isMultiplayerActive && matchStarted) {
         // Silky 60-144Hz Hermite / Lerp smoothing between network packets
+        remoteOpponent.mesh.visible = true;
         remoteOpponent.pos.lerp(remoteOpponent.targetPos, Math.min(dt * 22.0, 1.0));
         remoteOpponent.vel.lerp(remoteOpponent.targetVel, Math.min(dt * 22.0, 1.0));
         remoteOpponent.mesh.position.copy(remoteOpponent.pos);
         remoteOpponent.mesh.rotation.y = THREE.MathUtils.lerp(remoteOpponent.mesh.rotation.y, remoteOpponent.targetYaw, Math.min(dt * 18.0, 1.0));
-      } else {
+      } else if (currentTab === 'solo' && matchStarted) {
         // --- SOLO MODE TACTICAL COMBAT AI BOT ---
+        remoteOpponent.mesh.visible = true;
         const botPos = remoteOpponent.pos;
         const botVel = remoteOpponent.vel;
 
@@ -5479,6 +5694,11 @@ updateHUD(dt);
             break;
           }
         }
+      } else {
+        // Pre-match / In Lobby / Waiting for host or opponent
+        remoteOpponent.mesh.visible = (peerConnections.size > 0 || isMultiplayerActive);
+        remoteOpponent.pos.set(0, 1.8, isHost ? -22 : 22);
+        remoteOpponent.vel.set(0, 0, 0);
       }
 
       remoteOpponent.mesh.position.copy(remoteOpponent.pos);
