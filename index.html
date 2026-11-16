@@ -1140,6 +1140,13 @@
       document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><\/script>');
     }
   </script>
+  <script src="js/CopyShader.js"></script>
+  <script src="js/LuminosityHighPassShader.js"></script>
+  <script src="js/FXAAShader.js"></script>
+  <script src="js/EffectComposer.js"></script>
+  <script src="js/RenderPass.js"></script>
+  <script src="js/ShaderPass.js"></script>
+  <script src="js/UnrealBloomPass.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
@@ -1580,6 +1587,30 @@
                 <span class="setting-desc-text">Live framerate and frame-time readout in top HUD</span>
               </div>
               <input type="checkbox" id="fps-counter-check" class="setting-check" onchange="updateSetting('fpsCounterEnabled', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Call of Duty Post-Processing & Bloom</span>
+                <span class="setting-desc-text">Filmic contrast curve, emissive bloom, dynamic aberration & vignette</span>
+              </div>
+              <input type="checkbox" id="postprocessing-check" class="setting-check" checked onchange="updateSetting('postProcessingEnabled', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Tactical PEQ-15 Weapon Laser</span>
+                <span class="setting-desc-text">Visible collimated green laser beam & dynamic surface targeting dot</span>
+              </div>
+              <input type="checkbox" id="weapon-laser-check" class="setting-check" checked onchange="updateSetting('weaponLaserEnabled', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Volumetric Muzzle Flash & Lighting</span>
+                <span class="setting-desc-text">3D starburst muzzle fire and dynamic real-time weapon illumination</span>
+              </div>
+              <input type="checkbox" id="muzzle-flash-check" class="setting-check" checked onchange="updateSetting('muzzleFlashLightingEnabled', this.checked)">
             </div>
           </div>
         </div>
@@ -2057,6 +2088,9 @@
       lavaBubblesEnabled: true,
       filmGrainEnabled: true,
       fpsCounterEnabled: false,
+      postProcessingEnabled: true,
+      weaponLaserEnabled: true,
+      muzzleFlashLightingEnabled: true,
 
       // Reticle & Visor
       pilotColor: '#38bdf8',
@@ -2222,6 +2256,26 @@
           if (fpsChk) fpsChk.checked = !!val;
           const fpsEl = document.getElementById('fps-counter');
           if (fpsEl) fpsEl.style.display = val ? 'block' : 'none';
+          break;
+
+        case 'postProcessingEnabled':
+          window.postProcessingEnabled = !!val;
+          const ppChk = document.getElementById('postprocessing-check');
+          if (ppChk) ppChk.checked = !!val;
+          break;
+
+        case 'weaponLaserEnabled':
+          window.weaponLaserEnabled = !!val;
+          const wlChk = document.getElementById('weapon-laser-check');
+          if (wlChk) wlChk.checked = !!val;
+          if (window.laserDotMesh) window.laserDotMesh.visible = !!val;
+          if (window.laserBeamMesh) window.laserBeamMesh.visible = !!val;
+          break;
+
+        case 'muzzleFlashLightingEnabled':
+          window.muzzleFlashLightingEnabled = !!val;
+          const mfChk = document.getElementById('muzzle-flash-check');
+          if (mfChk) mfChk.checked = !!val;
           break;
 
         case 'pilotColor':
@@ -3186,12 +3240,15 @@
           ctx.fillRect(px, py, 4, 64);
         }
       }
-      // Puddles / oil slicks: mirror specular glints
-      for (let i = 0; i < 6; i++) {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
-        ctx.beginPath();
-        ctx.arc(Math.random() * 256, Math.random() * 256, 12 + Math.random() * 24, 0, Math.PI * 2);
-        ctx.fill();
+      // Mirror wet puddles catching sky, sun, and tracer reflections
+      for (let i = 0; i < 8; i++) {
+        const px = (i * 73 + 37) % 256, py = (i * 97 + 53) % 256, pr = 16 + (i % 3) * 12;
+        const grad = ctx.createRadialGradient(px, py, 2, px, py, pr);
+        grad.addColorStop(0, '#0a0d14'); // near-zero roughness = glass mirror reflection
+        grad.addColorStop(0.75, '#1e293b');
+        grad.addColorStop(1, '#6b7280');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
       }
 
       const tex = new THREE.CanvasTexture(c);
@@ -3477,29 +3534,239 @@
     function createSkyDomeTexture() {
       const c = document.createElement('canvas'); c.width = 1024; c.height = 512;
       const ctx = c.getContext('2d');
+
+      // Atmospheric HDR sky gradient
       const grad = ctx.createLinearGradient(0, 0, 0, 512);
-      grad.addColorStop(0, '#0c0a09');
-      grad.addColorStop(0.35, '#292524');
-      grad.addColorStop(0.65, '#78350f');
-      grad.addColorStop(0.85, '#d97706');
-      grad.addColorStop(1, '#9a3412');
+      grad.addColorStop(0, '#060911');
+      grad.addColorStop(0.28, '#111827');
+      grad.addColorStop(0.55, '#3b2514');
+      grad.addColorStop(0.74, '#854d0e');
+      grad.addColorStop(0.88, '#d97706');
+      grad.addColorStop(0.97, '#f59e0b');
+      grad.addColorStop(1, '#78350f');
       ctx.fillStyle = grad; ctx.fillRect(0, 0, 1024, 512);
 
-      // Distant Stygian industrial refinery silhouettes
-      ctx.fillStyle = 'rgba(12, 10, 9, 0.88)';
-      for (let x = 0; x < 1024; x += 32 + Math.random() * 40) {
-        const bW = 20 + Math.random() * 35;
-        const bH = 60 + Math.random() * 110;
+      // High-intensity radiant sun disk & solar corona
+      const sunX = 640, sunY = 320;
+      const sunCorona = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 180);
+      sunCorona.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+      sunCorona.addColorStop(0.12, 'rgba(254, 240, 138, 0.95)');
+      sunCorona.addColorStop(0.35, 'rgba(245, 158, 11, 0.7)');
+      sunCorona.addColorStop(0.7, 'rgba(217, 119, 6, 0.25)');
+      sunCorona.addColorStop(1, 'rgba(120, 53, 15, 0.0)');
+      ctx.fillStyle = sunCorona;
+      ctx.beginPath(); ctx.arc(sunX, sunY, 180, 0, Math.PI * 2); ctx.fill();
+
+      // Atmospheric Cirrus Cloud Bands
+      ctx.fillStyle = 'rgba(254, 215, 170, 0.12)';
+      for (let i = 0; i < 14; i++) {
+        const cy = 240 + i * 16 + Math.sin(i * 1.5) * 12;
+        ctx.beginPath();
+        ctx.ellipse(512 + (i * 73) % 400 - 200, cy, 320 + (i * 35), 18 + i * 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Distant Stygian industrial refinery silhouettes & military communications towers
+      ctx.fillStyle = 'rgba(10, 8, 7, 0.92)';
+      for (let x = 0; x < 1024; x += 28 + (x % 37)) {
+        const bW = 18 + (x % 29);
+        const bH = 50 + (x % 95);
         ctx.fillRect(x, 512 - bH, bW, bH);
 
-        if (Math.random() < 0.4) {
-          ctx.fillRect(x + bW / 2 - 1, 512 - bH - 35, 3, 35);
-          ctx.fillRect(x + bW / 2 - 12, 512 - bH - 25, 24, 2);
+        // Antenna towers & red aviation obstruction beacons
+        if (x % 5 === 0) {
+          ctx.fillRect(x + bW / 2 - 1, 512 - bH - 42, 2.5, 42);
+          ctx.fillRect(x + bW / 2 - 14, 512 - bH - 30, 28, 2);
+          ctx.fillRect(x + bW / 2 - 9, 512 - bH - 18, 18, 2);
+          // Flashing red obstruction beacon light
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(x + bW / 2 - 2, 512 - bH - 44, 4, 4);
+          ctx.fillStyle = 'rgba(10, 8, 7, 0.92)';
         }
       }
 
       const tex = new THREE.CanvasTexture(c);
       return tex;
+    }
+
+    // Call of Duty Style High-Resolution Procedural Gunmetal PBR Maps
+    function createProceduralGunmetalTexture() {
+      const c = document.createElement('canvas'); c.width = 1024; c.height = 1024;
+      const ctx = c.getContext('2d');
+
+      // Base dark parkerized blued gunmetal
+      ctx.fillStyle = '#171c26'; ctx.fillRect(0, 0, 1024, 1024);
+
+      // Micro-machined brushed steel horizontal striations
+      for (let y = 0; y < 1024; y += 2) {
+        const alpha = 0.02 + ((y * 17) % 10) * 0.005;
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.fillRect(0, y, 1024, 1);
+      }
+
+      // Receiver panel division seams
+      ctx.strokeStyle = '#090d14'; ctx.lineWidth = 4;
+      ctx.strokeRect(40, 40, 944, 440);
+      ctx.strokeRect(40, 520, 944, 460);
+
+      // Picatinny Accessory Rail Teeth
+      ctx.fillStyle = '#0f141d';
+      for (let rx = 60; rx < 960; rx += 48) {
+        ctx.fillRect(rx, 40, 24, 120);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+        ctx.fillRect(rx + 2, 42, 20, 4);
+        ctx.fillStyle = '#0f141d';
+      }
+
+      // Laser-engraved military serial markings & stencils
+      ctx.fillStyle = 'rgba(226, 232, 240, 0.85)';
+      ctx.font = 'bold 22px monospace';
+      ctx.fillText('US-MIL-STD // SECTOR-04 // SPEC-884-BF', 70, 220);
+      ctx.font = '16px monospace';
+      ctx.fillText('CALIBER: 12-GA MAGNUM // HIGH-VELOCITY KINETIC SLUG', 70, 250);
+      ctx.fillText('WARNING: CAPACITIVE THRUST OVERLOAD HAZARD', 70, 275);
+
+      // Fire Selector Switch Stencils: SAFE, SEMI, AUTO (Vibrant Red)
+      ctx.font = 'bold 20px monospace';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fillText('[SAFE]', 70, 340);
+      ctx.fillText('[SEMI]', 165, 340);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText('[AUTO]', 265, 340);
+
+      // Silver worn edge highlight chipping (aluminum wear)
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.65)'; ctx.lineWidth = 2;
+      ctx.strokeRect(42, 42, 940, 436);
+      ctx.strokeRect(42, 522, 940, 456);
+
+      // Allen key screws & receiver assembly pins
+      const pinCoords = [[80, 80], [940, 80], [80, 440], [940, 440], [80, 560], [940, 560], [80, 940], [940, 940]];
+      pinCoords.forEach(([px, py]) => {
+        ctx.fillStyle = '#090d14'; ctx.beginPath(); ctx.arc(px, py, 14, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.arc(px, py, 11, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#090d14'; ctx.fillRect(px - 5, py - 5, 10, 10); // hex socket
+      });
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function createProceduralGunmetalNormalMap() {
+      const w = 512, h = 512;
+      const heightMap = new Float32Array(w * h);
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let val = 0.5;
+          // Picatinny teeth slots
+          if (y < 80 && (x % 32 < 16)) val += 0.35;
+          // Receiver seam grooves
+          if (x < 10 || x > w - 10 || y < 10 || y > h - 10 || Math.abs(y - 256) < 4) val -= 0.38;
+          // Stippled grip texture in lower quadrant
+          if (y > 270 && x > 40 && x < 470) {
+            const sx = (x % 8) - 4, sy = (y % 8) - 4;
+            if (sx * sx + sy * sy < 8) val += 0.22;
+          }
+          heightMap[y * w + x] = val;
+        }
+      }
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      const imgData = ctx.createImageData(w, h);
+      const data = imgData.data;
+      const strength = 3.6;
+      for (let y = 0; y < h; y++) {
+        const ym = (y - 1 + h) % h;
+        const yp = (y + 1) % h;
+        for (let x = 0; x < w; x++) {
+          const xm = (x - 1 + w) % w;
+          const xp = (x + 1) % w;
+          const dx = (heightMap[y * w + xp] - heightMap[y * w + xm]) * strength;
+          const dy = (heightMap[yp * w + x] - heightMap[ym * w + x]) * strength;
+          const len = Math.sqrt(dx * dx + dy * dy + 1.0);
+          const idx = (y * w + x) * 4;
+          data[idx] = Math.round((-dx / len * 0.5 + 0.5) * 255);
+          data[idx + 1] = Math.round((-dy / len * 0.5 + 0.5) * 255);
+          data[idx + 2] = Math.round((1.0 / len * 0.5 + 0.5) * 255);
+          data[idx + 3] = 255;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function createProceduralGunmetalRoughnessMap() {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 512;
+      const ctx = c.getContext('2d');
+      // Base satin gunmetal roughness
+      ctx.fillStyle = '#4a4a4a'; ctx.fillRect(0, 0, 512, 512);
+
+      // Specular polished slide guide rails & bolt face
+      ctx.fillStyle = '#1c1c1c';
+      ctx.fillRect(0, 100, 512, 60);
+      ctx.fillRect(0, 360, 512, 40);
+
+      // Matte polymer lower & stippled grip
+      ctx.fillStyle = '#8a8a8a';
+      ctx.fillRect(30, 270, 452, 230);
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function createProceduralHeatBlueTexture() {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+      const ctx = c.getContext('2d');
+      // Titanium rainbow heat bluing gradient (cyan -> cobalt -> violet -> amber -> burnt)
+      const grad = ctx.createLinearGradient(0, 0, 256, 0);
+      grad.addColorStop(0, '#22d3ee');
+      grad.addColorStop(0.24, '#3b82f6');
+      grad.addColorStop(0.48, '#8b5cf6');
+      grad.addColorStop(0.72, '#f59e0b');
+      grad.addColorStop(0.92, '#78350f');
+      grad.addColorStop(1, '#1e293b');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, 256, 64);
+      const tex = new THREE.CanvasTexture(c);
+      return tex;
+    }
+
+    function createProceduralWatchTexture() {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#030712'; ctx.fillRect(0, 0, 256, 256);
+
+      // Tactical OLED display border
+      ctx.strokeStyle = '#10b981'; ctx.lineWidth = 3;
+      ctx.strokeRect(12, 12, 232, 232);
+
+      // Header Bar: Battery & Sat Lock
+      ctx.fillStyle = '#10b981'; ctx.font = 'bold 15px monospace';
+      ctx.fillText('■■■■ 98%  GPS:LOCK', 24, 40);
+
+      // Center: Mission Clock
+      ctx.fillStyle = '#38bdf8'; ctx.font = 'bold 36px monospace';
+      ctx.fillText('04:18.9', 32, 100);
+
+      // Azimuth Bearing
+      ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 20px monospace';
+      ctx.fillText('AZ 284° [WNW]', 28, 145);
+
+      // Pulse / Vitals Monitor & Heartbeat EKG line
+      ctx.fillStyle = '#ef4444'; ctx.font = 'bold 16px monospace';
+      ctx.fillText('PULSE: 138 BPM [NOMINAL]', 24, 185);
+
+      ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(24, 218); ctx.lineTo(70, 218);
+      ctx.lineTo(85, 204); ctx.lineTo(100, 232);
+      ctx.lineTo(115, 212); ctx.lineTo(130, 218);
+      ctx.lineTo(232, 218); ctx.stroke();
+
+      const tex = new THREE.CanvasTexture(c);
+      return { canvas: c, ctx: ctx, texture: tex };
     }
 
     function createProceduralCarbonFiberNormalMap() {
@@ -3621,6 +3888,17 @@
     const dustMotes = createAtmosphericDustMotes();
     window.dustMotes = dustMotes;
 
+    // --- CALL OF DUTY IMAGE-BASED LIGHTING (IBL) & ENVIRONMENT MAP ---
+    let envMap = null;
+    try {
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+      envMap = pmremGenerator.fromEquirectangular(skyDomeTex).texture;
+      scene.environment = envMap;
+    } catch (e) {
+      console.warn("PMREMGenerator environment map error, falling back:", e);
+    }
+
     // --- WEAPONS CONFIGURATION ---
     const WEAPONS = [
       { name: "BREAKER 12G", recoilImpulse: 27.0, enemyImpulse: 40.0, pellets: 8, spread: 0.075, cooldown: 0.85, shake: 0.35, type: "burst" },
@@ -3634,99 +3912,258 @@
     const weaponRig = new THREE.Group();
     camera.add(weaponRig); scene.add(camera);
     const weaponModels = [];
-    const matGunDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.85 });
-    const matGunBlue = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.6 });
-    const matBarrelHeat = new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x000000, roughness: 0.2, metalness: 0.95 });
+
+    // Call of Duty High-Fidelity PBR Weapon Materials
+    const gunmetalDiffuseTex = createProceduralGunmetalTexture();
+    const gunmetalNormalTex = createProceduralGunmetalNormalMap();
+    const gunmetalRoughnessTex = createProceduralGunmetalRoughnessMap();
+    const heatBlueTex = createProceduralHeatBlueTexture();
+    const tacticalWatch = createProceduralWatchTexture();
+
+    const matGunDark = new THREE.MeshStandardMaterial({
+      map: gunmetalDiffuseTex,
+      normalMap: gunmetalNormalTex,
+      normalScale: new THREE.Vector2(0.85, 0.85),
+      roughnessMap: gunmetalRoughnessTex,
+      roughness: 0.32,
+      metalness: 0.88,
+      envMapIntensity: 1.35
+    });
+
+    const matGunSteel = new THREE.MeshStandardMaterial({
+      color: 0x94a3b8,
+      roughness: 0.16,
+      metalness: 0.96,
+      envMapIntensity: 1.6
+    });
+
+    const matGunPolymer = new THREE.MeshStandardMaterial({
+      color: 0x181e28,
+      roughness: 0.72,
+      metalness: 0.15,
+      normalMap: gunmetalNormalTex,
+      normalScale: new THREE.Vector2(0.4, 0.4)
+    });
+
+    const matGunBlue = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.75
+    });
+
+    const matBarrelHeat = new THREE.MeshStandardMaterial({
+      map: heatBlueTex,
+      roughness: 0.22,
+      metalness: 0.92,
+      envMapIntensity: 1.4
+    });
+
+    const matOpticLens = new THREE.MeshPhysicalMaterial({
+      color: 0x064e3b,
+      emissive: 0x022c22,
+      emissiveIntensity: 0.15,
+      roughness: 0.04,
+      metalness: 0.1,
+      transmission: 0.88,
+      ior: 1.52,
+      reflectivity: 0.95,
+      transparent: true,
+      opacity: 0.85
+    });
 
     // Wep 0: Breaker 12G Shotgun (Heavy Combat Shotgun with Ventilated Shroud & Shell Saddle)
     const wep0 = new THREE.Group();
-    const bBody0 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.65), matGunDark);
-    const bBar1 = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.72, 16), matGunDark);
-    bBar1.rotation.x = Math.PI / 2; bBar1.position.set(-0.045, 0.03, -0.45);
+    // Receiver & Upper Housing
+    const bBody0 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.68), matGunDark);
+    // Double Barrel assembly with stainless crowns
+    const bBar1 = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.76, 16), matGunSteel);
+    bBar1.rotation.x = Math.PI / 2; bBar1.position.set(-0.045, 0.03, -0.48);
     const bBar2 = bBar1.clone(); bBar2.position.x = 0.045;
-    const bGrip0 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 0.14), matGunDark);
-    bGrip0.position.set(0, -0.2, 0.15); bGrip0.rotation.x = 0.25;
-    const bAccent = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.4), matGunBlue);
-    bAccent.position.set(0, 0.12, -0.1);
-    const heatRing0 = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.016, 8, 16), matBarrelHeat);
-    heatRing0.position.set(0, 0.03, -0.38);
+    // Extended Underbarrel Magazine Tube with CNC Clamps
+    const bMagTube = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.65, 14), matGunDark);
+    bMagTube.rotation.x = Math.PI / 2; bMagTube.position.set(0, -0.05, -0.42);
+    const bClamp1 = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.11, 0.03), matGunSteel);
+    bClamp1.position.set(0, -0.01, -0.62);
+    const bClamp2 = bClamp1.clone(); bClamp2.position.z = -0.38;
+
+    // Pistol Grip with stippled polymer
+    const bGrip0 = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.3, 0.14), matGunPolymer);
+    bGrip0.position.set(0, -0.2, 0.16); bGrip0.rotation.x = 0.25;
+
+    // Full-Length Top Picatinny Rail
+    const bPicRail = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.03, 0.62), matGunDark);
+    bPicRail.position.set(0, 0.125, -0.15);
 
     // Ventilated Heat Shroud
-    const bShroud = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 0.52), matGunDark);
-    bShroud.position.set(0, 0.09, -0.38);
-    // Holographic Reflex Sight Frame & Floating Reticle
-    const bSightFrame = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.12), matGunDark);
-    bSightFrame.position.set(0, 0.18, -0.06);
-    const bReticle = new THREE.Mesh(
-      new THREE.RingGeometry(0.01, 0.02, 16),
-      new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.95, side: THREE.DoubleSide })
+    const bShroud = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.065, 0.54), matGunDark);
+    bShroud.position.set(0, 0.09, -0.40);
+
+    // Call of Duty EOTech Holographic Combat Optic
+    const bSightGroup = new THREE.Group();
+    bSightGroup.position.set(0, 0.19, -0.08);
+    // Beveled Aluminum Hood & Base Mount
+    const bSightBase = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.04, 0.16), matGunPolymer);
+    const bSightHood = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.09, 0.15), matGunPolymer);
+    bSightHood.position.set(0, 0.04, 0);
+    // Coated Optical Glass Lens
+    const bSightGlass = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.07, 0.005), matOpticLens);
+    bSightGlass.position.set(0, 0.04, -0.05);
+    // Red Holographic Reticle (68-MOA Circle with 1-MOA Center Dot)
+    const bReticleRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.012, 0.022, 16),
+      new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.95, side: THREE.DoubleSide })
     );
-    bReticle.position.set(0, 0.18, -0.14);
-    // Side-Mounted Shell Saddle (4 Red 12-Gauge Shells with Brass Caps)
-    const shellMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.5 });
-    const brassMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.95, roughness: 0.2 });
+    bReticleRing.position.set(0, 0.04, -0.052);
+    const bReticleDot = new THREE.Mesh(
+      new THREE.CircleGeometry(0.004, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1.0, side: THREE.DoubleSide })
+    );
+    bReticleDot.position.set(0, 0.04, -0.053);
+    // Knurled Elevation/Windage Turrets
+    const bTurretE = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.02, 8), matGunSteel);
+    bTurretE.position.set(0, 0.09, 0.02);
+    const bTurretW = bTurretE.clone();
+    bTurretW.rotation.z = Math.PI / 2; bTurretW.position.set(0.055, 0.04, 0.02);
+    bSightGroup.add(bSightBase, bSightHood, bSightGlass, bReticleRing, bReticleDot, bTurretE, bTurretW);
+
+    // Tactical PEQ-15 Laser Designator on Right Rail
+    const peqBox = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.12), matGunPolymer);
+    peqBox.position.set(0.12, 0.07, -0.32);
+    const peqLens = new THREE.Mesh(new THREE.CircleGeometry(0.008, 8), new THREE.MeshBasicMaterial({ color: 0x22c55e }));
+    peqLens.position.set(0.12, 0.07, -0.382);
+    const peqCap = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.015, 8), matGunSteel);
+    peqCap.position.set(0.12, 0.095, -0.30);
+
+    // Multi-Port Titanium Heat-Blued Muzzle Compensator
+    const bMuzzleBrake = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.10), matBarrelHeat);
+    bMuzzleBrake.position.set(0, 0.03, -0.87);
+
+    // Side Saddle with 4 High-Brass 12G Shells
+    const shellMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.45 });
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.95, roughness: 0.18, envMapIntensity: 1.5 });
+    const sCaddy = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.18, 0.22), matGunPolymer);
+    sCaddy.position.set(-0.105, 0, 0.02);
+    wep0.add(sCaddy);
     for (let s = 0; s < 4; s++) {
-      const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.08, 8), shellMat);
-      sh.rotation.x = Math.PI / 2; sh.position.set(-0.11, 0.04 - s * 0.04, 0.02);
-      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.021, 0.021, 0.02, 8), brassMat);
-      cap.rotation.x = Math.PI / 2; cap.position.set(-0.11, 0.04 - s * 0.04, 0.06);
+      const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.07, 8), shellMat);
+      sh.rotation.x = Math.PI / 2; sh.position.set(-0.12, 0.05 - s * 0.036, 0.02);
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.019, 0.019, 0.022, 8), brassMat);
+      cap.rotation.x = Math.PI / 2; cap.position.set(-0.12, 0.05 - s * 0.036, 0.055);
       wep0.add(sh, cap);
     }
-    // Animated Pump Handle
-    const bPump = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.28, 12), new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.85 }));
+
+    // Ribbed Tactical Pump Handle with Forward Hand-Stop
+    const bPump = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.30, 14), new THREE.MeshStandardMaterial({ color: 0x111622, roughness: 0.75, normalMap: gunmetalNormalTex }));
     bPump.rotation.x = Math.PI / 2; bPump.position.set(0, -0.05, -0.32);
+    const bHandStop = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 0.03), matGunPolymer);
+    bHandStop.position.set(0, -0.09, -0.42);
+    bPump.add(bHandStop);
     wep0.userData.pump = bPump;
 
-    wep0.add(bBody0, bBar1, bBar2, bGrip0, bAccent, heatRing0, bShroud, bSightFrame, bReticle, bPump);
+    wep0.add(bBody0, bBar1, bBar2, bMagTube, bClamp1, bClamp2, bGrip0, bPicRail, bShroud, bSightGroup, peqBox, peqLens, peqCap, bMuzzleBrake, bPump);
     weaponRig.add(wep0); weaponModels.push(wep0);
 
     // Wep 1: Jackhammer (Automatic Kinetic Piston SMG with Heavy Drum Magazine)
     const wep1 = new THREE.Group();
-    const jBody = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.6, 16), matGunDark);
+    // Bullpup SMG receiver with skeletonized lightening cuts
+    const jBody = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.62, 16), matGunDark);
     jBody.rotation.x = Math.PI / 2;
     const jGrip = bGrip0.clone();
-    const jPiston = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.5, 12), new THREE.MeshStandardMaterial({ color: 0xa1a1aa, metalness: 0.95, roughness: 0.15 }));
-    jPiston.rotation.x = Math.PI / 2; jPiston.position.set(-0.06, 0.02, -0.45);
-    const jPiston2 = jPiston.clone(); jPiston2.position.set(0.06, 0.02, -0.45);
+    // Match barrel with twin reciprocating chrome gas pistons
+    const jPiston = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.52, 12), matGunSteel);
+    jPiston.rotation.x = Math.PI / 2; jPiston.position.set(-0.065, 0.02, -0.46);
+    const jPiston2 = jPiston.clone(); jPiston2.position.set(0.065, 0.02, -0.46);
     const jRing = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.03, 8, 16), matGunBlue);
     jRing.position.z = -0.2;
-    // Heavy Rotary Drum Magazine
-    const jDrum = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.13, 16), matGunDark);
-    jDrum.position.set(0, -0.22, -0.06);
-    // Tactical Compensator Brake
-    const jBrake = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.1), matGunDark);
-    jBrake.position.set(0, 0, -0.65);
 
-    wep1.add(jBody, jGrip, jPiston, jPiston2, jRing, jDrum, jBrake);
+    // Heavy Carbon-Fiber Rotary Drum Magazine with Ammo Window
+    const jDrum = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.14, 18), matGunPolymer);
+    jDrum.position.set(0, -0.22, -0.06);
+    const jWindow = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 0.04), matOpticLens);
+    jWindow.position.set(0, -0.22, 0.02);
+    jDrum.add(jWindow);
+
+    // Magpul AFG Style Angled Foregrip
+    const jAfg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.18), matGunPolymer);
+    jAfg.rotation.x = -0.35; jAfg.position.set(0, -0.15, -0.32);
+
+    // Micro Reflex Red Dot Sight (Trijicon RMR style)
+    const jRmr = new THREE.Group();
+    jRmr.position.set(0, 0.16, -0.12);
+    const jRmrBody = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.06, 0.09), matGunPolymer);
+    const jRmrLens = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.005), matOpticLens);
+    jRmrLens.position.set(0, 0.01, -0.03);
+    const jRmrDot = new THREE.Mesh(new THREE.CircleGeometry(0.005, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+    jRmrDot.position.set(0, 0.01, -0.032);
+    jRmr.add(jRmrBody, jRmrLens, jRmrDot);
+
+    // Tactical Compensator with Titanium Heat Bluing
+    const jBrake = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.12), matBarrelHeat);
+    jBrake.position.set(0, 0, -0.68);
+
+    wep1.add(jBody, jGrip, jPiston, jPiston2, jRing, jDrum, jAfg, jRmr, jBrake);
     wep1.userData.pistons = [jPiston, jPiston2];
     wep1.visible = false; weaponRig.add(wep1); weaponModels.push(wep1);
 
     // Wep 2: Rail Slugger (High-Voltage Electromagnetic Sniper with Stator Rings)
     const wep2 = new THREE.Group();
-    const rBody = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2, 0.7), matGunDark);
-    const rRailL = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.08, 0.8), matGunBlue);
-    rRailL.position.set(-0.065, 0.02, -0.45);
+    // Anti-Materiel Electromagnetic Chassis
+    const rBody = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.22, 0.74), matGunDark);
+    const rRailL = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.085, 0.84), matGunBlue);
+    rRailL.position.set(-0.065, 0.02, -0.48);
     const rRailR = rRailL.clone(); rRailR.position.x = 0.065;
     const rGrip = bGrip0.clone();
-    const heatRail0 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.5), matBarrelHeat);
-    heatRail0.position.set(0, 0.09, -0.4);
-    // Magnetic Stator Acceleration Rings
+    const heatRail0 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.035, 0.52), matBarrelHeat);
+    heatRail0.position.set(0, 0.09, -0.42);
+
+    // 4 Magnetic Stator Acceleration Rings with Copper Windings
+    const copperMat = new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.95, roughness: 0.22, envMapIntensity: 1.5 });
     for (let sr = 0; sr < 4; sr++) {
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.016, 8, 16), matGunDark);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.018, 8, 16), matGunDark);
       ring.position.set(0, 0.02, -0.22 - sr * 0.14);
-      wep2.add(ring);
+      const copper = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.009, 8, 16), copperMat);
+      copper.position.set(0, 0.02, -0.22 - sr * 0.14);
+      wep2.add(ring, copper);
     }
-    // Digital Glowing Capacitor Readout
-    const rCapacitor = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.03, 0.25), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
-    rCapacitor.position.set(0, 0.12, 0.02);
-    // Dynamic Crackling Electric Arc between Rails
+
+    // Precision Sniper Optic Scope with Dual 34mm Tactical Rings
+    const scopeGroup = new THREE.Group();
+    scopeGroup.position.set(0, 0.20, -0.15);
+    const scopeTube = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.38, 16), matGunDark);
+    scopeTube.rotation.x = Math.PI / 2;
+    const scopeObj = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.035, 0.10, 16), matGunDark);
+    scopeObj.rotation.x = Math.PI / 2; scopeObj.position.set(0, 0, -0.22);
+    const scopeOcular = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.08, 16), matGunDark);
+    scopeOcular.rotation.x = Math.PI / 2; scopeOcular.position.set(0, 0, 0.21);
+    const scopeLens = new THREE.Mesh(new THREE.CircleGeometry(0.045, 16), matOpticLens);
+    scopeLens.position.set(0, 0, -0.272);
+    // Scope Mount Rings & Tall Turrets
+    const sRing1 = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.10, 0.03), matGunSteel);
+    sRing1.position.set(0, -0.02, -0.10);
+    const sRing2 = sRing1.clone(); sRing2.position.z = 0.10;
+    const sTurretE = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.03, 10), matGunSteel);
+    sTurretE.position.set(0, 0.045, 0);
+    const sTurretW = sTurretE.clone(); sTurretW.rotation.z = Math.PI / 2; sTurretW.position.set(0.045, 0, 0);
+    scopeGroup.add(scopeTube, scopeObj, scopeOcular, scopeLens, sRing1, sRing2, sTurretE, sTurretW);
+
+    // Folded Tactical Steel Bipod Assembly
+    const bipodL = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.34, 8), matGunSteel);
+    bipodL.rotation.x = Math.PI / 2; bipodL.position.set(-0.06, -0.12, -0.52);
+    const bipodR = bipodL.clone(); bipodR.position.x = 0.06;
+
+    // Digital OLED Capacitor & Voltage Display
+    const rCapacitor = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.04, 0.28), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+    rCapacitor.position.set(0, 0.13, 0.02);
+
+    // Dynamic Crackling Electric Ionization Arc
     const arcGeo = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(-0.065, 0.02, -0.35),
       new THREE.Vector3(0, 0.04, -0.4),
       new THREE.Vector3(0.065, 0.02, -0.35)
     ]);
     const arcLine = new THREE.Line(arcGeo, new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 }));
-    wep2.add(rBody, rRailL, rRailR, rGrip, heatRail0, rCapacitor, arcLine);
+
+    wep2.add(rBody, rRailL, rRailR, rGrip, heatRail0, scopeGroup, bipodL, bipodR, rCapacitor, arcLine);
     wep2.userData.arcLine = arcLine;
     wep2.visible = false; weaponRig.add(wep2); weaponModels.push(wep2);
 
@@ -3741,7 +4178,7 @@
         normalMap: carbonFiberNormalTex,
         normalScale: new THREE.Vector2(0.6, 0.6)
       });
-      const matArmSuit = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.82, metalness: 0.2 });
+      const matArmSuit = new THREE.MeshStandardMaterial({ color: 0x1a2130, roughness: 0.80, metalness: 0.15 });
       const matArmSteel = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.2, metalness: 0.95 });
       const matArmNeon = new THREE.MeshStandardMaterial({
         color: window.myPilotColor || 0x38bdf8,
@@ -3749,28 +4186,30 @@
         emissiveIntensity: 2.2
       });
       window.fpArmsNeonMat = matArmNeon;
-      const matGloveLeather = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6, metalness: 0.3 });
-      const matGloveKnuckles = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2, metalness: 0.95 });
+      const matGloveLeather = new THREE.MeshStandardMaterial({ color: 0x1e2738, roughness: 0.65, metalness: 0.25 });
+      const matTprRibs = new THREE.MeshStandardMaterial({ color: 0x0f1520, roughness: 0.45, metalness: 0.6 });
+      const matWatchScreen = new THREE.MeshBasicMaterial({ map: tacticalWatch.texture });
 
       // --- RIGHT ARM (Firmly gripping weapon receiver & trigger) ---
       const rArmGroup = new THREE.Group();
 
-      // Right Sleeve / Upper Arm entering from bottom-right corner of viewport
-      const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 0.42, 12), matArmSuit);
+      // Right Sleeve with rolled uniform fabric cuff
+      const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.105, 0.42, 12), matArmSuit);
       rUpperArm.rotation.set(0.70, -0.22, -0.32);
       rUpperArm.position.set(0.32, -0.32, 0.42);
+      const rCuff = new THREE.Mesh(new THREE.TorusGeometry(0.088, 0.015, 8, 14), matArmSuit);
+      rCuff.rotation.set(0.70, -0.22, -0.32);
+      rCuff.position.set(0.24, -0.23, 0.28);
 
       // Armored Forearm Gauntlet Chassis
       const rForearm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.32), matArmCarbon);
       rForearm.position.set(0.18, -0.18, 0.18);
       rForearm.rotation.set(0.25, 0.35, -0.18);
 
-      // Gauntlet Top Strike Plate
       const rGauntletPlate = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.025, 0.26), matArmSteel);
       rGauntletPlate.position.set(0, 0.05, 0);
       rForearm.add(rGauntletPlate);
 
-      // Glowing Neon Energy Conduit Line
       const rConduit = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.24), matArmNeon);
       rConduit.position.set(0.06, 0.045, 0);
       rForearm.add(rConduit);
@@ -3779,68 +4218,80 @@
       const rGlove = new THREE.Group();
       rGlove.position.set(0.06, -0.08, 0.02);
 
-      // Glove Palm wrapping around right side of weapon
       const rPalm = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.12, 0.13), matGloveLeather);
-      rPalm.position.set(0, 0, 0);
 
-      // Knuckle Armor Plate
-      const rKnuckles = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.11), matArmCarbon);
-      rKnuckles.position.set(0.045, 0.035, 0);
+      // Ergonomic Curved Molded Carbon-Fiber Knuckle Shell
+      const rKnuckles = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.12), matArmCarbon);
+      rKnuckles.position.set(0.048, 0.038, 0);
 
-      // 4 Wrapped Fingers curling under the receiver
+      // Segmented TPR Impact Ribs
+      for (let f = 0; f < 4; f++) {
+        const rib = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.012, 0.06), matTprRibs);
+        rib.position.set(0.04, 0.02, -0.045 + f * 0.028);
+        rGlove.add(rib);
+      }
+
       const rFingers = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.11), matGloveLeather);
       rFingers.position.set(-0.01, -0.055, -0.01);
 
-      // Trigger Finger along trigger guard
       const rTrigFinger = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.016, 0.11, 8), matGloveLeather);
       rTrigFinger.rotation.x = Math.PI / 2;
       rTrigFinger.position.set(0.02, -0.01, -0.11);
 
-      // Thumb wrapped over top
       const rThumb = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.09, 8), matGloveLeather);
       rThumb.rotation.z = -0.7;
       rThumb.position.set(-0.04, 0.04, 0.02);
 
       rGlove.add(rPalm, rKnuckles, rFingers, rTrigFinger, rThumb);
-      rArmGroup.add(rUpperArm, rForearm, rGlove);
+      rArmGroup.add(rUpperArm, rCuff, rForearm, rGlove);
       armGroup.add(rArmGroup);
 
       // --- LEFT ARM (Holding Foregrip / Shotgun Pump) ---
       const lArmGroup = new THREE.Group();
 
-      // Left Sleeve / Upper Arm entering from bottom-left
-      const lUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 0.42, 12), matArmSuit);
+      const lUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.105, 0.42, 12), matArmSuit);
       lUpperArm.rotation.set(0.55, 0.32, 0.38);
       lUpperArm.position.set(-0.32, -0.34, 0.28);
+      const lCuff = new THREE.Mesh(new THREE.TorusGeometry(0.088, 0.015, 8, 14), matArmSuit);
+      lCuff.rotation.set(0.55, 0.32, 0.38);
+      lCuff.position.set(-0.24, -0.24, 0.14);
 
-      // Armored Left Forearm Gauntlet Chassis
       const lForearm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.34), matArmCarbon);
       lForearm.position.set(-0.16, -0.16, -0.10);
       lForearm.rotation.set(0.18, -0.42, 0.15);
 
-      // Gauntlet Top Strike Plate
       const lGauntletPlate = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.025, 0.28), matArmSteel);
       lGauntletPlate.position.set(0, 0.05, 0);
       lForearm.add(lGauntletPlate);
 
-      // Holographic Wrist HUD Mini-Terminal
-      const lWristHud = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.025, 0.08), matArmNeon);
-      lWristHud.position.set(0, 0.065, -0.10);
-      lForearm.add(lWristHud);
+      // Call of Duty Tactical Smartwatch on Left Wrist
+      const watchGroup = new THREE.Group();
+      watchGroup.position.set(0, 0.065, -0.10);
+      const watchCase = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.022, 0.09), matArmSteel);
+      const watchScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.075, 0.075), matWatchScreen);
+      watchScreen.rotation.x = -Math.PI / 2; watchScreen.position.y = 0.012;
+      watchGroup.add(watchCase, watchScreen);
+      lForearm.add(watchGroup);
 
-      // Neon Conduit Line
       const lConduit = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.26), matArmNeon);
       lConduit.position.set(-0.06, 0.045, 0);
       lForearm.add(lConduit);
 
-      // Left Tactical Glove Group (Holding Pump Handle / Underbarrel)
+      // Left Tactical Combat Glove
       const lGlove = new THREE.Group();
       lGlove.position.set(0, -0.05, -0.32);
 
-      // Glove Palm cupping under the pump
       const lPalm = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.09, 0.16), matGloveLeather);
-      const lKnuckles = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.13), matArmCarbon);
+      const lKnuckles = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.14), matArmCarbon);
       lKnuckles.position.set(-0.06, 0.02, 0);
+
+      // Segmented TPR Finger Impact Ribs on Left Hand
+      for (let f = 0; f < 4; f++) {
+        const rib = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.012, 0.06), matTprRibs);
+        rib.position.set(0.01, -0.04, -0.045 + f * 0.028);
+        lGlove.add(rib);
+      }
+
       const lFingers = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.14), matGloveLeather);
       lFingers.position.set(0.03, -0.035, 0);
       const lThumb = new THREE.Mesh(new THREE.CylinderGeometry(0.017, 0.018, 0.09, 8), matGloveLeather);
@@ -3848,7 +4299,7 @@
       lThumb.position.set(-0.05, 0.035, 0.02);
 
       lGlove.add(lPalm, lKnuckles, lFingers, lThumb);
-      lArmGroup.add(lUpperArm, lForearm, lGlove);
+      lArmGroup.add(lUpperArm, lCuff, lForearm, lGlove);
       armGroup.add(lArmGroup);
 
       return {
@@ -3857,31 +4308,171 @@
         lForearm: lForearm,
         rGlove: rGlove,
         rForearm: rForearm,
+        tacticalWatch: tacticalWatch,
         update: function(dt, wepIdx, pumpZ) {
           if (wepIdx === 0) {
-            // Shotgun: Left hand tracks pump handle smoothly!
             lGlove.position.set(0, -0.05, pumpZ || -0.32);
             lGlove.rotation.set(0.12, 0.08, -0.05);
             rGlove.position.set(0.06, -0.08, 0.02);
           } else if (wepIdx === 1) {
-            // Jackhammer: Hand holds under-slung drum
             lGlove.position.set(0, -0.14, -0.18);
             lGlove.rotation.set(0.24, 0.12, -0.15);
             rGlove.position.set(0.06, -0.08, 0.02);
           } else if (wepIdx === 2) {
-            // Rail Slugger: Hand cradles stator rail
             lGlove.position.set(0, -0.04, -0.32);
             lGlove.rotation.set(0.15, -0.08, 0.15);
             rGlove.position.set(0.06, -0.08, 0.02);
           }
 
-          // Smoothly connect forearm to the hand position
           lForearm.position.x = lGlove.position.x * 0.4 - 0.14;
           lForearm.position.y = lGlove.position.y * 0.5 - 0.12;
           lForearm.position.z = lGlove.position.z * 0.5 + 0.06;
         }
       };
     }
+
+    // Collimated Green Tactical Laser Pointer
+    const laserBeamGeo = new THREE.CylinderGeometry(0.002, 0.0035, 1.0, 8);
+    laserBeamGeo.rotateX(Math.PI / 2);
+    laserBeamGeo.translate(0, 0, 0.5);
+    const laserBeamMat = new THREE.MeshBasicMaterial({
+      color: 0x22c55e,
+      transparent: true,
+      opacity: 0.65,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const laserBeamMesh = new THREE.Mesh(laserBeamGeo, laserBeamMat);
+    scene.add(laserBeamMesh);
+    window.laserBeamMesh = laserBeamMesh;
+
+    const laserDotMat = new THREE.MeshBasicMaterial({
+      color: 0x4ade80,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const laserDotMesh = new THREE.Mesh(new THREE.RingGeometry(0.015, 0.038, 16), laserDotMat);
+    scene.add(laserDotMesh);
+    window.laserDotMesh = laserDotMesh;
+
+    // Volumetric 3D Muzzle Flash Mesh attached to camera
+    const mFlashGroup = new THREE.Group();
+    const mFlashMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const mPlane1 = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.24), mFlashMat);
+    const mPlane2 = mPlane1.clone(); mPlane2.rotation.z = Math.PI / 4;
+    const mPlane3 = mPlane1.clone(); mPlane3.rotation.z = Math.PI / 2;
+    mFlashGroup.add(mPlane1, mPlane2, mPlane3);
+    mFlashGroup.position.set(0.32, -0.22, -1.25);
+    mFlashGroup.visible = false;
+    camera.add(mFlashGroup);
+    window.mFlashGroup = mFlashGroup;
+
+    // Barrel propellant smoke particles
+    const activeBarrelSmokes = [];
+
+    // --- CALL OF DUTY POST-PROCESSING PIPELINE ---
+    let composer = null;
+    let bloomPass = null;
+    let codShaderPass = null;
+
+    function initPostProcessing() {
+      if (typeof THREE.EffectComposer === 'undefined' || typeof THREE.RenderPass === 'undefined') {
+        console.warn('EffectComposer or RenderPass not available, using standard WebGL renderer');
+        return;
+      }
+      try {
+        composer = new THREE.EffectComposer(renderer);
+        const renderPass = new THREE.RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        if (typeof THREE.UnrealBloomPass !== 'undefined') {
+          bloomPass = new THREE.UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            0.36, // strength: cinematic glow without washout
+            0.55, // radius
+            0.74  // threshold: only high-intensity emissives bloom
+          );
+          composer.addPass(bloomPass);
+        }
+
+        if (typeof THREE.ShaderPass !== 'undefined') {
+          const CoDPostShader = {
+            uniforms: {
+              tDiffuse: { value: null },
+              uTime: { value: 0 },
+              uAberration: { value: 0.0016 },
+              uVignette: { value: 0.32 },
+              uSpeed: { value: 0.0 }
+            },
+            vertexShader: `
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              uniform sampler2D tDiffuse;
+              uniform float uTime;
+              uniform float uAberration;
+              uniform float uVignette;
+              uniform float uSpeed;
+              varying vec2 vUv;
+
+              void main() {
+                vec2 uv = vUv;
+                vec2 toCenter = uv - vec2(0.5);
+                float dist = length(toCenter);
+
+                // Dynamic radial chromatic aberration scaled by speed
+                float ab = uAberration + uSpeed * 0.0032;
+                vec2 offset = toCenter * dist * ab;
+
+                float r = texture2D(tDiffuse, uv + offset).r;
+                float g = texture2D(tDiffuse, uv).g;
+                float b = texture2D(tDiffuse, uv - offset).b;
+                vec3 col = vec3(r, g, b);
+
+                // Call of Duty Military Contrast Curve (Lifted midtones, rich blacks)
+                col = pow(col, vec3(1.06));
+
+                // Modern Warfare Warm Highlights & Cool Shadows Split Toning
+                vec3 warmHigh = vec3(1.03, 1.01, 0.97);
+                vec3 coolShadow = vec3(0.96, 0.98, 1.02);
+                float lum = dot(col, vec3(0.299, 0.587, 0.114));
+                col = mix(col * coolShadow, col * warmHigh, clamp(lum, 0.0, 1.0));
+
+                // Cinematic Lens Vignette
+                float vig = 1.0 - smoothstep(0.42, 0.96, dist) * uVignette;
+                col *= vig;
+
+                // Subtle tactical camera micro-noise
+                float noise = fract(sin(dot(uv * (uTime + 1.0), vec2(12.9898, 78.233))) * 43758.5453);
+                col += (noise - 0.5) * 0.015;
+
+                gl_FragColor = vec4(col, 1.0);
+              }
+            `
+          };
+          codShaderPass = new THREE.ShaderPass(CoDPostShader);
+          composer.addPass(codShaderPass);
+        }
+        console.log('Call of Duty post-processing pipeline initialized successfully');
+      } catch (e) {
+        console.error('Post processing init failed, falling back:', e);
+        composer = null;
+      }
+    }
+    initPostProcessing();
 
     const fpArms = createFirstPersonArms();
     weaponRig.add(fpArms.group);
@@ -6840,8 +7431,36 @@
       }
 
       gunKickOffset = 0.22; gunKickRot = 0.35; screenShake = wep.shake;
-      muzzleLight.intensity = (currentWeaponIdx === 2) ? 6.0 : 4.0;
-      muzzleLight.color.setHex(currentWeaponIdx === 2 ? 0x38bdf8 : 0xfbbf24);
+
+      // Volumetric 3D Muzzle Flash & Real-Time Dynamic Illumination
+      if (window.muzzleFlashLightingEnabled !== false) {
+        muzzleLight.intensity = (currentWeaponIdx === 2) ? 14.0 : 12.0;
+        muzzleLight.color.setHex(currentWeaponIdx === 2 ? 0x38bdf8 : 0xfffaed);
+      }
+      if (window.mFlashGroup) {
+        window.mFlashGroup.visible = true;
+        window.mFlashGroup.rotation.z = Math.random() * Math.PI * 2;
+        const fScale = 0.85 + Math.random() * 0.35;
+        window.mFlashGroup.scale.set(fScale, fScale, fScale);
+        setTimeout(() => { if (window.mFlashGroup) window.mFlashGroup.visible = false; }, 42);
+      }
+
+      // Gun Barrel Propellant Smoke Wisps
+      const fwdRay = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.cameraPitch, player.cameraYaw, 0, 'YXZ')).normalize();
+      const barrelMuzzlePos = camera.position.clone().add(fwdRay.clone().multiplyScalar(0.75)).add(new THREE.Vector3(0.12, -0.15, 0));
+      for (let smk = 0; smk < 2; smk++) {
+        const sGeo = new THREE.SphereGeometry(0.038 + smk * 0.02, 6, 6);
+        const sMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.35 });
+        const sMesh = new THREE.Mesh(sGeo, sMat);
+        sMesh.position.copy(barrelMuzzlePos);
+        scene.add(sMesh);
+        activeBarrelSmokes.push({
+          mesh: sMesh,
+          vel: fwdRay.clone().multiplyScalar(0.35).add(new THREE.Vector3((Math.random() - 0.5) * 0.2, 0.25 + Math.random() * 0.2, (Math.random() - 0.5) * 0.2)),
+          life: 1.0,
+          maxLife: 1.0
+        });
+      }
 
       const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.cameraPitch, player.cameraYaw, 0, 'YXZ')).normalize();
       player.vel.add(forward.clone().multiplyScalar(-wep.recoilImpulse));
@@ -7536,7 +8155,147 @@ updateHUD(dt);
         screenShake = THREE.MathUtils.lerp(screenShake, 0, rawDt * 14);
       }
 
-      renderer.render(scene, camera);
+      // Update Barrel propellant smoke particles
+      for (let sIdx = activeBarrelSmokes.length - 1; sIdx >= 0; sIdx--) {
+        const smk = activeBarrelSmokes[sIdx];
+        smk.life -= dt;
+        if (smk.life <= 0) {
+          scene.remove(smk.mesh);
+          activeBarrelSmokes.splice(sIdx, 1);
+        } else {
+          smk.mesh.position.addScaledVector(smk.vel, dt);
+          const prg = 1.0 - (smk.life / smk.maxLife);
+          smk.mesh.scale.setScalar(1.0 + prg * 2.5);
+          smk.mesh.material.opacity = (1.0 - prg) * 0.35;
+        }
+      }
+
+      // Update Tactical PEQ-15 Weapon Laser Beam & Impact Dot
+      if (window.laserBeamMesh && window.laserDotMesh) {
+        if (window.weaponLaserEnabled !== false) {
+          window.laserBeamMesh.visible = true;
+          const laserDir = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.cameraPitch, player.cameraYaw, 0, 'YXZ')).normalize();
+          const laserRight = new THREE.Vector3(1, 0, 0).applyEuler(new THREE.Euler(0, player.cameraYaw, 0, 'YXZ')).normalize();
+          const laserUp = new THREE.Vector3(0, 1, 0);
+          const laserOrigin = camera.position.clone()
+            .add(laserRight.clone().multiplyScalar(0.28))
+            .add(laserUp.clone().multiplyScalar(-0.16))
+            .add(laserDir.clone().multiplyScalar(0.35));
+
+          const laserRay = new THREE.Ray(laserOrigin, laserDir);
+          let closestHit = null;
+          let hitNormal = new THREE.Vector3(0, 1, 0);
+          let minHitDist = 65;
+
+          // Raycast colliders
+          for (let c of colliders) {
+            const hit = laserRay.intersectBox(c.box, new THREE.Vector3());
+            if (hit) {
+              const d = laserOrigin.distanceTo(hit);
+              if (d < minHitDist) {
+                minHitDist = d;
+                closestHit = hit;
+                const cCenter = c.box.getCenter(new THREE.Vector3());
+                const toH = hit.clone().sub(cCenter);
+                const half = c.box.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+                hitNormal.set(
+                  Math.abs(toH.x / half.x) > 0.95 ? Math.sign(toH.x) : 0,
+                  Math.abs(toH.y / half.y) > 0.95 ? Math.sign(toH.y) : 0,
+                  Math.abs(toH.z / half.z) > 0.95 ? Math.sign(toH.z) : 0
+                ).normalize();
+              }
+            }
+          }
+
+          // Raycast floor
+          if (laserDir.y < -0.01) {
+            const floorDist = (laserOrigin.y - 0) / (-laserDir.y);
+            if (floorDist > 0 && floorDist < minHitDist) {
+              minHitDist = floorDist;
+              closestHit = laserOrigin.clone().add(laserDir.clone().multiplyScalar(floorDist));
+              hitNormal.set(0, 1, 0);
+            }
+          }
+
+          // Raycast remote opponent
+          const oppCenter = remoteOpponent.pos.clone().add(new THREE.Vector3(0, 1.0, 0));
+          const toOpp = oppCenter.clone().sub(laserOrigin);
+          const oppProj = toOpp.dot(laserDir);
+          if (oppProj > 0 && oppProj < minHitDist) {
+            const closestPt = laserOrigin.clone().add(laserDir.clone().multiplyScalar(oppProj));
+            if (closestPt.distanceTo(oppCenter) < remoteOpponent.radius + 0.35) {
+              minHitDist = oppProj - (remoteOpponent.radius * 0.8);
+              closestHit = laserOrigin.clone().add(laserDir.clone().multiplyScalar(minHitDist));
+              hitNormal.copy(laserDir).multiplyScalar(-1);
+            }
+          }
+
+          window.laserBeamMesh.position.copy(laserOrigin);
+          window.laserBeamMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), laserDir);
+          window.laserBeamMesh.scale.set(1, 1, minHitDist);
+
+          if (closestHit) {
+            window.laserDotMesh.visible = true;
+            window.laserDotMesh.position.copy(closestHit).addScaledVector(hitNormal, 0.02);
+            window.laserDotMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), hitNormal);
+          } else {
+            window.laserDotMesh.visible = false;
+          }
+        } else {
+          window.laserBeamMesh.visible = false;
+          window.laserDotMesh.visible = false;
+        }
+      }
+
+      // Animate Tactical Smartwatch screen on operator's left wrist
+      if (tacticalWatch && tacticalWatch.ctx) {
+        const wCtx = tacticalWatch.ctx;
+        wCtx.fillStyle = '#030712'; wCtx.fillRect(14, 14, 228, 228);
+        wCtx.strokeStyle = '#10b981'; wCtx.lineWidth = 3;
+        wCtx.strokeRect(12, 12, 232, 232);
+
+        wCtx.fillStyle = '#10b981'; wCtx.font = 'bold 15px monospace';
+        wCtx.fillText('■■■■ 98%  GPS:LOCK', 24, 40);
+
+        const matchSec = Math.floor(currentTime * 0.001);
+        const mm = String(Math.floor(matchSec / 60)).padStart(2, '0');
+        const ss = String(matchSec % 60).padStart(2, '0');
+        const ms1 = Math.floor((currentTime % 1000) / 100);
+        wCtx.fillStyle = '#38bdf8'; wCtx.font = 'bold 36px monospace';
+        wCtx.fillText(`${mm}:${ss}.${ms1}`, 32, 100);
+
+        const deg = Math.round(((-player.cameraYaw * 180 / Math.PI) % 360 + 360) % 360);
+        const cardDirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+        const card = cardDirs[Math.floor(((deg + 22.5) % 360) / 45)];
+        wCtx.fillStyle = '#f59e0b'; wCtx.font = 'bold 20px monospace';
+        wCtx.fillText(`AZ ${deg}° [${card}]`, 28, 145);
+
+        wCtx.fillStyle = '#ef4444'; wCtx.font = 'bold 16px monospace';
+        const hr = Math.round(132 + Math.min(player.vel.length() * 1.5, 50));
+        wCtx.fillText(`PULSE: ${hr} BPM [NOMINAL]`, 24, 185);
+
+        const pulseOffset = (currentTime * 0.08) % 100;
+        wCtx.strokeStyle = '#ef4444'; wCtx.lineWidth = 2.5;
+        wCtx.beginPath();
+        wCtx.moveTo(24, 218); wCtx.lineTo(60 + (pulseOffset * 0.2), 218);
+        wCtx.lineTo(75 + (pulseOffset * 0.2), 202);
+        wCtx.lineTo(90 + (pulseOffset * 0.2), 234);
+        wCtx.lineTo(105 + (pulseOffset * 0.2), 210);
+        wCtx.lineTo(120 + (pulseOffset * 0.2), 218);
+        wCtx.lineTo(232, 218); wCtx.stroke();
+
+        tacticalWatch.texture.needsUpdate = true;
+      }
+
+      if (composer && window.postProcessingEnabled !== false) {
+        if (codShaderPass) {
+          codShaderPass.uniforms.uTime.value = currentTime * 0.001;
+          codShaderPass.uniforms.uSpeed.value = Math.min(player.vel.length() / 42.0, 1.5);
+        }
+        composer.render();
+      } else {
+        renderer.render(scene, camera);
+      }
     }
 
     function updatePlayer(dt) {
@@ -8200,6 +8959,10 @@ updateHUD(dt);
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      if (composer) {
+        composer.setSize(window.innerWidth, window.innerHeight);
+        if (bloomPass) bloomPass.resolution.set(window.innerWidth, window.innerHeight);
+      }
     });
 
     initPeerJS();
