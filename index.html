@@ -649,6 +649,95 @@
       color: #f43f5e;
       box-shadow: 0 0 40px rgba(244, 63, 94, 0.6);
     }
+
+    .skillshot-banner {
+      display: none;
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      padding: 14px 32px;
+      border-radius: 12px;
+      backdrop-filter: blur(14px);
+      z-index: 60;
+      pointer-events: none;
+      background: rgba(245, 158, 11, 0.25);
+      border: 2px solid #f59e0b;
+      box-shadow: 0 0 50px rgba(245, 158, 11, 0.7);
+      animation: skillshotPop 1.8s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+    }
+    @keyframes skillshotPop {
+      0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+      15% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+      25% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+      80% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+      100% { transform: translate(-50%, -70%) scale(0.9); opacity: 0; }
+    }
+    .skillshot-name {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #fbbf24;
+      text-shadow: 0 0 20px #f59e0b;
+      text-transform: uppercase;
+    }
+    .skillshot-points {
+      font-size: 18px;
+      font-family: monospace;
+      font-weight: 900;
+      color: #38bdf8;
+      margin-top: 2px;
+    }
+    .skillshot-desc {
+      font-size: 12px;
+      color: #cbd5e1;
+      font-weight: 700;
+      margin-top: 4px;
+      letter-spacing: 1px;
+    }
+
+    .ping-wheel-modal {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.88);
+      border: 2px solid rgba(56, 189, 248, 0.5);
+      box-shadow: 0 0 35px rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(12px);
+      z-index: 90;
+      pointer-events: auto;
+    }
+    .ping-option {
+      position: absolute;
+      width: 90px;
+      height: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(30, 41, 59, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #f1f5f9;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+      padding: 4px;
+    }
+    .ping-option:hover {
+      background: #0284c7;
+      border-color: #38bdf8;
+      transform: scale(1.08);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
+    }
     @keyframes knockoutZoom {
       0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
       15% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
@@ -809,6 +898,32 @@
     </div>
     <div id="hazard-warning-badge" class="hazard-threat-badge">⚠️ HAZARD IMPACT IMMINENT</div>
     <div id="knockout-banner" class="knockout-banner"></div>
+    <div id="skillshot-banner" class="skillshot-banner">
+      <div id="skillshot-title" class="skillshot-name">⚡ SKILLSHOT: VOODOO DOLL</div>
+      <div id="skillshot-pts" class="skillshot-points">+500 PTS</div>
+      <div id="skillshot-sub" class="skillshot-desc">Tether Yank into Wall Spikes!</div>
+    </div>
+
+    <!-- TACTICAL CHAT & PING WHEEL MODAL -->
+    <div id="ping-wheel" class="ping-wheel-modal">
+      <div class="ping-option" style="top: 8px; left: 85px;" onclick="selectTacticalPing(1)">
+        <span style="font-size: 14px;">🌀</span>
+        <span>ATTACK TURBINE</span>
+      </div>
+      <div class="ping-option" style="top: 100px; right: 8px;" onclick="selectTacticalPing(2)">
+        <span style="font-size: 14px;">🌋</span>
+        <span>WATCH LAVA</span>
+      </div>
+      <div class="ping-option" style="bottom: 8px; left: 85px;" onclick="selectTacticalPing(3)">
+        <span style="font-size: 14px;">🛡️</span>
+        <span>REGROUP</span>
+      </div>
+      <div class="ping-option" style="top: 100px; left: 8px;" onclick="selectTacticalPing(4)">
+        <span style="font-size: 14px;">⚡</span>
+        <span>HARPOONED!</span>
+      </div>
+      <div style="position: absolute; top: 110px; left: 100px; font-size: 10px; font-weight: 800; color: #94a3b8; pointer-events: none;">PING [G]</div>
+    </div>
     <div id="feed-container"></div>
 
     <!-- Bottom Panels -->
@@ -916,6 +1031,10 @@
         <div class="mvp-stat-box">
           <div class="mvp-stat-label">Shockwave Stomp Hits</div>
           <div id="stat-stomp-hits" class="mvp-stat-val">0</div>
+        </div>
+        <div class="mvp-stat-box" style="grid-column: span 2; border-color: rgba(245, 158, 11, 0.4);">
+          <div class="mvp-stat-label" style="color: #fbbf24;">Top Skillshot Award</div>
+          <div id="stat-top-skillshot" class="mvp-stat-val" style="color: #fbbf24;">NONE</div>
         </div>
       </div>
 
@@ -1612,6 +1731,63 @@
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
         osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.18);
+      }
+      playSkillshot() {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 triumphant chime
+        notes.forEach((freq, idx) => {
+          const t = now + idx * 0.055;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.45, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+          osc.connect(gain); gain.connect(this.dest());
+          osc.start(t); osc.stop(t + 0.2);
+        });
+      }
+      playElectricArc() {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const nBuf = this.createNoiseBuffer(0.28);
+        if (nBuf) {
+          const nSrc = this.ctx.createBufferSource();
+          nSrc.buffer = nBuf;
+          const bpf = this.ctx.createBiquadFilter();
+          bpf.type = 'bandpass'; bpf.frequency.setValueAtTime(2400, now);
+          bpf.Q.value = 6.0;
+          const nGain = this.ctx.createGain();
+          nGain.gain.setValueAtTime(0.65, now);
+          nGain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+          nSrc.connect(bpf); bpf.connect(nGain); nGain.connect(this.dest());
+          nSrc.start(now);
+        }
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain); gain.connect(this.dest());
+        osc.start(now); osc.stop(now + 0.26);
+      }
+      playPing() {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1760, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.18);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+        osc.connect(gain); gain.connect(this.dest());
+        osc.start(now); osc.stop(now + 0.24);
       }
     }
     const audio = new SoundEngine();
@@ -2887,15 +3063,57 @@
     };
 
     // =============================================
-    //  PEERJS P2P NETWORKING (replaces WebSocket)
+    //  PEERJS P2P NETWORKING (Multi-Peer Mesh + Failover)
     // =============================================
     let peer = null;
-    let dataConn = null;  // the active PeerJS DataConnection
+    let dataConn = null;  // primary PeerJS DataConnection
+    const peerConnections = new Map(); // peerId -> DataConnection (2v2 mesh support)
+    let hostReconnectAttempts = 0;
     let isHost = !isJoiner; // if no ?room= in URL, we're the host (creator)
     let isMultiplayerActive = false;
     let blueScore = 0;
     let redScore = 0;
     const WIN_SCORE = 5;
+
+    // Dynamic 2v2 / Multi-Pilot Roster UI
+    function updateRosterUI() {
+      const rosterEl = document.getElementById('roster-list');
+      if (!rosterEl) return;
+      const count = peerConnections.size;
+      const total = count + 1;
+      if (total <= 2) {
+        let html = '';
+        html += `<div class="roster-pilot"><span id="p1-name">${isHost ? "YOU (BLUE)" : "YOU (RED)"}</span><div class="pilot-dot ${isHost ? 'blue' : 'red'}"></div></div>`;
+        const p2Label = (peerConnections.size > 0 || isMultiplayerActive)
+          ? (isHost ? "OPPONENT (RED)" : "HOST (BLUE)")
+          : (offlineMode ? "AI BOT (RED)" : "WAITING...");
+        html += `<div class="roster-pilot"><span id="p2-name">${p2Label}</span><div class="pilot-dot ${isHost ? 'red' : 'blue'}"></div></div>`;
+        rosterEl.innerHTML = html;
+      } else {
+        // 2v2 Mesh Squad Roster
+        let html = '';
+        html += `<div class="roster-pilot"><span style="font-size:10px; font-weight:800; color:#38bdf8;">BLUE 1: ${isHost ? "YOU (HOST)" : "HOST"}</span><div class="pilot-dot blue"></div></div>`;
+        html += `<div class="roster-pilot"><span style="font-size:10px; font-weight:800; color:#38bdf8;">BLUE 2: ALLY</span><div class="pilot-dot blue"></div></div>`;
+        html += `<div class="roster-pilot"><span style="font-size:10px; font-weight:800; color:#f43f5e;">RED 1: ENEMY</span><div class="pilot-dot red"></div></div>`;
+        html += `<div class="roster-pilot"><span style="font-size:10px; font-weight:800; color:#f43f5e;">RED 2: ENEMY</span><div class="pilot-dot red"></div></div>`;
+        rosterEl.innerHTML = html;
+      }
+    }
+
+    // Host Migration Failover: promotes the next connected peer if host drops
+    function triggerHostMigration() {
+      console.log('[BACKFIRE] Host migration triggered: promoting client to room host');
+      isHost = true;
+      hostReconnectAttempts = 0;
+      showPopup("👑 HOST MIGRATION: YOU ARE NOW ROOM HOST!", "#fbbf24");
+      const statusEl = document.getElementById('conn-status-text');
+      if (statusEl) statusEl.innerText = `Host migrated. You are now the room host! Waiting for pilots...`;
+      updateRosterUI();
+      try { if (peer && !peer.destroyed) peer.destroy(); } catch (e) {}
+      setTimeout(() => {
+        initPeerJS();
+      }, 500);
+    }
 
     // Sanitize room ID for PeerJS (alphanumeric + hyphens only)
     function peerIdFromRoom(roomId) {
@@ -2936,8 +3154,9 @@
         });
 
         peer.on('connection', (conn) => {
-          console.log('[BACKFIRE] Guest connected!');
-          dataConn = conn;
+          console.log('[BACKFIRE] Guest connected:', conn.peer);
+          peerConnections.set(conn.peer, conn);
+          if (!dataConn || !dataConn.open) dataConn = conn;
           setupDataConnection(conn);
         });
 
@@ -2997,8 +3216,13 @@
         peer.on('error', (err) => {
           console.error('[BACKFIRE] Peer error:', err);
           if (err.type === 'peer-unavailable') {
-            statusEl.innerText = `Host not found for ${activeRoomId}. Retrying in 3s...`;
-            setTimeout(() => connectToHost(), 3000);
+            hostReconnectAttempts++;
+            if (hostReconnectAttempts > 2) {
+              triggerHostMigration();
+            } else {
+              statusEl.innerText = `Host not found for ${activeRoomId}. Retrying (${hostReconnectAttempts}/2)...`;
+              setTimeout(() => connectToHost(), 2500);
+            }
           } else {
             statusEl.innerText = `Connection error: ${err.type}. Retrying...`;
             setTimeout(() => {
@@ -3030,14 +3254,29 @@
       const dotEl = document.getElementById('conn-dot');
 
       conn.on('open', () => {
-        console.log('[BACKFIRE] Data channel open!');
+        console.log('[BACKFIRE] Data channel open with peer:', conn.peer);
+        peerConnections.set(conn.peer, conn);
+        if (!dataConn || !dataConn.open) dataConn = conn;
         isMultiplayerActive = true;
         dotEl.classList.add('green');
         statusEl.innerText = `PILOT CONNECTED! Ready to engage.`;
         document.getElementById('ping-display').innerText = `LIVE P2P (${activeRoomId})`;
         showPopup("OPPONENT CONNECTED!", "#10b981");
 
-        if (!isHost) {
+        updateRosterUI();
+
+        if (isHost) {
+          // Sync live match state to newly connected peer
+          try {
+            conn.send({
+              type: 'sync_match',
+              blueScore: blueScore,
+              redScore: redScore,
+              currentMapId: currentMapId,
+              pillarHealths: coverPillars ? coverPillars.map(p => p.health) : []
+            });
+          } catch (e) {}
+        } else {
           document.getElementById('p1-name').innerText = "YOU (RED)";
           document.getElementById('p2-name').innerText = "HOST (BLUE)";
           player.pos.set(0, 1.8, -22);
@@ -3130,6 +3369,7 @@
         else if (msg.type === 'hazard_overload') {
           if (msg.hazard === 'turbine') triggerTurbineOverload(false);
           else if (msg.hazard === 'lava') triggerLavaSurge(false);
+          else if (msg.hazard === 'spikes') triggerSpikeOverload(false);
         }
         else if (msg.type === 'kick_shove') {
           const kDir = new THREE.Vector3(msg.dir[0], msg.dir[1], msg.dir[2]);
@@ -3139,6 +3379,26 @@
           audio.playCrunch(1.2);
           if (window.triggerRumble) triggerRumble(0.6, 0.9, 250);
           showPopup("👢 SHOVED BY OPPONENT BOOT KICK!", "#f43f5e");
+        }
+        else if (msg.type === 'tactical_ping') {
+          renderTacticalPingBeacon(msg.pingText, msg.color, new THREE.Vector3(msg.origin[0], msg.origin[1], msg.origin[2]));
+        }
+        else if (msg.type === 'sync_match') {
+          blueScore = msg.blueScore || 0;
+          redScore = msg.redScore || 0;
+          document.getElementById('blue-score').innerText = blueScore;
+          document.getElementById('red-score').innerText = redScore;
+          if (typeof msg.currentMapId === 'number' && msg.currentMapId !== currentMapId) {
+            selectArenaMap(msg.currentMapId, false);
+          }
+          if (Array.isArray(msg.pillarHealths) && coverPillars) {
+            msg.pillarHealths.forEach((hp, idx) => {
+              if (coverPillars[idx] && hp <= 0 && coverPillars[idx].alive) {
+                damagePillar(idx, 100, false);
+              }
+            });
+          }
+          showPopup("MATCH STATE RECOVERED & SYNCED!", "#10b981");
         }
       });
 
@@ -3150,17 +3410,33 @@
 
       conn.on('close', () => {
         clearInterval(pingTimer);
-        console.log('[BACKFIRE] Connection closed');
-        isMultiplayerActive = false;
-        dotEl.classList.remove('green');
-        statusEl.innerText = `Opponent disconnected. Waiting for reconnect...`;
-        showPopup("OPPONENT DISCONNECTED", "#f43f5e");
-        dataConn = null;
+        console.log('[BACKFIRE] Connection closed with peer:', conn.peer);
+        peerConnections.delete(conn.peer);
+        updateRosterUI();
 
-        // If we're host, wait for a new connection
-        // If we're guest, try to reconnect
+        if (dataConn === conn) {
+          dataConn = null;
+          for (const [id, c] of peerConnections.entries()) {
+            if (c.open) { dataConn = c; break; }
+          }
+        }
+
+        if (peerConnections.size === 0) {
+          isMultiplayerActive = false;
+          dotEl.classList.remove('green');
+          statusEl.innerText = `Opponent disconnected. Waiting for reconnect...`;
+          showPopup("OPPONENT DISCONNECTED", "#f43f5e");
+        }
+
+        // Host Migration Failover & Auto-reconnect
         if (!isHost) {
-          setTimeout(() => connectToHost(), 3000);
+          hostReconnectAttempts++;
+          if (hostReconnectAttempts <= 2) {
+            statusEl.innerText = `Host lost. Auto-reconnecting (${hostReconnectAttempts}/2)...`;
+            setTimeout(() => connectToHost(), 2500);
+          } else {
+            triggerHostMigration();
+          }
         }
       });
 
@@ -3175,6 +3451,13 @@
           dataConn.send(packet);
         } catch (e) {
           // connection may have been torn down
+        }
+      }
+      for (const [id, c] of peerConnections.entries()) {
+        if (c !== dataConn && c && c.open) {
+          try {
+            c.send(packet);
+          } catch (e) {}
         }
       }
     }
@@ -3215,7 +3498,37 @@
         showPopup(`BLUE SCORED! (RED IMPALED IN ${hazardName})`, "#38bdf8");
       }
 
-            if (blueScore >= WIN_SCORE || redScore >= WIN_SCORE) {
+      // Detect & Award Bulletstorm Skillshot
+      const myTeam = isHost ? 'blue' : 'red';
+      const isMyScore = (victimTeam !== myTeam);
+      const skillshot = (typeof detectSkillshot === 'function') ? detectSkillshot(victimTeam, hazardName) : null;
+
+      if (skillshot) {
+        audio.playSkillshot();
+        if (window.triggerRumble) triggerRumble(0.8, 1.0, 350);
+
+        const skBanner = document.getElementById('skillshot-banner');
+        const skTitle = document.getElementById('skillshot-title');
+        const skPts = document.getElementById('skillshot-pts');
+        const skSub = document.getElementById('skillshot-sub');
+
+        if (skBanner && skTitle && skPts && skSub) {
+          skTitle.innerText = `⚡ SKILLSHOT: ${skillshot.name}`;
+          skPts.innerText = `+${skillshot.points} PTS`;
+          skSub.innerText = skillshot.desc;
+          skBanner.style.display = 'block';
+          setTimeout(() => { if (skBanner) skBanner.style.display = 'none'; }, 1800);
+        }
+
+        if (isMyScore) {
+          window.matchStats.skillshotScore = (window.matchStats.skillshotScore || 0) + skillshot.points;
+          if (!window.matchStats.skillshots) window.matchStats.skillshots = [];
+          window.matchStats.skillshots.push(skillshot);
+          showPopup(`⚡ SKILLSHOT: ${skillshot.name} (+${skillshot.points} PTS!)`, "#fbbf24");
+        }
+      }
+
+      if (blueScore >= WIN_SCORE || redScore >= WIN_SCORE) {
         const winner = blueScore >= WIN_SCORE ? "BLUE TEAM WINS" : "RED TEAM WINS";
         const isBlueWin = blueScore >= WIN_SCORE;
         const mvpModal = document.getElementById('mvp-modal');
@@ -3228,6 +3541,12 @@
         document.getElementById('stat-hazard-kills').innerText = (blueScore + redScore);
         document.getElementById('stat-max-tether').innerText = window.matchStats.maxTetherDist.toFixed(1) + ' M';
         document.getElementById('stat-stomp-hits').innerText = window.matchStats.stompImpacts;
+
+        const topSkill = (window.matchStats.skillshots && window.matchStats.skillshots.length > 0)
+          ? window.matchStats.skillshots.sort((a,b) => b.points - a.points)[0].name
+          : "IMPALER";
+        const topEl = document.getElementById('stat-top-skillshot');
+        if (topEl) topEl.innerText = topSkill;
 
         document.exitPointerLock();
         setTimeout(() => {
@@ -3554,6 +3873,7 @@
         if (slideTimer > 0) return;
         slideTimer = 0.75;
         isSliding = true;
+        lastPlayerAction = { type: 'SLIDE', time: performance.now() };
         audio.playSlide();
         triggerRumble(0.3, 0.4, 180);
 
@@ -3590,6 +3910,7 @@
       if (kickCooldownTimer > 0) return;
       kickCooldownTimer = 0.65;
       kickAnimTimer = 0.32;
+      lastPlayerAction = { type: 'KICK', time: performance.now() };
       bootRig.visible = true;
       audio.playBootKick();
       triggerRumble(0.4, 0.8, 180);
@@ -3700,6 +4021,17 @@
       }
 
       activeKeys[e.code] = true;
+
+      if (e.code === 'KeyG') {
+        togglePingWheel();
+        return;
+      }
+      if (document.getElementById('ping-wheel') && document.getElementById('ping-wheel').style.display === 'block') {
+        if (e.code === 'Digit1') { selectTacticalPing(1); return; }
+        if (e.code === 'Digit2') { selectTacticalPing(2); return; }
+        if (e.code === 'Digit3') { selectTacticalPing(3); return; }
+        if (e.code === 'Digit4') { selectTacticalPing(4); return; }
+      }
 
       // Quick Action Triggers
       if (e.code === keyBinds.weapon1) selectWeapon(0);
@@ -3841,6 +4173,7 @@
         tether.active = true;
         tether.targetIsOpponent = (hitPoint === oppCenter);
         if (tether.targetIsOpponent) {
+          lastPlayerAction = { type: 'TETHER', time: performance.now() };
           showPopup("OPPONENT HARPOONED! [SLINGSHOT ARMED]", "#38bdf8");
         }
         tether.anchorPoint.copy(hitPoint);
@@ -3985,6 +4318,7 @@
               const hitImpulse = beamForward.clone().multiplyScalar(85.0);
               hitImpulse.y += 6.0;
               remoteOpponent.vel.add(hitImpulse);
+              lastPlayerAction = { type: 'SHOOT_' + currentWeaponIdx, time: performance.now() };
               sendNet({ type: 'hit', impulse: [hitImpulse.x, hitImpulse.y, hitImpulse.z] });
               createSparks(closest, 35, 0xf59e0b, 16);
               audio.playCrunch(1.0);
@@ -4044,6 +4378,8 @@
               triggerTurbineOverload(true);
             } else if (hz.type === 'MOLTEN_PIT' && lavaSurgeTimer <= 0) {
               triggerLavaSurge(true);
+            } else if ((hz.type === 'SPIKE_WALL' || hz.type === 'SPIKES') && spikeOverloadTimer <= 0) {
+              triggerSpikeOverload(true);
             }
           }
         }
@@ -4083,6 +4419,7 @@
               }
 
               remoteOpponent.vel.add(hitImpulse);
+              lastPlayerAction = { type: 'SHOOT_' + currentWeaponIdx, time: performance.now() };
               sendNet({
                 type: 'hit',
                 impulse: [hitImpulse.x, hitImpulse.y, hitImpulse.z]
@@ -4113,9 +4450,13 @@
     // --- INTERACTIVE HAZARDS & OVERLOADS ---
     let turbineOverloadTimer = 0;
     let lavaSurgeTimer = 0;
+    let spikeOverloadTimer = 0;
+    let lastHazardOverload = null;
+    let lastPlayerAction = null;
 
     function triggerTurbineOverload(broadcast = true) {
       turbineOverloadTimer = 3.5;
+      lastHazardOverload = { type: 'TURBINE', time: performance.now() };
       audio.playTurbineSurge();
       showPopup("🌀 TURBINE OVERLOAD! (SUCTION SURGE)", "#f59e0b");
       createSparks(new THREE.Vector3(-ARENA_HALF + 3, 6, 0), 45, 0xf59e0b, 16);
@@ -4124,6 +4465,7 @@
 
     function triggerLavaSurge(broadcast = true) {
       lavaSurgeTimer = 2.5;
+      lastHazardOverload = { type: 'MOLTEN_PIT', time: performance.now() };
       audio.playHazardPulverize();
       showPopup("🌋 MOLTEN GEYSER ERUPTION!", "#f97316");
       createSparks(new THREE.Vector3(0, 1.5, 0), 60, 0xf97316, 22);
@@ -4139,6 +4481,125 @@
         remoteOpponent.vel.y += 22.0;
       }
       if (broadcast) sendNet({ type: 'hazard_overload', hazard: 'lava' });
+    }
+
+    function triggerSpikeOverload(broadcast = true) {
+      spikeOverloadTimer = 3.2;
+      lastHazardOverload = { type: 'SPIKE_WALL', time: performance.now() };
+      audio.playElectricArc();
+      showPopup("⚡ 50,000V REBAR GRID ELECTRIFIED!", "#38bdf8");
+      createSparks(new THREE.Vector3(0, 4, -ARENA_HALF + 2), 50, 0x38bdf8, 20);
+      createSparks(new THREE.Vector3(0, 4, ARENA_HALF - 2), 50, 0x38bdf8, 20);
+      if (broadcast) sendNet({ type: 'hazard_overload', hazard: 'spikes' });
+    }
+
+    // --- BULLETSTORM SKILLSHOT DETECTION ENGINE ---
+    function detectSkillshot(victimTeam, hazardName) {
+      const now = performance.now();
+      const action = lastPlayerAction;
+      const recentAction = (action && (now - action.time < 3200));
+      const recentOverload = (lastHazardOverload && (now - lastHazardOverload.time < 4500));
+
+      if (tether.active && tether.targetIsOpponent && hazardName.includes("SPIKE")) {
+        return { name: "VOODOO DOLL", points: 500, desc: "Harpoon Tether Yank into Rebar Spikes!" };
+      }
+      if (recentAction && action.type === 'KICK' && hazardName.includes("SPIKE")) {
+        return { name: "BARBED SKEWER", points: 550, desc: "Concussive Boot Kick into Wall Impalers!" };
+      }
+      if (recentAction && action.type === 'KICK' && (hazardName.includes("ROTARY") || hazardName.includes("MEATGRINDER") || hazardName.includes("TURBINE"))) {
+        return { name: "MEAT SLICER", points: 650, desc: "Boot Kicked into Industrial Shredder Blades!" };
+      }
+      if (recentAction && action.type === 'SLIDE' && (hazardName.includes("ROTARY") || hazardName.includes("TURBINE"))) {
+        return { name: "SAUSAGE GRINDER", points: 600, desc: "Power Slide Juggle into Rotary Meatgrinder!" };
+      }
+      if (recentAction && action.type === 'SLIDE') {
+        return { name: "SLIDE TRIPPED", points: 450, desc: "Low-Angle Slide Trip into Lethal Hazard!" };
+      }
+      if (recentAction && action.type === 'STOMP' && (hazardName.includes("LAVA") || hazardName.includes("MOLTEN") || hazardName.includes("SLAG"))) {
+        return { name: "FLY SWATTER", points: 750, desc: "Retro-Stomp Air Slam into Molten Slag!" };
+      }
+      if (recentOverload && lastHazardOverload.type === 'SPIKE_WALL') {
+        return { name: "HIGH VOLTAGE", points: 650, desc: "Overloaded 50KV High-Voltage Electrocution!" };
+      }
+      if (recentOverload && lastHazardOverload.type === 'MOLTEN_PIT') {
+        return { name: "MOLTEN TSUNAMI", points: 600, desc: "Overloaded Slag Geyser Vaporization!" };
+      }
+      if (recentOverload && lastHazardOverload.type === 'TURBINE') {
+        return { name: "VORTEX PULVERIZE", points: 600, desc: "Turbine Overload Suction Shred!" };
+      }
+      if (recentAction && action.type === 'KICK') {
+        return { name: "BOOT CAMP", points: 400, desc: "Direct Boot Kick Hazard Knockout!" };
+      }
+      if (hazardName.includes("CEILING")) {
+        return { name: "SKY BURIAL", points: 700, desc: "Supercharged Launch into Ceiling Impaler Grid!" };
+      }
+      if (hazardName.includes("DAM") || hazardName.includes("SPILLWAY")) {
+        return { name: "DAM BUSTER", points: 550, desc: "High-Altitude Hydro-Slag Vaporization!" };
+      }
+
+      // Default classic skillshots
+      if (hazardName.includes("ROTARY") || hazardName.includes("TURBINE")) {
+        return { name: "MINCEMEAT", points: 400, desc: "Industrial Blade Shred!" };
+      }
+      if (hazardName.includes("LAVA") || hazardName.includes("MOLTEN") || hazardName.includes("PLASMA")) {
+        return { name: "DISINTEGRATED", points: 350, desc: "1000°C Thermal Slag Dissolution!" };
+      }
+      return { name: "IMPALED", points: 300, desc: "High-Tensile Rebar Impalement!" };
+    }
+
+    // --- TACTICAL PINGS & CHAT WHEEL ---
+    function togglePingWheel(open) {
+      const pw = document.getElementById('ping-wheel');
+      if (!pw) return;
+      if (open === undefined) open = (pw.style.display !== 'block');
+      pw.style.display = open ? 'block' : 'none';
+    }
+
+    window.selectTacticalPing = function(pingId) {
+      togglePingWheel(false);
+      let text = "ATTACK TURBINE!";
+      let color = "#f59e0b";
+      if (pingId === 1) { text = "ATTACK TURBINE!"; color = "#f59e0b"; }
+      else if (pingId === 2) { text = "WATCH LAVA GEYSER!"; color = "#f97316"; }
+      else if (pingId === 3) { text = "REGROUP AT CATWALK!"; color = "#10b981"; }
+      else if (pingId === 4) { text = "ENEMY HARPOONED!"; color = "#38bdf8"; }
+
+      const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.cameraPitch, player.cameraYaw, 0, 'YXZ')).normalize();
+      const targetPos = player.pos.clone().add(forward.multiplyScalar(18.0));
+      targetPos.y = Math.max(1.0, targetPos.y);
+
+      renderTacticalPingBeacon(text, color, targetPos);
+      audio.playPing();
+      sendNet({
+        type: 'tactical_ping',
+        pingText: text,
+        color: color,
+        origin: [targetPos.x, targetPos.y, targetPos.z]
+      });
+    };
+
+    const activePingBeacons = [];
+    function renderTacticalPingBeacon(text, color, pos) {
+      showPopup(`📢 TACTICAL PING: ${text}`, color);
+      audio.playPing();
+
+      const beaconGroup = new THREE.Group();
+      beaconGroup.position.copy(pos);
+
+      const colGeo = new THREE.CylinderGeometry(0.35, 0.35, 14, 16);
+      const colMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.65, blending: THREE.AdditiveBlending });
+      const colMesh = new THREE.Mesh(colGeo, colMat);
+      colMesh.position.y = 7;
+
+      const ringGeo = new THREE.RingGeometry(0.5, 2.4, 24);
+      const ringMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = -Math.PI / 2;
+      ringMesh.position.y = 0.25;
+
+      beaconGroup.add(colMesh, ringMesh);
+      arenaRoot.add(beaconGroup);
+      activePingBeacons.push({ group: beaconGroup, age: 0, maxAge: 4.5 });
     }
 
 
@@ -4219,6 +4680,29 @@
 
       if (turbineOverloadTimer > 0) turbineOverloadTimer -= dt;
       if (lavaSurgeTimer > 0) lavaSurgeTimer -= dt;
+      if (spikeOverloadTimer > 0) {
+        spikeOverloadTimer -= dt;
+        if (Math.random() < 0.35) {
+          const rx = (Math.random() - 0.5) * 36;
+          const ry = Math.random() * 5 + 1;
+          const rz = (Math.random() < 0.5) ? -ARENA_HALF + 1.5 : ARENA_HALF - 1.5;
+          createSparks(new THREE.Vector3(rx, ry, rz), 4, 0x38bdf8, 14);
+        }
+      }
+
+      // Update Tactical Ping Beacons
+      for (let i = activePingBeacons.length - 1; i >= 0; i--) {
+        const pb = activePingBeacons[i];
+        pb.age += dt;
+        if (pb.group.children[1]) pb.group.children[1].rotation.z += dt * 3.0;
+        const fade = Math.max(0, 1.0 - (pb.age / pb.maxAge));
+        if (pb.group.children[0]) pb.group.children[0].material.opacity = fade * 0.65;
+        if (pb.group.children[1]) pb.group.children[1].material.opacity = fade * 0.85;
+        if (pb.age >= pb.maxAge) {
+          arenaRoot.remove(pb.group);
+          activePingBeacons.splice(i, 1);
+        }
+      }
       const spinRpm = (turbineOverloadTimer > 0) ? 28.0 : 8.5;
       for (let h of hazards) {
         if (h.blades) h.blades.rotation.x += dt * spinRpm;
@@ -4507,6 +4991,7 @@ updateHUD(dt);
         player.pos.y = 1.0;
         if (player.isStomping) {
           player.isStomping = false;
+          lastPlayerAction = { type: 'STOMP', time: performance.now() };
           createShockwaveRing(player.pos);
           createSparks(player.pos, 45, 0x38bdf8, 20);
           audio.playCrunch(1.0);
