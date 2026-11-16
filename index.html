@@ -558,6 +558,96 @@
       75% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
       100% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); }
     }
+
+    /* MVP Victory Modal */
+    #mvp-modal {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(6, 8, 14, 0.94);
+      backdrop-filter: blur(16px);
+      z-index: 200;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.4s ease-out;
+    }
+    .mvp-card {
+      background: #0f172a;
+      border: 2px solid rgba(56, 189, 248, 0.4);
+      border-radius: 16px;
+      padding: 36px 48px;
+      text-align: center;
+      max-width: 580px;
+      width: 90%;
+      box-shadow: 0 0 60px rgba(56, 189, 248, 0.25);
+    }
+    .mvp-title {
+      font-size: 38px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .mvp-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 24px 0;
+      text-align: left;
+    }
+    .mvp-stat-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+    .mvp-stat-label {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      color: #94a3b8;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .mvp-stat-val {
+      font-size: 26px;
+      font-weight: 900;
+      font-family: monospace;
+      color: #38bdf8;
+      margin-top: 2px;
+    }
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.15s ease;
+    }
+    .color-swatch:hover, .color-swatch.active {
+      transform: scale(1.18);
+      border-color: #fff;
+      box-shadow: 0 0 12px currentColor;
+    }
+    .fullscreen-btn {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      transition: all 0.15s ease;
+      letter-spacing: 1px;
+      pointer-events: auto;
+    }
+    .fullscreen-btn:hover {
+      color: #38bdf8;
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -589,11 +679,14 @@
       </div>
 
       <!-- Roster Card -->
-      <div class="player-roster">
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+        <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶ FULLSCREEN</button>
+        <div class="player-roster">
         <div class="roster-title">ACTIVE PILOTS</div>
         <div id="roster-list">
           <div class="roster-pilot"><span id="p1-name">YOU (BLUE)</span><div class="pilot-dot blue"></div></div>
           <div class="roster-pilot"><span id="p2-name">OPPONENT (RED)</span><div class="pilot-dot red"></div></div>
+        </div>
         </div>
       </div>
     </div>
@@ -681,6 +774,35 @@
     </div>
   </div>
 
+  <!-- Post-Match MVP & Victory Stat Ceremony Modal -->
+  <div id="mvp-modal">
+    <div class="mvp-card">
+      <div id="mvp-title" class="mvp-title" style="color: #38bdf8;">BLUE TEAM WINS</div>
+      <div style="font-size: 13px; color: #94a3b8; letter-spacing: 2px;">MATCH SUMMARY // VICTORY SECURED</div>
+
+      <div class="mvp-stats-grid">
+        <div class="mvp-stat-box">
+          <div class="mvp-stat-label">Max Velocity Reached</div>
+          <div id="stat-max-speed" class="mvp-stat-val">0.0 M/S</div>
+        </div>
+        <div class="mvp-stat-box">
+          <div class="mvp-stat-label">Lethal Hazard Pulverizes</div>
+          <div id="stat-hazard-kills" class="mvp-stat-val">0</div>
+        </div>
+        <div class="mvp-stat-box">
+          <div class="mvp-stat-label">Longest Harpoon Sling</div>
+          <div id="stat-max-tether" class="mvp-stat-val">0.0 M</div>
+        </div>
+        <div class="mvp-stat-box">
+          <div class="mvp-stat-label">Shockwave Stomp Hits</div>
+          <div id="stat-stomp-hits" class="mvp-stat-val">0</div>
+        </div>
+      </div>
+
+      <button class="start-btn" onclick="restartMatch()">PLAY AGAIN / REMATCH</button>
+    </div>
+  </div>
+
   <!-- Start / Multiplayer Lobby Modal -->
   <div id="start-modal">
     <div class="modal-box">
@@ -745,6 +867,17 @@
           </div>
           <input type="range" id="vol-slider" min="0" max="100" step="5" value="80" style="width: 100%; accent-color: #38bdf8;" oninput="updateVolume(this.value)">
         </div>
+        <div style="margin-top: 14px;">
+          <div style="font-size: 12px; margin-bottom: 8px;">Pilot Visor & Energy Color:</div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <div class="color-swatch active" style="background: #38bdf8; color: #38bdf8;" onclick="setPilotColor('#38bdf8', this)"></div>
+            <div class="color-swatch" style="background: #f43f5e; color: #f43f5e;" onclick="setPilotColor('#f43f5e', this)"></div>
+            <div class="color-swatch" style="background: #10b981; color: #10b981;" onclick="setPilotColor('#10b981', this)"></div>
+            <div class="color-swatch" style="background: #facc15; color: #facc15;" onclick="setPilotColor('#facc15', this)"></div>
+            <div class="color-swatch" style="background: #c084fc; color: #c084fc;" onclick="setPilotColor('#c084fc', this)"></div>
+          </div>
+        </div>
+
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
           <span>Dynamic FOV Speed Warping:</span>
           <input type="checkbox" id="dynamic-fov-check" checked style="accent-color: #38bdf8; width: 18px; height: 18px; cursor: pointer;" onchange="updateDynamicFov(this.checked)">
@@ -779,7 +912,57 @@
     const joinInput = document.getElementById('join-room-input');
     if (joinInput) joinInput.placeholder = 'Current: ' + activeRoomId;
 
-        window.switchTab = function(tab) {
+        
+    // Match Lifetime Stats
+    window.matchStats = {
+      maxSpeed: 0,
+      hazardKills: 0,
+      maxTetherDist: 0,
+      stompImpacts: 0
+    };
+
+    window.toggleFullscreen = function() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    };
+
+    window.myPilotColor = '#38bdf8';
+    window.setPilotColor = function(colorHex, el) {
+      window.myPilotColor = colorHex;
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      if (el) el.classList.add('active');
+      const dot = document.querySelector('.cross-dot');
+      if (dot) {
+        dot.style.background = colorHex;
+        dot.style.boxShadow = `0 0 10px ${colorHex}`;
+      }
+      if (window.matGunBlue) {
+        window.matGunBlue.color.set(colorHex);
+        window.matGunBlue.emissive.set(colorHex);
+      }
+      if (window.sendNet) {
+        window.sendNet({ type: 'customize', color: colorHex });
+      }
+    };
+
+    window.restartMatch = function() {
+      document.getElementById('mvp-modal').style.display = 'none';
+      window.blueScore = 0;
+      window.redScore = 0;
+      document.getElementById('blue-score').innerText = 0;
+      document.getElementById('red-score').innerText = 0;
+      window.matchStats = { maxSpeed: 0, hazardKills: 0, maxTetherDist: 0, stompImpacts: 0 };
+      if (window.player) {
+        window.player.pos.set(0, 1.8, window.isHost ? 22 : -22);
+        window.player.vel.set(0, 0, 0);
+      }
+      if (document.body.requestPointerLock) document.body.requestPointerLock();
+    };
+
+    window.switchTab = function(tab) {
       document.getElementById('tab-online').classList.toggle('active', tab === 'online');
       document.getElementById('tab-solo').classList.toggle('active', tab === 'solo');
       document.getElementById('tab-settings').classList.toggle('active', tab === 'settings');
@@ -1870,6 +2053,15 @@
         else if (msg.type === 'tether_pull') {
           player.vel.add(new THREE.Vector3(msg.impulse[0], msg.impulse[1], msg.impulse[2]));
         }
+        else if (msg.type === 'customize') {
+          if (remoteOpponent && remoteOpponent.mesh) {
+            const visorMesh = remoteOpponent.mesh.children[1];
+            if (visorMesh && visorMesh.material) {
+              visorMesh.material.color.set(msg.color);
+              visorMesh.material.emissive.set(msg.color);
+            }
+          }
+        }
         else if (msg.type === 'hazard_overload') {
           if (msg.hazard === 'turbine') triggerTurbineOverload(false);
           else if (msg.hazard === 'lava') triggerLavaSurge(false);
@@ -1949,14 +2141,24 @@
         showPopup(`BLUE SCORED! (RED IMPALED IN ${hazardName})`, "#38bdf8");
       }
 
-      if (blueScore >= WIN_SCORE || redScore >= WIN_SCORE) {
+            if (blueScore >= WIN_SCORE || redScore >= WIN_SCORE) {
         const winner = blueScore >= WIN_SCORE ? "BLUE TEAM WINS" : "RED TEAM WINS";
-        showPopup(`MATCH COMPLETE // ${winner}!`, blueScore >= WIN_SCORE ? "#38bdf8" : "#f43f5e");
+        const isBlueWin = blueScore >= WIN_SCORE;
+        const mvpModal = document.getElementById('mvp-modal');
+        const mvpTitle = document.getElementById('mvp-title');
+        if (mvpTitle) {
+          mvpTitle.innerText = winner;
+          mvpTitle.style.color = isBlueWin ? '#38bdf8' : '#f43f5e';
+        }
+        document.getElementById('stat-max-speed').innerText = window.matchStats.maxSpeed.toFixed(1) + ' M/S';
+        document.getElementById('stat-hazard-kills').innerText = (blueScore + redScore);
+        document.getElementById('stat-max-tether').innerText = window.matchStats.maxTetherDist.toFixed(1) + ' M';
+        document.getElementById('stat-stomp-hits').innerText = window.matchStats.stompImpacts;
+
+        document.exitPointerLock();
         setTimeout(() => {
-          blueScore = 0; redScore = 0;
-          document.getElementById('blue-score').innerText = 0;
-          document.getElementById('red-score').innerText = 0;
-        }, 3500);
+          if (mvpModal) mvpModal.style.display = 'flex';
+        }, 800);
       }
     }
 
@@ -2524,6 +2726,7 @@ updateHUD(dt);
 
       if (window.dynamicFovEnabled) {
         const speed = player.vel.length();
+      if (speed > window.matchStats.maxSpeed) window.matchStats.maxSpeed = speed;
         const targetFov = 75 + Math.min(speed / 28.0, 1.0) * 17.0; // 75 -> 92 degrees
         camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, dt * 5.0);
         camera.updateProjectionMatrix();
