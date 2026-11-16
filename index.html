@@ -520,6 +520,44 @@
       0% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.8; }
       100% { transform: translate(-50%, -50%) scale(1.06); opacity: 1; box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
     }
+
+    .knockout-banner {
+      display: none;
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      text-align: center;
+      padding: 16px 36px;
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      z-index: 50;
+      pointer-events: none;
+      animation: knockoutZoom 1.4s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+    }
+    .knockout-banner.blue-team {
+      background: rgba(14, 165, 233, 0.25);
+      border: 2px solid #38bdf8;
+      color: #38bdf8;
+      box-shadow: 0 0 40px rgba(56, 189, 248, 0.6);
+    }
+    .knockout-banner.red-team {
+      background: rgba(244, 63, 94, 0.25);
+      border: 2px solid #f43f5e;
+      color: #f43f5e;
+      box-shadow: 0 0 40px rgba(244, 63, 94, 0.6);
+    }
+    @keyframes knockoutZoom {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+      15% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+      30% { transform: translate(-50%, -50%) scale(1.0); }
+      75% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); }
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -572,6 +610,7 @@
       </div>
     </div>
     <div id="hazard-warning-badge" class="hazard-threat-badge">⚠️ HAZARD IMPACT IMMINENT</div>
+    <div id="knockout-banner" class="knockout-banner"></div>
     <div id="feed-container"></div>
 
     <!-- Bottom Panels -->
@@ -1168,6 +1207,9 @@
       mesh: createOpponentMesh(0xf43f5e),
       pos: new THREE.Vector3(0, 1.0, -22),
       vel: new THREE.Vector3(0, 0, 0),
+      targetPos: new THREE.Vector3(0, 1.0, -22),
+      targetVel: new THREE.Vector3(0, 0, 0),
+      targetYaw: 0,
       radius: 0.7,
       alive: true
     };
@@ -1334,10 +1376,9 @@
         if (!msg || !msg.type) return;
 
         if (msg.type === 'state') {
-          remoteOpponent.pos.set(msg.pos[0], msg.pos[1], msg.pos[2]);
-          remoteOpponent.vel.set(msg.vel[0], msg.vel[1], msg.vel[2]);
-          remoteOpponent.mesh.rotation.y = msg.yaw;
-          remoteOpponent.mesh.position.copy(remoteOpponent.pos);
+          remoteOpponent.targetPos.set(msg.pos[0], msg.pos[1], msg.pos[2]);
+          remoteOpponent.targetVel.set(msg.vel[0], msg.vel[1], msg.vel[2]);
+          remoteOpponent.targetYaw = msg.yaw;
         }
         else if (msg.type === 'fire') {
           const start = new THREE.Vector3(msg.origin[0], msg.origin[1], msg.origin[2]);
@@ -1438,8 +1479,26 @@
     }
 
     // Scoring & Knockouts
+    
+    let timeDilation = 1.0;
+    let slowMoTimer = 0;
+
     function handleKnockoutScore(victimTeam, hazardName) {
       audio.playHazardPulverize();
+
+      // Trigger dramatic slow-mo time dilation
+      slowMoTimer = 1.3;
+      timeDilation = 0.28;
+
+      const banner = document.getElementById('knockout-banner');
+      if (banner) {
+        const scorerTeam = (victimTeam === 'blue') ? 'RED' : 'BLUE';
+        banner.className = 'knockout-banner ' + (scorerTeam === 'RED' ? 'red-team' : 'blue-team');
+        banner.innerHTML = `<div>${scorerTeam} SCORED!</div><div style="font-size: 15px; margin-top: 6px; color: #e2e8f0; font-weight: 700;">${victimTeam.toUpperCase()} IMPALED IN ${hazardName}</div>`;
+        banner.style.display = 'block';
+        setTimeout(() => { if (banner) banner.style.display = 'none'; }, 1400);
+      }
+
 
       if (victimTeam === 'blue') {
         redScore++;
@@ -1814,8 +1873,14 @@
       requestAnimationFrame(animate);
 
       const currentTime = performance.now();
-      const dt = Math.min((currentTime - lastTime) / 1000, 0.05);
+      let rawDt = Math.min((currentTime - lastTime) / 1000, 0.05);
       lastTime = currentTime;
+
+      if (slowMoTimer > 0) {
+        slowMoTimer -= rawDt;
+        if (slowMoTimer <= 0) timeDilation = 1.0;
+      }
+      const dt = rawDt * timeDilation;
 
       if (weaponCooldownTimer > 0) weaponCooldownTimer -= dt;
       if (isMouseDown && WEAPONS[currentWeaponIdx].type === "auto") {
@@ -2015,7 +2080,13 @@
     }
 
     function updateOpponent(dt) {
-      if (!isMultiplayerActive) {
+      if (isMultiplayerActive) {
+        // Silky 60-144Hz Hermite / Lerp smoothing between network packets
+        remoteOpponent.pos.lerp(remoteOpponent.targetPos, Math.min(dt * 22.0, 1.0));
+        remoteOpponent.vel.lerp(remoteOpponent.targetVel, Math.min(dt * 22.0, 1.0));
+        remoteOpponent.mesh.position.copy(remoteOpponent.pos);
+        remoteOpponent.mesh.rotation.y = THREE.MathUtils.lerp(remoteOpponent.mesh.rotation.y, remoteOpponent.targetYaw, Math.min(dt * 18.0, 1.0));
+      } else {
         remoteOpponent.vel.y -= 26.0 * dt;
         remoteOpponent.vel.x *= Math.pow(0.92, dt);
         remoteOpponent.vel.z *= Math.pow(0.92, dt);
