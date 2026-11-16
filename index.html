@@ -2604,10 +2604,17 @@
         createSparks(p.mesh.position.clone().add(new THREE.Vector3(0, 4, 0)), 50, 0xf59e0b, 18);
         showPopup("💥 COVER PILLAR SHATTERED!", "#f59e0b");
       } else {
-        p.mesh.material.color.setHex(0xffffff);
-        setTimeout(() => {
-          if (p && p.mesh && !p.destroyed) p.mesh.material.color.setHex(0x334155);
-        }, 90);
+        p.mesh.traverse((child) => {
+          if (child.isMesh && child.material && child.material.color) {
+            if (child.userData.origColor === undefined) child.userData.origColor = child.material.color.getHex();
+            child.material.color.setHex(0xffffff);
+            setTimeout(() => {
+              if (child && child.material && child.material.color && !p.destroyed) {
+                child.material.color.setHex(child.userData.origColor);
+              }
+            }, 90);
+          }
+        });
       }
       if (broadcast) sendNet({ type: 'damage_pillar', idx, amount });
     }
