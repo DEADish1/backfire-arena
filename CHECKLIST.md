@@ -229,6 +229,49 @@ This master checklist tracks everything built so far and all remaining features 
 
 ---
 
+## 🟢 5. Realistic 3D Human Skeleton & 4 Operator Classes (Completed & Live)
+- [x] **Mixamo 68-Bone Human Skeleton (`models/Soldier.glb`)**:
+  - Replaced boxy geometries with authentic military soldier humanoid mesh cloned via `THREE.SkeletonUtils.clone`.
+  - Independent skeletal rig instances with smooth running, jump recoil, and kick animations.
+  - Organic high-poly fallback with cranial spheres, curved visors, anatomical limbs, and rounded combat boots.
+- [x] **Four Differentiated Operator Classes**:
+  - **Assault**: *Overdrive Thruster* (`[F]`, +24 m/s scramjet boost & turbo recoil recovery) | Passive: *Kinetic Draft* (reduced aerial drag).
+  - **Recon**: *Tactical Sonar Ping* (`[F]`, holographic radar wave + 3D hazard trajectory line) | Passive: *Tether Overreach* (+40% grapple reach, +25% reel speed).
+  - **Juggernaut**: *Kinetic Fortress* (`[F]`, golden shield dome absorbing 75% knockback, +61 m/s boot slam) | Passive: *Seismic Stomp* (+60% shockwave radius, +35% blast impulse).
+  - **Engineer**: *Repulsion Nova* (`[F]`, 360° displacement blast) | Passive: *Overclocked Venting* (34/s rapid core heat cooling).
+
+---
+
+## 🟢 6. Solid Ceilings, Arena Clamping & Collision Resolution (Completed & Live)
+- [x] **Physical 3D Arena Ceilings Across All Maps**:
+  - **Hazard Foundry (Map 1)**: Structural steel roof, girder trusses, skylight safety grating, and floodlights at $y = 16.0\text{ m}$.
+  - **The Core (Map 2)**: Heavy cylindrical reactor dome containment cap at $y = 44.0\text{ m}$.
+  - **Stygian Dam (Map 3)**: Overhead canyon containment gantry and support trusses at $y = 22.0\text{ m}$.
+- [x] **Map Bounds & Ceiling Elastic Damping (`clampEntityToBounds`)**:
+  - Restricts player and bot strictly within arena horizontal limits.
+  - Ceilings bounce entities downwards with an elastic damping coefficient ($-0.35\times$) and mechanical strike sparks.
+- [x] **Solid Pillar & Pole Collision Resolution (`resolveSolidObstacles`)**:
+  - 2.5D solid collision push-out against all `colliders` and `arenaPillars`, preventing players and bots from phasing through poles or cover pillars.
+- [x] **Solo AI Bot Navigation & Steering Overhaul**:
+  - Completely removed the perimeter wall rocket-jump bug that previously propelled the bot over the walls into the void.
+  - Added proactive repulsive steering around pillars and hazard perimeters.
+
+---
+
+## 🟢 7. High-Fidelity Studio Audio Engine (22 CC0 Sample Buffers) (Completed & Live)
+- [x] **Eliminated Tinny Procedural Oscillators**: Replaced 8-bit square/sawtooth synth beeps with 22 studio-grade open-source CC0 audio sample buffers from Warfork and Kenney FPS starter kits.
+- [x] **Preloaded Decoded Audio Buffers**: Asynchronous fetch and `AudioContext.decodeAudioData` into `soundBuffers` map with graceful fallback.
+- [x] **Acoustic Sub-Bass Layering & Dynamic Weapon Audio**:
+  - **Breaker-12G Shotgun**: Real riotgun blast layered with a 45Hz sub-bass chest thump and randomized micro-pitch (`0.97–1.03×`).
+  - **Jackhammer SMG**: Real machinegun fire with transient mechanical clatter and micro-pitch drift (`0.96–1.04×`).
+  - **Rail-Slugger**: Real Electrobolt concussive blast layered with a 320Hz $\to$ 20Hz supersonic magnetic sweep.
+  - **Call of Duty / Quake Kill Sound**: Dedicated triumphant elimination chime (`kill.wav`) on scoring an enemy trap kill.
+  - **Tactile Hitmarkers**: Crisp tick sound (`hitmarker.wav`) with critical headshot pitch scaling.
+  - **Visceral Boot Kick & Impact**: Real bone crunch (`crunch.ogg`), melee strike (`kick.ogg`), and pulverizing mechanical shredder (`hazard_pulverize.wav`).
+  - **Mobility & Jetpack SFX**: Pneumatic jump pads (`jumppad.ogg`), thruster hop (`jump.ogg`), air dash (`dash.ogg`), and floor slide (`slide.ogg`).
+
+---
+
 ## 🟢 9. Infrastructure & Git Sync (Completed)
 - [x] Local Git repository initialized on `main` with feature commits
 - [x] Remote GitHub repository linked and active at [`DEADish1/backfire-arena`](https://github.com/DEADish1/backfire-arena)
