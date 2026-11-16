@@ -1132,6 +1132,293 @@
       text-align: center;
       text-transform: uppercase;
     }
+
+    /* --- OPERATOR ARMORY & CHARACTER CUSTOMIZATION --- */
+    .modal-box.wide-modal {
+      max-width: 1060px;
+      width: 95%;
+    }
+    .operator-layout-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 16px;
+      margin-top: 10px;
+    }
+    @media (max-width: 840px) {
+      .operator-layout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .operator-turntable-container {
+      position: relative;
+      background: radial-gradient(circle at 50% 40%, #1e293b 0%, #090d16 100%);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 12px;
+      overflow: hidden;
+      min-height: 440px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.7);
+    }
+    #armory-turntable-canvas {
+      width: 100%;
+      height: 100%;
+      min-height: 440px;
+      display: block;
+      cursor: grab;
+    }
+    #armory-turntable-canvas:active {
+      cursor: grabbing;
+    }
+    .turntable-drag-hint {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 4px 10px;
+      border-radius: 6px;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .turntable-active-label {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #38bdf8;
+      text-transform: uppercase;
+      background: rgba(15, 23, 42, 0.8);
+      padding: 4px 10px;
+      border-radius: 4px;
+      border-left: 3px solid #38bdf8;
+      pointer-events: none;
+    }
+    .operator-drawer {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 460px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    .operator-drawer::-webkit-scrollbar {
+      width: 5px;
+    }
+    .operator-drawer::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.4);
+      border-radius: 4px;
+    }
+    .op-section {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: left;
+    }
+    .op-section-title {
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+    }
+    .op-text-input {
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: #38bdf8;
+      font-size: 12px;
+      font-weight: 800;
+      font-family: monospace;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .op-text-input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+    }
+    .op-preset-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .op-preset-pill {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .op-preset-pill:hover, .op-preset-pill.active {
+      color: #38bdf8;
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.18);
+    }
+    .op-emblem-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .op-emblem-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .op-emblem-btn:hover, .op-emblem-btn.active {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.22);
+      transform: scale(1.12);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }
+    .op-chassis-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .op-chassis-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .op-chassis-card:hover, .op-chassis-card.active {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.16);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+    }
+    .op-card-icon {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    .op-card-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: #e2e8f0;
+      letter-spacing: 1px;
+    }
+    .op-card-sub {
+      font-size: 9.5px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    .op-camo-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    .op-camo-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .op-camo-card:hover, .op-camo-card.active {
+      border-color: #38bdf8;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.18);
+    }
+    .camo-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      flex-shrink: 0;
+    }
+    .op-swatch-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .op-attach-grid, .op-jet-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .op-attach-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 8px 10px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .op-attach-card:hover, .op-attach-card.active {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.18);
+    }
+    .op-attach-title {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #e2e8f0;
+    }
+    .op-attach-desc {
+      font-size: 9px;
+      color: #94a3b8;
+      margin-top: 2px;
+      line-height: 1.25;
+    }
+    .op-watch-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    .op-watch-pill {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 7px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      color: #cbd5e1;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .op-watch-pill:hover, .op-watch-pill.active {
+      border-color: #38bdf8;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.18);
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="js/GLTFLoader.js"></script>
@@ -1387,6 +1674,7 @@
       <div class="tab-bar">
         <button id="tab-online" class="tab-btn active" onclick="switchTab('online')">1v1 ONLINE MATCH</button>
         <button id="tab-solo" class="tab-btn" onclick="switchTab('solo')">OFFLINE VS BOT</button>
+        <button id="tab-operator" class="tab-btn" onclick="switchTab('operator')">🛡️ OPERATOR</button>
         <button id="tab-settings" class="tab-btn" onclick="switchTab('settings')">SETTINGS</button>
       </div>
 
@@ -1426,6 +1714,186 @@
         </p>
       </div>
 
+      <!-- Operator Armory & Customization Panel -->
+      <div id="operator-panel" class="room-card" style="display: none; padding: 18px; background: rgba(15, 23, 42, 0.94); border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
+          <div class="room-header" style="margin-bottom: 0; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+            <span>🛡️ 3D OPERATOR ARMORY & CUSTOMIZATION</span>
+            <span id="operator-badge-tag" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">[141] VIPER 💀</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="action-sub-btn" style="padding: 4px 10px; font-size: 10px;" onclick="randomizeCustomization()">🎲 RANDOMIZE</button>
+            <button class="action-sub-btn" style="padding: 4px 10px; font-size: 10px;" onclick="resetCustomizationView()">🔄 RESET CAM</button>
+          </div>
+        </div>
+
+        <div class="operator-layout-grid">
+          <!-- LEFT: 3D Turntable Preview Canvas -->
+          <div class="operator-turntable-container">
+            <canvas id="armory-turntable-canvas"></canvas>
+            <div class="turntable-drag-hint">DRAG TO ROTATE 360° • SCROLL TO ZOOM</div>
+            <div class="turntable-active-label" id="turntable-active-label">VANGUARD ASSAULT • TACTICAL ONYX</div>
+          </div>
+
+          <!-- RIGHT: Customization Control Drawer -->
+          <div class="operator-drawer">
+            <!-- Section 1: Callsign & Clan Tag -->
+            <div class="op-section">
+              <div class="op-section-title">PILOT CALLSIGN & SQUAD EMBLEM</div>
+              <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <input type="text" id="op-tag-input" maxlength="5" value="141" placeholder="[141]" class="op-text-input" style="width: 70px; text-transform: uppercase;" oninput="updateCustomCallsign()">
+                <input type="text" id="op-callsign-input" maxlength="12" value="VIPER" placeholder="CALLSIGN" class="op-text-input" style="flex: 1; text-transform: uppercase;" oninput="updateCustomCallsign()">
+              </div>
+              <div class="op-preset-tags">
+                <button class="op-preset-pill active" onclick="setPresetCallsign('VIPER')">VIPER</button>
+                <button class="op-preset-pill" onclick="setPresetCallsign('GHOST')">GHOST</button>
+                <button class="op-preset-pill" onclick="setPresetCallsign('REAPER')">REAPER</button>
+                <button class="op-preset-pill" onclick="setPresetCallsign('TITAN')">TITAN</button>
+                <button class="op-preset-pill" onclick="setPresetCallsign('SPECTRE')">SPECTRE</button>
+                <button class="op-preset-pill" onclick="setPresetCallsign('VALKYRIE')">VALKYRIE</button>
+              </div>
+              <div style="margin-top: 10px; font-size: 11px; color: #94a3b8; margin-bottom: 6px;">Squad Emblem Badge:</div>
+              <div class="op-emblem-row">
+                <button class="op-emblem-btn active" data-emblem="💀" onclick="setEmblem('💀', this)">💀</button>
+                <button class="op-emblem-btn" data-emblem="🦅" onclick="setEmblem('🦅', this)">🦅</button>
+                <button class="op-emblem-btn" data-emblem="⚡" onclick="setEmblem('⚡', this)">⚡</button>
+                <button class="op-emblem-btn" data-emblem="☣️" onclick="setEmblem('☣️', this)">☣️</button>
+                <button class="op-emblem-btn" data-emblem="🐺" onclick="setEmblem('🐺', this)">🐺</button>
+                <button class="op-emblem-btn" data-emblem="🎯" onclick="setEmblem('🎯', this)">🎯</button>
+                <button class="op-emblem-btn" data-emblem="👑" onclick="setEmblem('👑', this)">👑</button>
+                <button class="op-emblem-btn" data-emblem="🔥" onclick="setEmblem('🔥', this)">🔥</button>
+              </div>
+            </div>
+
+            <!-- Section 2: Chassis Suit Archetype -->
+            <div class="op-section">
+              <div class="op-section-title">CHASSIS SUIT ARCHETYPE</div>
+              <div class="op-chassis-grid">
+                <div class="op-chassis-card active" id="chassis-vanguard" onclick="setChassis('vanguard')">
+                  <div class="op-card-icon">🎖️</div>
+                  <div class="op-card-title">VANGUARD</div>
+                  <div class="op-card-sub">Assault Soldier</div>
+                </div>
+                <div class="op-chassis-card" id="chassis-phantom" onclick="setChassis('phantom')">
+                  <div class="op-card-icon">🥷</div>
+                  <div class="op-card-title">PHANTOM</div>
+                  <div class="op-card-sub">Spec-Ops Stealth</div>
+                </div>
+                <div class="op-chassis-card" id="chassis-titan" onclick="setChassis('titan')">
+                  <div class="op-card-icon">🦾</div>
+                  <div class="op-card-title">TITAN</div>
+                  <div class="op-card-sub">Heavy Juggernaut</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 3: Armor Camo & Finish -->
+            <div class="op-section">
+              <div class="op-section-title">ARMOR CAMOUFLAGE & FINISH</div>
+              <div class="op-camo-grid">
+                <button class="op-camo-card active" id="camo-onyx" onclick="setCamo('onyx')">
+                  <span class="camo-dot" style="background: #111827;"></span>
+                  <span>TACTICAL ONYX</span>
+                </button>
+                <button class="op-camo-card" id="camo-desert" onclick="setCamo('desert')">
+                  <span class="camo-dot" style="background: #b48356;"></span>
+                  <span>DESERT DIGITAL</span>
+                </button>
+                <button class="op-camo-card" id="camo-arctic" onclick="setCamo('arctic')">
+                  <span class="camo-dot" style="background: #e2e8f0;"></span>
+                  <span>ARCTIC HEX</span>
+                </button>
+                <button class="op-camo-card" id="camo-damascus" onclick="setCamo('damascus')">
+                  <span class="camo-dot" style="background: #64748b;"></span>
+                  <span>DAMASCUS STEEL</span>
+                </button>
+                <button class="op-camo-card" id="camo-hazard" onclick="setCamo('hazard')">
+                  <span class="camo-dot" style="background: #eab308;"></span>
+                  <span>HAZARD CHEVRON</span>
+                </button>
+                <button class="op-camo-card" id="camo-bloodline" onclick="setCamo('bloodline')">
+                  <span class="camo-dot" style="background: #ef4444;"></span>
+                  <span>BLOODLINE CRIMSON</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Section 4: Visor Energy & Glow -->
+            <div class="op-section">
+              <div class="op-section-title">VISOR ENERGY & REACTOR GLOW</div>
+              <div class="op-swatch-row">
+                <div class="color-swatch active" style="background: #38bdf8; color: #38bdf8;" title="Cyan Cryo" onclick="setVisorColor('#38bdf8', this)"></div>
+                <div class="color-swatch" style="background: #f43f5e; color: #f43f5e;" title="Crimson Strike" onclick="setVisorColor('#f43f5e', this)"></div>
+                <div class="color-swatch" style="background: #10b981; color: #10b981;" title="Toxic Emerald" onclick="setVisorColor('#10b981', this)"></div>
+                <div class="color-swatch" style="background: #facc15; color: #facc15;" title="Cyber Gold" onclick="setVisorColor('#facc15', this)"></div>
+                <div class="color-swatch" style="background: #c084fc; color: #c084fc;" title="Hyper Violet" onclick="setVisorColor('#c084fc', this)"></div>
+                <div class="color-swatch" style="background: #ffffff; color: #ffffff;" title="Glacial White" onclick="setVisorColor('#ffffff', this)"></div>
+                <div class="color-swatch" style="background: #f97316; color: #f97316;" title="Solar Orange" onclick="setVisorColor('#f97316', this)"></div>
+                <div class="color-swatch" style="background: #ec4899; color: #ec4899;" title="Neon Magenta" onclick="setVisorColor('#ec4899', this)"></div>
+              </div>
+            </div>
+
+            <!-- Section 5: Modular Helmet Attachments -->
+            <div class="op-section">
+              <div class="op-section-title">TACTICAL HELMET ATTACHMENT</div>
+              <div class="op-attach-grid">
+                <button class="op-attach-card active" id="attach-clean" onclick="setAttachment('clean')">
+                  <div class="op-attach-title">CLEAN VISOR</div>
+                  <div class="op-attach-desc">Minimalist ballistic helmet shell</div>
+                </button>
+                <button class="op-attach-card" id="attach-nvg" onclick="setAttachment('nvg')">
+                  <div class="op-attach-title">NVG QUAD-OPTICS</div>
+                  <div class="op-attach-desc">GPNVG-18 4-tube cluster with radiant optical lenses</div>
+                </button>
+                <button class="op-attach-card" id="attach-antennas" onclick="setAttachment('antennas')">
+                  <div class="op-attach-title">DUAL COMM-ANTENNAS</div>
+                  <div class="op-attach-desc">Dual tactical ear comm antennas with blinking data LEDs</div>
+                </button>
+                <button class="op-attach-card" id="attach-shield" onclick="setAttachment('shield')">
+                  <div class="op-attach-title">BLAST BROW SHIELD</div>
+                  <div class="op-attach-desc">Angled reinforced titanium ballistic brow plate</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Section 6: Jetpack Thruster Engine & Exhaust Plume -->
+            <div class="op-section">
+              <div class="op-section-title">JETPACK THRUSTER ENGINE</div>
+              <div class="op-jet-grid">
+                <button class="op-attach-card active" id="jet-vector" onclick="setJetpack('vector')">
+                  <div class="op-attach-title">VECTOR NACELLES</div>
+                  <div class="op-attach-desc">Twin cylindrical vectoring thruster pods</div>
+                </button>
+                <button class="op-attach-card" id="jet-quad" onclick="setJetpack('quad')">
+                  <div class="op-attach-title">QUAD EXHAUST</div>
+                  <div class="op-attach-desc">4-nozzle high-velocity boost array</div>
+                </button>
+                <button class="op-attach-card" id="jet-wings" onclick="setJetpack('wings')" style="grid-column: span 2;">
+                  <div class="op-attach-title">AERO WINGS</div>
+                  <div class="op-attach-desc">Swept-back flight fins for atmospheric control</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Section 7: First-Person Smartwatch HUD Theme -->
+            <div class="op-section">
+              <div class="op-section-title">FIRST-PERSON VIEWMODEL SMARTWATCH HUD</div>
+              <div class="op-watch-grid">
+                <button class="op-watch-pill active" id="watch-emerald" onclick="setWatchTheme('emerald')">EMERALD MILITARY</button>
+                <button class="op-watch-pill" id="watch-cyan" onclick="setWatchTheme('cyan')">CYAN CRYO</button>
+                <button class="op-watch-pill" id="watch-amber" onclick="setWatchTheme('amber')">AMBER RETRO</button>
+                <button class="op-watch-pill" id="watch-redline" onclick="setWatchTheme('redline')">REDLINE COMBAT</button>
+              </div>
+            </div>
+
+            <!-- Save & Deploy Button -->
+            <div style="margin-top: 4px;">
+              <button class="start-btn" style="margin-top: 0; padding: 12px; font-size: 13px;" onclick="saveAndDeployOperator()">💾 SAVE & CONFIRM LOADOUT</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Settings Panel -->
       <div id="settings-panel" class="room-card" style="display: none; padding: 20px; background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(56, 189, 248, 0.35); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
@@ -1440,6 +1908,7 @@
           <button id="subtab-crosshair" class="settings-subtab-btn" onclick="switchSettingsSubTab('crosshair')">🎨 RETICLE</button>
           <button id="subtab-audio" class="settings-subtab-btn" onclick="switchSettingsSubTab('audio')">🔊 AUDIO</button>
           <button id="subtab-controls" class="settings-subtab-btn" onclick="switchSettingsSubTab('controls')">⌨️ KEYBINDS</button>
+          <button id="subtab-operator" class="settings-subtab-btn" onclick="switchSettingsSubTab('operator')">🛡️ OPERATOR</button>
         </div>
 
         <!-- PANE 1: GAMEPLAY -->
@@ -1859,9 +2328,236 @@
       }
     };
 
+    window.DEFAULT_CUSTOMIZATION = {
+      callsign: 'VIPER',
+      emblem: '💀',
+      tag: '141',
+      chassis: 'vanguard', // 'vanguard' | 'phantom' | 'titan'
+      camo: 'onyx', // 'onyx' | 'desert' | 'arctic' | 'damascus' | 'hazard' | 'bloodline'
+      visorColor: '#38bdf8', // 8 radiant swatches
+      attachment: 'clean', // 'clean' | 'nvg' | 'antennas' | 'shield'
+      jetpack: 'vector', // 'vector' | 'quad' | 'wings'
+      thrusterFlameColor: '#38bdf8',
+      watchTheme: 'emerald' // 'emerald' | 'cyan' | 'amber' | 'redline'
+    };
+    window.pilotCustomization = Object.assign({}, window.DEFAULT_CUSTOMIZATION);
+
+    window.loadCustomizationFromStorage = function() {
+      try {
+        const raw = localStorage.getItem('backfire_customization_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          window.pilotCustomization = Object.assign({}, window.DEFAULT_CUSTOMIZATION, parsed);
+        }
+      } catch(e) {}
+      window.myPilotColor = window.pilotCustomization.visorColor || '#38bdf8';
+      if (window.appSettings) window.appSettings.pilotColor = window.myPilotColor;
+    };
+
+    window.saveCustomizationToStorage = function() {
+      try {
+        localStorage.setItem('backfire_customization_v1', JSON.stringify(window.pilotCustomization));
+      } catch(e) {}
+    };
+
+    window.syncCustomizationUI = function() {
+      const c = window.pilotCustomization || window.DEFAULT_CUSTOMIZATION;
+
+      // Inputs & Badges
+      const csInp = document.getElementById('op-callsign-input');
+      if (csInp && document.activeElement !== csInp) csInp.value = c.callsign || 'VIPER';
+      const tagInp = document.getElementById('op-tag-input');
+      if (tagInp && document.activeElement !== tagInp) tagInp.value = c.tag || '141';
+
+      const badge = document.getElementById('operator-badge-tag');
+      if (badge) badge.innerText = `[${c.tag || '141'}] ${c.callsign || 'VIPER'} ${c.emblem || '💀'}`;
+
+      // Presets
+      document.querySelectorAll('.op-preset-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText.trim().toUpperCase() === (c.callsign || '').toUpperCase());
+      });
+
+      // Emblems
+      document.querySelectorAll('.op-emblem-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-emblem') === c.emblem);
+      });
+
+      // Chassis
+      document.querySelectorAll('.op-chassis-card').forEach(card => {
+        card.classList.toggle('active', card.id === `chassis-${c.chassis}`);
+      });
+
+      // Camo
+      document.querySelectorAll('.op-camo-card').forEach(card => {
+        card.classList.toggle('active', card.id === `camo-${c.camo}`);
+      });
+
+      // Visor Color Swatches
+      document.querySelectorAll('.color-swatch').forEach(sw => {
+        const bg = sw.style.background;
+        sw.classList.toggle('active', bg === c.visorColor || sw.getAttribute('onclick')?.includes(c.visorColor));
+      });
+
+      // Attachments
+      document.querySelectorAll('.op-attach-card').forEach(card => {
+        if (card.id.startsWith('attach-')) {
+          card.classList.toggle('active', card.id === `attach-${c.attachment}`);
+        } else if (card.id.startsWith('jet-')) {
+          card.classList.toggle('active', card.id === `jet-${c.jetpack}`);
+        }
+      });
+
+      // Watch Themes
+      document.querySelectorAll('.op-watch-pill').forEach(pill => {
+        pill.classList.toggle('active', pill.id === `watch-${c.watchTheme}`);
+      });
+
+      // Active label in Turntable
+      const labelEl = document.getElementById('turntable-active-label');
+      if (labelEl) {
+        const chassisNames = { vanguard: 'VANGUARD ASSAULT', phantom: 'PHANTOM SPEC-OPS', titan: 'TITAN JUGGERNAUT' };
+        const camoNames = { onyx: 'TACTICAL ONYX', desert: 'DESERT DIGITAL', arctic: 'ARCTIC HEX', damascus: 'DAMASCUS STEEL', hazard: 'HAZARD CHEVRON', bloodline: 'BLOODLINE CRIMSON' };
+        labelEl.innerText = `${chassisNames[c.chassis] || 'OPERATOR'} • ${camoNames[c.camo] || 'TACTICAL'}`;
+      }
+
+      // Update Turntable 3D Model
+      if (window.armoryTurntable && window.armoryTurntable.model && window.armoryTurntable.model.userData.applyCustomization) {
+        window.armoryTurntable.model.userData.applyCustomization(c);
+      }
+      if (window.armoryTurntable && window.armoryTurntable.neonRing) {
+        window.armoryTurntable.neonRing.color.set(c.visorColor);
+      }
+    };
+
+    window.updateCustomCallsign = function() {
+      const csInp = document.getElementById('op-callsign-input');
+      const tagInp = document.getElementById('op-tag-input');
+      if (csInp) {
+        let val = csInp.value.replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 12).toUpperCase();
+        window.pilotCustomization.callsign = val || 'VIPER';
+      }
+      if (tagInp) {
+        let val = tagInp.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 5).toUpperCase();
+        window.pilotCustomization.tag = val || '141';
+      }
+      window.syncCustomizationUI();
+      window.saveCustomizationToStorage();
+    };
+
+    window.setPresetCallsign = function(name) {
+      window.pilotCustomization.callsign = name;
+      const csInp = document.getElementById('op-callsign-input');
+      if (csInp) csInp.value = name;
+      window.syncCustomizationUI();
+      window.saveCustomizationToStorage();
+      if (window.audio && window.audio.playPing) window.audio.playPing();
+    };
+
+    window.setEmblem = function(emblem, el) {
+      window.pilotCustomization.emblem = emblem;
+      window.syncCustomizationUI();
+      window.saveCustomizationToStorage();
+      if (window.audio && window.audio.playPing) window.audio.playPing();
+    };
+
+    window.setChassis = function(chassisId) {
+      window.pilotCustomization.chassis = chassisId;
+      window.syncCustomizationUI();
+      window.saveCustomizationToStorage();
+      if (window.audio && window.audio.playPing) window.audio.playPing();
+    };
+
+    window.setCamo = function(camoId) {
+      window.pilotCustomization.camo = camoId;
+      window.syncCustomizationUI();
+      window.saveCustomizationToStorage();
+      if (window.audio && window.audio.playPing) window.audio.playPing();
+    };
+
+    window.setVisorColor = function(colorHex, el) {
+      window.pilotCustomization.visorColor = colorHex;
+      window.pilotCustomization.thrusterFlameColor = colorHex;
+      window.setPilotColor(colorHex, el, true);
+      window.syncCustomizationUI();
+      window.saveCustomizationToStorage();
+    };
+
+    window.setAttachment = function(attachId) {
+      window.pilotCustomization.attachment = attachId;
+      window.syncCustomizationUI();
+      window.saveCustomizationToStorage();
+      if (window.audio && window.audio.playPing) window.audio.playPing();
+    };
+
+    window.setJetpack = function(jetpackId) {
+      window.pilotCustomization.jetpack = jetpackId;
+      window.syncCustomizationUI();
+      window.saveCustomizationToStorage();
+      if (window.audio && window.audio.playPing) window.audio.playPing();
+    };
+
+    window.setWatchTheme = function(themeId) {
+      window.pilotCustomization.watchTheme = themeId;
+      window.syncCustomizationUI();
+      window.saveCustomizationToStorage();
+      if (window.audio && window.audio.playPing) window.audio.playPing();
+    };
+
+    window.randomizeCustomization = function() {
+      const chassisList = ['vanguard', 'phantom', 'titan'];
+      const camoList = ['onyx', 'desert', 'arctic', 'damascus', 'hazard', 'bloodline'];
+      const visorList = ['#38bdf8', '#f43f5e', '#10b981', '#facc15', '#c084fc', '#ffffff', '#f97316', '#ec4899'];
+      const attachList = ['clean', 'nvg', 'antennas', 'shield'];
+      const jetList = ['vector', 'quad', 'wings'];
+      const emblemList = ['💀', '🦅', '⚡', '☣️', '🐺', '🎯', '👑', '🔥'];
+      const tagList = ['141', 'SHDW', 'APEX', 'KOR', 'SPEC', 'GHOST', 'TITAN'];
+      const callsignList = ['VIPER', 'GHOST', 'REAPER', 'TITAN', 'SPECTRE', 'VALKYRIE', 'RONIN', 'APEX', 'STRIKER'];
+      const watchList = ['emerald', 'cyan', 'amber', 'redline'];
+
+      const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+      window.pilotCustomization.chassis = pick(chassisList);
+      window.pilotCustomization.camo = pick(camoList);
+      window.pilotCustomization.visorColor = pick(visorList);
+      window.pilotCustomization.thrusterFlameColor = window.pilotCustomization.visorColor;
+      window.pilotCustomization.attachment = pick(attachList);
+      window.pilotCustomization.jetpack = pick(jetList);
+      window.pilotCustomization.emblem = pick(emblemList);
+      window.pilotCustomization.tag = pick(tagList);
+      window.pilotCustomization.callsign = pick(callsignList);
+      window.pilotCustomization.watchTheme = pick(watchList);
+
+      window.setPilotColor(window.pilotCustomization.visorColor, null, true);
+      window.syncCustomizationUI();
+      window.saveCustomizationToStorage();
+      showPopup("🎲 OPERATOR LOADOUT RANDOMIZED!", window.pilotCustomization.visorColor);
+      if (window.audio && window.audio.playPing) window.audio.playPing();
+    };
+
+    window.resetCustomizationView = function() {
+      if (window.armoryTurntable && window.armoryTurntable.resetView) {
+        window.armoryTurntable.resetView();
+        showPopup("CAMERA VIEW RESET", "#38bdf8");
+      }
+    };
+
+    window.saveAndDeployOperator = function() {
+      window.saveCustomizationToStorage();
+      if (window.applyPlayerCustomization) window.applyPlayerCustomization();
+      if (window.sendNet) {
+        window.sendNet({ type: 'customize_full', custom: window.pilotCustomization });
+      }
+      showPopup("🛡️ OPERATOR LOADOUT CONFIRMED & DEPLOYED!", "#10b981");
+      if (window.audio && window.audio.playPing) window.audio.playPing();
+      window.switchTab('online');
+    };
+
     window.myPilotColor = '#38bdf8';
     window.setPilotColor = function(colorHex, el, broadcast = true) {
       window.myPilotColor = colorHex;
+      if (window.pilotCustomization) {
+        window.pilotCustomization.visorColor = colorHex;
+        window.pilotCustomization.thrusterFlameColor = colorHex;
+      }
       if (window.appSettings) window.appSettings.pilotColor = colorHex;
       document.querySelectorAll('.color-swatch').forEach(s => {
         const bg = s.style.background;
@@ -1879,9 +2575,14 @@
       }
       if (broadcast && window.sendNet) {
         window.sendNet({ type: 'customize', color: colorHex });
+        window.sendNet({ type: 'customize_full', custom: window.pilotCustomization });
       }
       if (window.saveSettingsToStorage) window.saveSettingsToStorage();
+      if (window.saveCustomizationToStorage) window.saveCustomizationToStorage();
     };
+
+    // Load initial customization
+    window.loadCustomizationFromStorage();
 
     window.matchStarted = false;
     window.currentTab = 'online';
@@ -1983,6 +2684,16 @@
       const startBtn = document.getElementById('start-button');
       if (!startBtn) return;
       const tab = window.currentTab || 'online';
+
+      if (tab === 'operator') {
+        startBtn.innerText = "💾 CONFIRM & DEPLOY LOADOUT";
+        startBtn.disabled = false;
+        startBtn.classList.remove('waiting');
+        startBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+        startBtn.style.color = '#ffffff';
+        startBtn.style.cursor = 'pointer';
+        return;
+      }
 
       if (tab === 'solo') {
         startBtn.innerText = "DEPLOY INTO SOLO MATCH";
@@ -2402,6 +3113,10 @@
     };
 
     window.switchSettingsSubTab = function(subtab) {
+      if (subtab === 'operator') {
+        window.switchTab('operator');
+        return;
+      }
       const subtabs = ['gameplay', 'graphics', 'crosshair', 'audio', 'controls'];
       subtabs.forEach(t => {
         const btn = document.getElementById(`subtab-${t}`);
@@ -2469,19 +3184,43 @@
     window.updateGamepadSens = function(val) { window.updateSetting('gamepadSensitivity', parseFloat(val)); };
 
     window.switchTab = function(tab) {
-      if (tab !== 'settings') window.previousTab = tab;
+      if (tab !== 'settings' && tab !== 'operator') window.previousTab = tab;
       window.currentTab = tab;
-      document.getElementById('tab-online').classList.toggle('active', tab === 'online');
-      document.getElementById('tab-solo').classList.toggle('active', tab === 'solo');
-      document.getElementById('tab-settings').classList.toggle('active', tab === 'settings');
-      document.getElementById('online-panel').style.display = tab === 'online' ? 'block' : 'none';
-      document.getElementById('solo-panel').style.display = tab === 'solo' ? 'block' : 'none';
-      document.getElementById('settings-panel').style.display = tab === 'settings' ? 'block' : 'none';
+      const tabOnline = document.getElementById('tab-online');
+      const tabSolo = document.getElementById('tab-solo');
+      const tabOp = document.getElementById('tab-operator');
+      const tabSettings = document.getElementById('tab-settings');
+      if (tabOnline) tabOnline.classList.toggle('active', tab === 'online');
+      if (tabSolo) tabSolo.classList.toggle('active', tab === 'solo');
+      if (tabOp) tabOp.classList.toggle('active', tab === 'operator');
+      if (tabSettings) tabSettings.classList.toggle('active', tab === 'settings');
+
+      const onlinePane = document.getElementById('online-panel');
+      const soloPane = document.getElementById('solo-panel');
+      const opPane = document.getElementById('operator-panel');
+      const settingsPane = document.getElementById('settings-panel');
+      if (onlinePane) onlinePane.style.display = tab === 'online' ? 'block' : 'none';
+      if (soloPane) soloPane.style.display = tab === 'solo' ? 'block' : 'none';
+      if (opPane) opPane.style.display = tab === 'operator' ? 'block' : 'none';
+      if (settingsPane) settingsPane.style.display = tab === 'settings' ? 'block' : 'none';
+
+      const modalBox = document.querySelector('.modal-box');
+      if (modalBox) modalBox.classList.toggle('wide-modal', tab === 'operator');
 
       const mapBox = document.getElementById('map-selection-box');
-      if (mapBox) mapBox.style.display = (tab === 'settings') ? 'none' : 'block';
+      if (mapBox) mapBox.style.display = (tab === 'settings' || tab === 'operator') ? 'none' : 'block';
       const ctrlGrid = document.getElementById('lobby-controls-grid');
-      if (ctrlGrid) ctrlGrid.style.display = (tab === 'settings') ? 'none' : 'grid';
+      if (ctrlGrid) ctrlGrid.style.display = (tab === 'settings' || tab === 'operator') ? 'none' : 'grid';
+
+      if (tab === 'operator') {
+        if (window.syncCustomizationUI) window.syncCustomizationUI();
+        if (window.armoryTurntable) {
+          window.armoryTurntable.active = true;
+          setTimeout(() => { if (window.armoryTurntable.resize) window.armoryTurntable.resize(); }, 40);
+        }
+      } else if (window.armoryTurntable) {
+        window.armoryTurntable.active = false;
+      }
 
       if (tab === 'settings' && window.renderKeybindsUI) window.renderKeybindsUI();
       window.updateStartButtonState();
@@ -2490,6 +3229,8 @@
 
     setTimeout(() => {
       window.loadSettings();
+      if (window.loadCustomizationFromStorage) window.loadCustomizationFromStorage();
+      if (window.syncCustomizationUI) window.syncCustomizationUI();
       window.updateRoleBadge();
       window.updateStartButtonState();
     }, 100);
@@ -3733,6 +4474,261 @@
       return tex;
     }
 
+    const camoTextureCache = {};
+    function createProceduralCamoTexture(camoType) {
+      camoType = camoType || 'onyx';
+      if (camoTextureCache[camoType]) return camoTextureCache[camoType];
+
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+
+      if (camoType === 'desert') {
+        // Desert Digital Camouflage (pixelated military blocks)
+        ctx.fillStyle = '#b89668'; // coyote tan base
+        ctx.fillRect(0, 0, 512, 512);
+        const palette = ['#8c6f4a', '#dfc59e', '#5a4630', '#2e2417', '#c9af88'];
+        const blockSize = 16;
+        for (let y = 0; y < 512; y += blockSize) {
+          for (let x = 0; x < 512; x += blockSize) {
+            const n = Math.sin(x * 0.04) * Math.cos(y * 0.04) + Math.sin((x + y) * 0.02);
+            if (n > 0.1) {
+              const pIdx = Math.floor(Math.abs(Math.sin(x * 12.3 + y * 7.7) * palette.length)) % palette.length;
+              ctx.fillStyle = palette[pIdx];
+              ctx.fillRect(x, y, blockSize, blockSize);
+            }
+          }
+        }
+      } else if (camoType === 'arctic') {
+        // Arctic Hex (Tactical white/slate geometric hex grid)
+        ctx.fillStyle = '#e2e8f0'; // bright arctic snow white
+        ctx.fillRect(0, 0, 512, 512);
+
+        // Splinter facets
+        ctx.fillStyle = '#94a3b8';
+        for (let i = 0; i < 24; i++) {
+          ctx.beginPath();
+          const ox = ((i * 73) % 480) + 16;
+          const oy = ((i * 109) % 480) + 16;
+          ctx.moveTo(ox, oy);
+          ctx.lineTo(ox + 80, oy + 40);
+          ctx.lineTo(ox + 40, oy + 90);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.fillStyle = '#334155';
+        for (let i = 0; i < 16; i++) {
+          ctx.beginPath();
+          const ox = ((i * 127) % 460) + 20;
+          const oy = ((i * 89) % 460) + 20;
+          ctx.moveTo(ox, oy);
+          ctx.lineTo(ox + 50, oy + 20);
+          ctx.lineTo(ox + 20, oy + 60);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // Tactical hexagonal grid overlay
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.lineWidth = 1.5;
+        const hexR = 24;
+        const hexH = hexR * Math.sqrt(3);
+        for (let r = 0; r < 512 + hexH; r += hexH) {
+          for (let q = 0; q < 512 + hexR * 3; q += hexR * 3) {
+            for (let k = 0; k < 2; k++) {
+              const cx = q + k * hexR * 1.5;
+              const cy = r + k * (hexH / 2);
+              ctx.beginPath();
+              for (let a = 0; a < 6; a++) {
+                const ang = (Math.PI / 3) * a;
+                const hx = cx + hexR * Math.cos(ang);
+                const hy = cy + hexR * Math.sin(ang);
+                if (a === 0) ctx.moveTo(hx, hy);
+                else ctx.lineTo(hx, hy);
+              }
+              ctx.closePath();
+              ctx.stroke();
+            }
+          }
+        }
+      } else if (camoType === 'damascus') {
+        // Damascus Steel (wavy topographic folded steel ripples)
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 0, 512, 512);
+        for (let y = 0; y < 512; y += 4) {
+          const wave = Math.sin(y * 0.05) * 40 + Math.sin(y * 0.12) * 15;
+          const colLum = Math.floor(110 + Math.sin(y * 0.08) * 85);
+          ctx.strokeStyle = `rgb(${colLum}, ${colLum + 10}, ${colLum + 25})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          for (let x = 0; x <= 512; x += 16) {
+            const offY = y + Math.sin((x + wave) * 0.04) * 12 + Math.cos(x * 0.08) * 6;
+            ctx.lineTo(x, offY);
+          }
+          ctx.stroke();
+        }
+      } else if (camoType === 'hazard') {
+        // Hazard Chevron (45-degree yellow & black safety stripes)
+        ctx.fillStyle = '#111827';
+        ctx.fillRect(0, 0, 512, 512);
+        ctx.fillStyle = '#eab308';
+        const stripeW = 48;
+        for (let i = -512; i < 1024; i += stripeW * 2) {
+          ctx.beginPath();
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i + stripeW, 0);
+          ctx.lineTo(i + stripeW + 512, 512);
+          ctx.lineTo(i + 512, 512);
+          ctx.closePath();
+          ctx.fill();
+        }
+        // Distressed industrial grime speckles
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        for (let s = 0; s < 400; s++) {
+          const sx = Math.random() * 512;
+          const sy = Math.random() * 512;
+          ctx.fillRect(sx, sy, 2 + Math.random() * 4, 2 + Math.random() * 4);
+        }
+      } else if (camoType === 'bloodline') {
+        // Bloodline Crimson (deep crimson splatter on anodized tungsten)
+        ctx.fillStyle = '#18181b';
+        ctx.fillRect(0, 0, 512, 512);
+        // Crimson veins & splatter
+        const splatColors = ['#991b1b', '#b91c1c', '#dc2626', '#ef4444', '#7f1d1d'];
+        for (let b = 0; b < 28; b++) {
+          const bx = ((b * 97) % 480) + 16;
+          const by = ((b * 131) % 480) + 16;
+          const bRad = 20 + ((b * 17) % 40);
+          ctx.fillStyle = splatColors[b % splatColors.length];
+          ctx.beginPath();
+          ctx.arc(bx, by, bRad, 0, Math.PI * 2);
+          ctx.fill();
+          // Radiating droplets
+          for (let d = 0; d < 6; d++) {
+            const ang = (d / 6) * Math.PI * 2 + (b * 0.5);
+            const dist = bRad * (1.3 + Math.sin(d + b) * 0.4);
+            ctx.beginPath();
+            ctx.arc(bx + Math.cos(ang) * dist, by + Math.sin(ang) * dist, 3 + (d % 3), 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      } else {
+        // Tactical Onyx (Deep matte carbon weave with anisotropic sheen)
+        ctx.fillStyle = '#111827';
+        ctx.fillRect(0, 0, 512, 512);
+        ctx.fillStyle = '#1f2937';
+        for (let y = 0; y < 512; y += 12) {
+          for (let x = 0; x < 512; x += 12) {
+            if ((Math.floor(x / 12) + Math.floor(y / 12)) % 2 === 0) {
+              ctx.fillRect(x, y, 12, 12);
+            }
+          }
+        }
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 512; i += 6) {
+          ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 2);
+      camoTextureCache[camoType] = tex;
+      return tex;
+    }
+
+    function createCallsignBillboard(callsign, emblem, tag, teamColorHex) {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 128;
+      const ctx = c.getContext('2d');
+
+      let colStr = typeof teamColorHex === 'string' ? teamColorHex : ('#' + ('000000' + (teamColorHex || 0x38bdf8).toString(16)).slice(-6));
+
+      function drawTag() {
+        ctx.clearRect(0, 0, 512, 128);
+
+        // Sleek semi-transparent dark rounded badge
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.strokeStyle = colStr;
+        ctx.lineWidth = 3.5;
+
+        // Rounded badge path
+        const x = 20, y = 14, w = 472, h = 100, rad = 14;
+        ctx.beginPath();
+        ctx.moveTo(x + rad, y);
+        ctx.lineTo(x + w - rad, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
+        ctx.lineTo(x + w, y + h - rad);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+        ctx.lineTo(x + rad, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
+        ctx.lineTo(x, y + rad);
+        ctx.quadraticCurveTo(x, y, x + rad, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Left team indicator tab
+        ctx.fillStyle = colStr;
+        ctx.fillRect(x + 2, y + 10, 8, h - 20);
+
+        // Emblem icon
+        ctx.font = '48px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(emblem || '💀', x + 50, y + h / 2);
+
+        // Callsign & Clan Tag
+        ctx.textAlign = 'left';
+        ctx.fillStyle = colStr;
+        ctx.font = 'bold 22px monospace';
+        const displayTag = tag ? `[${tag}] ` : '';
+        ctx.fillText(displayTag, x + 90, y + 42);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 36px "Segoe UI", system-ui, sans-serif';
+        ctx.fillText((callsign || 'VIPER').toUpperCase(), x + 90 + (displayTag ? ctx.measureText(displayTag).width * 0.9 : 0), y + 42);
+
+        // Subtitle status pip
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(x + 96, y + 78, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 16px monospace';
+        ctx.fillText('ONLINE // COMBAT-READY', x + 110, y + 83);
+      }
+
+      drawTag();
+
+      const tex = new THREE.CanvasTexture(c);
+      const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(2.4, 0.6, 1.0);
+      sprite.position.set(0, 2.3, 0);
+
+      return {
+        sprite: sprite,
+        canvas: c,
+        ctx: ctx,
+        texture: tex,
+        update: function(newCallsign, newEmblem, newTag, newColor) {
+          if (newCallsign) callsign = newCallsign;
+          if (newEmblem) emblem = newEmblem;
+          if (newTag) tag = newTag;
+          if (newColor) colStr = typeof newColor === 'string' ? newColor : ('#' + ('000000' + (newColor || 0x38bdf8).toString(16)).slice(-6));
+          drawTag();
+          tex.needsUpdate = true;
+        }
+      };
+    }
+
     function createProceduralWatchTexture() {
       const c = document.createElement('canvas'); c.width = 256; c.height = 256;
       const ctx = c.getContext('2d');
@@ -4186,6 +5182,7 @@
         emissiveIntensity: 2.2
       });
       window.fpArmsNeonMat = matArmNeon;
+      window.fpArmsCarbonMat = matArmCarbon;
       const matGloveLeather = new THREE.MeshStandardMaterial({ color: 0x1e2738, roughness: 0.65, metalness: 0.25 });
       const matTprRibs = new THREE.MeshStandardMaterial({ color: 0x0f1520, roughness: 0.45, metalness: 0.6 });
       const matWatchScreen = new THREE.MeshBasicMaterial({ map: tacticalWatch.texture });
@@ -4477,6 +5474,31 @@
     const fpArms = createFirstPersonArms();
     weaponRig.add(fpArms.group);
     window.fpArms = fpArms;
+
+    window.applyPlayerCustomization = function() {
+      const c = window.pilotCustomization || window.DEFAULT_CUSTOMIZATION;
+      if (!c) return;
+
+      const colHex = c.visorColor || 0x38bdf8;
+      window.myPilotColor = colHex;
+
+      if (window.fpArmsNeonMat) {
+        window.fpArmsNeonMat.color.set(colHex);
+        window.fpArmsNeonMat.emissive.set(colHex);
+      }
+      if (window.matGunBlue) {
+        window.matGunBlue.color.set(colHex);
+        window.matGunBlue.emissive.set(colHex);
+      }
+      if (window.fpArmsCarbonMat) {
+        window.fpArmsCarbonMat.map = createProceduralCamoTexture(c.camo || 'onyx');
+        window.fpArmsCarbonMat.needsUpdate = true;
+      }
+      if (window.updateCrosshairColor) {
+        window.updateCrosshairColor();
+      }
+    };
+    window.applyPlayerCustomization();
 
     weaponRig.position.set(0.32, -0.28, -0.6);
     let gunKickOffset = 0;
@@ -5435,10 +6457,26 @@
     remoteTetherLine.visible = false; scene.add(remoteTetherLine);
 
     // --- REMOTE OPPONENT 3D ACTOR (CYBERNETIC ARENA MECH PILOT) ---
-    function createOpponentMesh(colorHex) {
+    function createOpponentMesh(colorHex, initialCustom, addToScene = true) {
       const g = new THREE.Group();
+      const customData = Object.assign({
+        callsign: 'VIPER',
+        emblem: '💀',
+        tag: '141',
+        chassis: 'vanguard',
+        camo: 'onyx',
+        visorColor: colorHex,
+        attachment: 'clean',
+        jetpack: 'vector',
+        thrusterFlameColor: colorHex
+      }, initialCustom || {});
+
+      const effectiveColor = customData.visorColor || colorHex;
+      const effectiveCamoTex = createProceduralCamoTexture(customData.camo || 'onyx');
+
       const matArmorDark = new THREE.MeshStandardMaterial({
         color: 0x182030,
+        map: effectiveCamoTex,
         roughness: 0.35,
         metalness: 0.8,
         normalMap: carbonFiberNormalTex,
@@ -5446,22 +6484,22 @@
       });
       const matArmorSteel = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.22, metalness: 0.95 });
       const matVisorGlow = new THREE.MeshStandardMaterial({
-        color: colorHex,
+        color: effectiveColor,
         map: visorHudTex,
-        emissive: colorHex,
+        emissive: effectiveColor,
         emissiveMap: visorHudTex,
         emissiveIntensity: 2.5,
         roughness: 0.08,
         metalness: 0.9
       });
       const matReactorCore = new THREE.MeshStandardMaterial({
-        color: colorHex,
-        emissive: colorHex,
+        color: effectiveColor,
+        emissive: effectiveColor,
         emissiveIntensity: 3.5,
         roughness: 0.1,
         metalness: 0.5
       });
-      const matTeamTrim = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.7 });
+      const matTeamTrim = new THREE.MeshStandardMaterial({ color: effectiveColor, roughness: 0.3, metalness: 0.7 });
       const matHazard = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.4, metalness: 0.6 });
       const matRubber = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.88, metalness: 0.1 });
       const matPiston = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.08, metalness: 1.0 });
@@ -5614,6 +6652,8 @@
       const jetHeatSink = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.14), matArmorSteel);
       jetHeatSink.position.set(0, 0.24, 0);
 
+      // Jetpack Style 1: Vector Nacelles (Twin heavy turbines)
+      const jetpackVariantVector = new THREE.Group();
       const podL = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.52, 12), matArmorSteel);
       podL.position.set(-0.24, -0.02, 0);
       const podR = podL.clone(); podR.position.x = 0.24;
@@ -5622,19 +6662,52 @@
       nozzleL.rotation.x = Math.PI / 2; nozzleL.position.set(-0.24, -0.28, 0);
       const nozzleR = nozzleL.clone(); nozzleR.position.x = 0.24;
 
-      // 3D Animated Thruster Jet Exhaust Flames
       const flameGeo = new THREE.ConeGeometry(0.1, 0.65, 10);
       flameGeo.rotateX(Math.PI); flameGeo.translate(0, -0.32, 0);
-      const flameMat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+      const flameMat = new THREE.MeshBasicMaterial({ color: effectiveColor, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
       const flameL = new THREE.Mesh(flameGeo, flameMat);
       flameL.position.set(-0.24, -0.28, 0);
       const flameR = flameL.clone(); flameR.position.x = 0.24;
+      jetpackVariantVector.add(podL, podR, nozzleL, nozzleR, flameL, flameR);
 
-      const beaconLight = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshBasicMaterial({ color: colorHex }));
+      // Jetpack Style 2: Quad Exhaust (4-nozzle high-velocity boost array)
+      const jetpackVariantQuad = new THREE.Group();
+      for (let q = 0; q < 4; q++) {
+        const qx = (q % 2 === 0) ? -0.21 : 0.21;
+        const qy = (q < 2) ? 0.08 : -0.16;
+        const qPod = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.065, 0.28, 8), matArmorSteel);
+        qPod.position.set(qx, qy, 0.02);
+        const qNoz = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.015, 8, 12), matTeamTrim);
+        qNoz.rotation.x = Math.PI / 2; qNoz.position.set(qx, qy - 0.14, 0.02);
+        const qFlGeo = new THREE.ConeGeometry(0.065, 0.45, 8);
+        qFlGeo.rotateX(Math.PI); qFlGeo.translate(0, -0.22, 0);
+        const qFl = new THREE.Mesh(qFlGeo, flameMat);
+        qFl.position.set(qx, qy - 0.14, 0.02);
+        jetpackVariantQuad.add(qPod, qNoz, qFl);
+      }
+
+      // Jetpack Style 3: Aero Wings (Swept flight fins for atmospheric glide)
+      const jetpackVariantWings = new THREE.Group();
+      const wingL = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.03, 0.26), matArmorDark);
+      wingL.position.set(-0.36, 0.04, -0.04); wingL.rotation.set(-0.15, 0.2, 0.35);
+      const wingRimL = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.035, 0.04), matTeamTrim);
+      wingRimL.position.set(-0.36, 0.04, 0.08); wingRimL.rotation.set(-0.15, 0.2, 0.35);
+      const wingR = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.03, 0.26), matArmorDark);
+      wingR.position.set(0.36, 0.04, -0.04); wingR.rotation.set(-0.15, -0.2, -0.35);
+      const wingRimR = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.035, 0.04), matTeamTrim);
+      wingRimR.position.set(0.36, 0.04, 0.08); wingRimR.rotation.set(-0.15, -0.2, -0.35);
+      jetpackVariantWings.add(wingL, wingRimL, wingR, wingRimR, podL.clone(), podR.clone(), flameL.clone(), flameR.clone());
+
+      const beaconLight = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshBasicMaterial({ color: effectiveColor }));
       beaconLight.position.set(0, 0.29, 0);
 
-      jetpackGroup.add(jetBody, jetHeatSink, podL, podR, nozzleL, nozzleR, flameL, flameR, beaconLight);
+      jetpackGroup.add(jetBody, jetHeatSink, jetpackVariantVector, jetpackVariantQuad, jetpackVariantWings, beaconLight);
       torsoGroup.add(jetpackGroup);
+
+      // Jetpack visibility
+      jetpackVariantVector.visible = (!customData.jetpack || customData.jetpack === 'vector');
+      jetpackVariantQuad.visible = (customData.jetpack === 'quad');
+      jetpackVariantWings.visible = (customData.jetpack === 'wings');
 
       // --- 4. ARTICULATED HEAD & CYBERNETIC HELMET ---
       const headGroup = new THREE.Group();
@@ -5669,8 +6742,44 @@
       const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.32, 6), matArmorSteel);
       antenna.position.set(-0.18, 0.34, -0.06); antenna.rotation.z = 0.18;
 
-      headGroup.add(helmet, crest, mandibleL, mandibleR, rebreatherL, rebreatherR, optics1, optics2, visor, earComm, antenna);
+      // Modular Tactical Helmet Attachments
+      const nvgCluster = new THREE.Group();
+      const nvgMount = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.08), matArmorSteel);
+      nvgMount.position.set(0, 0.28, 0.21);
+      nvgCluster.add(nvgMount);
+      const matNvgLens = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+      for (let t = 0; t < 4; t++) {
+        const xOffset = -0.09 + t * 0.06;
+        const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.024, 0.12, 8), matArmorSteel);
+        tube.rotation.x = Math.PI / 2; tube.position.set(xOffset, 0.25, 0.25);
+        const lens = new THREE.Mesh(new THREE.CircleGeometry(0.019, 8), matNvgLens);
+        lens.position.set(xOffset, 0.25, 0.312);
+        nvgCluster.add(tube, lens);
+      }
+
+      const antennaCluster = new THREE.Group();
+      const antL = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.009, 0.42, 6), matArmorSteel);
+      antL.position.set(-0.20, 0.38, -0.08); antL.rotation.set(0.1, 0, 0.22);
+      const ledL = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), new THREE.MeshBasicMaterial({ color: 0x10b981 }));
+      ledL.position.set(-0.25, 0.58, -0.09);
+      const antR = antL.clone(); antR.position.x = 0.20; antR.rotation.z = -0.22;
+      const ledR = ledL.clone(); ledR.position.x = 0.25;
+      antennaCluster.add(antL, ledL, antR, ledR);
+
+      const blastShield = new THREE.Group();
+      const shieldPlate = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.12, 0.06), matArmorSteel);
+      shieldPlate.position.set(0, 0.26, 0.21); shieldPlate.rotation.x = -0.15;
+      const shieldStripe = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.02, 0.065), matHazard);
+      shieldStripe.position.set(0, 0.26, 0.21); shieldStripe.rotation.x = -0.15;
+      blastShield.add(shieldPlate, shieldStripe);
+
+      headGroup.add(helmet, crest, mandibleL, mandibleR, rebreatherL, rebreatherR, optics1, optics2, visor, earComm, antenna, nvgCluster, antennaCluster, blastShield);
       torsoGroup.add(headGroup);
+
+      // Attachment visibility
+      nvgCluster.visible = (customData.attachment === 'nvg');
+      antennaCluster.visible = (customData.attachment === 'antennas');
+      blastShield.visible = (customData.attachment === 'shield');
 
       // --- 5. ARTICULATED ARMS & HELD TACTICAL WEAPON ---
       // Left Arm Pivot Hierarchy
@@ -5742,6 +6851,11 @@
       shoulderPivotR.rotation.set(0.35, -0.2, 0.1);
       elbowPivotR.rotation.set(-0.55, 0, 0);
 
+      // 3D In-World Floating Callsign Billboard Sprite
+      const billboard = createCallsignBillboard(customData.callsign, customData.emblem, customData.tag, effectiveColor);
+      g.add(billboard.sprite);
+      g.userData.billboard = billboard;
+
       // UserData References for Animations, Hit Feedback & Networking
       g.userData.flameL = flameL;
       g.userData.flameR = flameR;
@@ -5756,6 +6870,63 @@
           matArmorDark.emissiveIntensity = 0;
         }, 85);
       };
+
+      g.userData.applyCustomization = function(c) {
+        if (!c) return;
+        if (c.camo) {
+          const cTex = createProceduralCamoTexture(c.camo);
+          matArmorDark.map = cTex;
+          matArmorDark.needsUpdate = true;
+        }
+        if (c.visorColor) {
+          const vCol = new THREE.Color(c.visorColor);
+          matVisorGlow.color.copy(vCol);
+          matVisorGlow.emissive.copy(vCol);
+          matReactorCore.color.copy(vCol);
+          matReactorCore.emissive.copy(vCol);
+          matTeamTrim.color.copy(vCol);
+          if (g.userData.soldierScene) {
+            g.userData.soldierScene.traverse(function(child) {
+              if (child.isMesh && child.material && child.material.name === 'Vanguard_VisorMat') {
+                child.material.color.copy(vCol);
+                child.material.emissive.copy(vCol);
+              }
+            });
+          }
+        }
+        if (c.attachment !== undefined) {
+          nvgCluster.visible = (c.attachment === 'nvg');
+          antennaCluster.visible = (c.attachment === 'antennas');
+          blastShield.visible = (c.attachment === 'shield');
+        }
+        if (c.jetpack !== undefined) {
+          jetpackVariantVector.visible = (c.jetpack === 'vector');
+          jetpackVariantQuad.visible = (c.jetpack === 'quad');
+          jetpackVariantWings.visible = (c.jetpack === 'wings');
+        }
+        const thrusterColHex = c.thrusterFlameColor || c.visorColor;
+        if (thrusterColHex) {
+          const tCol = new THREE.Color(thrusterColHex);
+          flameMat.color.copy(tCol);
+        }
+        if (billboard && (c.callsign || c.emblem || c.tag || c.visorColor)) {
+          billboard.update(c.callsign, c.emblem, c.tag, c.visorColor);
+        }
+        if (c.chassis) {
+          if (c.chassis === 'titan') {
+            proceduralBody.visible = true;
+            if (g.userData.soldierScene) g.userData.soldierScene.visible = false;
+          } else {
+            if (g.userData.soldierScene) {
+              g.userData.soldierScene.visible = true;
+              proceduralBody.visible = false;
+            } else {
+              proceduralBody.visible = true;
+            }
+          }
+        }
+      };
+
       g.userData.animState = {
         gaitPhase: 0,
         idleTime: 0,
@@ -5791,8 +6962,8 @@
               child.receiveShadow = true;
               if (child.material) {
                 if (child.material.name === 'Vanguard_VisorMat') {
-                  child.material.color.set(colorHex);
-                  child.material.emissive.set(colorHex);
+                  child.material.color.set(effectiveColor);
+                  child.material.emissive.set(effectiveColor);
                   child.material.emissiveIntensity = 2.4;
                 }
               }
@@ -5843,8 +7014,12 @@
           }
 
           // Real 3D Vanguard Soldier takes over smoothly!
-          if (g.userData.proceduralBody) {
-            g.userData.proceduralBody.visible = false;
+          if (customData.chassis === 'titan') {
+            soldier.visible = false;
+            if (g.userData.proceduralBody) g.userData.proceduralBody.visible = true;
+          } else {
+            if (g.userData.proceduralBody) g.userData.proceduralBody.visible = false;
+            soldier.visible = true;
           }
           g.add(soldier);
           g.userData.soldierScene = soldier;
@@ -5854,7 +7029,7 @@
       }
 
       g.position.set(0, 1.0, -22);
-      scene.add(g);
+      if (addToScene !== false) scene.add(g);
       return g;
     }
 
@@ -5868,6 +7043,152 @@
       radius: 0.7,
       alive: true
     };
+
+    // --- 3D INTERACTIVE ARMORY TURNTABLE SHOWCASE ---
+    function initArmoryTurntable() {
+      const canvas = document.getElementById('armory-turntable-canvas');
+      if (!canvas) return;
+
+      const width = canvas.clientWidth || 460;
+      const height = canvas.clientHeight || 420;
+
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+      renderer.setSize(width, height, false);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      const armoryScene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+      camera.position.set(0, 1.25, 3.6);
+
+      // Armory Pedestal Platform
+      const pedestalGeo = new THREE.CylinderGeometry(1.2, 1.3, 0.15, 32);
+      const pedestalMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4, metalness: 0.8 });
+      const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
+      pedestal.position.set(0, -0.08, 0);
+      pedestal.receiveShadow = true;
+
+      // Neon glowing ring around pedestal
+      const ringGeo = new THREE.TorusGeometry(1.21, 0.02, 8, 32);
+      ringGeo.rotateX(Math.PI / 2);
+      const ringMat = new THREE.MeshBasicMaterial({ color: (window.pilotCustomization && window.pilotCustomization.visorColor) || 0x38bdf8 });
+      const neonRing = new THREE.Mesh(ringGeo, ringMat);
+      neonRing.position.set(0, -0.01, 0);
+
+      // Floor Shadow Grid
+      const gridHelper = new THREE.GridHelper(6, 12, 0x38bdf8, 0x1e293b);
+      gridHelper.position.set(0, -0.15, 0);
+
+      armoryScene.add(pedestal, neonRing, gridHelper);
+
+      // Studio Lighting (Key, Fill, Rim)
+      const ambLight = new THREE.AmbientLight(0xffffff, 0.7);
+      const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
+      keyLight.position.set(2.5, 3.5, 2.5);
+      keyLight.castShadow = true;
+
+      const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.7);
+      fillLight.position.set(-2.5, 2.0, 2.0);
+
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 2.5);
+      rimLight.position.set(0, 2.8, -3.0);
+
+      armoryScene.add(ambLight, keyLight, fillLight, rimLight);
+
+      // Create preview model
+      const initialCustom = window.pilotCustomization || window.DEFAULT_CUSTOMIZATION;
+      const model = createOpponentMesh(initialCustom.visorColor || 0x38bdf8, initialCustom, false);
+      model.position.set(0, 0, 0);
+      armoryScene.add(model);
+
+      let targetYaw = 0;
+      let targetPitch = 0.08;
+      let currentYaw = 0;
+      let currentPitch = 0.08;
+      let isDragging = false;
+      let lastX = 0;
+      let lastY = 0;
+      let idleTime = 0;
+
+      // Mouse / Touch Drag to Rotate
+      function onPointerDown(e) {
+        isDragging = true;
+        lastX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        lastY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+        idleTime = 0;
+      }
+      function onPointerMove(e) {
+        if (!isDragging) return;
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+        const dx = clientX - lastX;
+        const dy = clientY - lastY;
+        lastX = clientX;
+        lastY = clientY;
+        targetYaw += dx * 0.014;
+        targetPitch = Math.max(-0.25, Math.min(0.35, targetPitch + dy * 0.008));
+        idleTime = 0;
+      }
+      function onPointerUp() {
+        isDragging = false;
+      }
+
+      canvas.addEventListener('mousedown', onPointerDown);
+      window.addEventListener('mousemove', onPointerMove);
+      window.addEventListener('mouseup', onPointerUp);
+
+      canvas.addEventListener('touchstart', onPointerDown, { passive: true });
+      window.addEventListener('touchmove', onPointerMove, { passive: true });
+      window.addEventListener('touchend', onPointerUp);
+
+      const turntable = {
+        active: false,
+        renderer: renderer,
+        scene: armoryScene,
+        camera: camera,
+        model: model,
+        neonRing: ringMat,
+        resize: function() {
+          const w = canvas.clientWidth;
+          const h = canvas.clientHeight;
+          if (w > 0 && h > 0) {
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h, false);
+          }
+        },
+        resetView: function() {
+          targetYaw = 0;
+          targetPitch = 0.08;
+        },
+        update: function(dt) {
+          if (!turntable.active) return;
+          if (!isDragging) {
+            idleTime += dt;
+            if (idleTime > 1.0) {
+              targetYaw += dt * 0.35; // smooth showcase rotation
+            }
+          }
+          currentYaw += (targetYaw - currentYaw) * 0.12;
+          currentPitch += (targetPitch - currentPitch) * 0.12;
+
+          model.rotation.y = currentYaw;
+          camera.position.y = 1.25 + currentPitch * 1.5;
+          camera.lookAt(0, 1.05, 0);
+
+          if (model.userData && model.userData.mixer) {
+            model.userData.mixer.update(dt);
+          }
+
+          renderer.render(armoryScene, camera);
+        }
+      };
+
+      window.armoryTurntable = turntable;
+      if (window.syncCustomizationUI) window.syncCustomizationUI();
+    }
+    setTimeout(initArmoryTurntable, 80);
 
     // --- COMBAT FEEDBACK & DESTRUCTIBLE ENVIRONMENT HELPERS ---
     function damagePillar(idx, amount = 1, broadcast = true) {
@@ -6186,6 +7507,14 @@
         }
         if (window.updateRoleBadge) window.updateRoleBadge();
         if (window.updateStartButtonState) window.updateStartButtonState();
+
+        // Broadcast pilot customization to connected peer
+        try {
+          conn.send({
+            type: 'customize_full',
+            custom: window.pilotCustomization || window.DEFAULT_CUSTOMIZATION
+          });
+        } catch (e) {}
       });
 
       conn.on('data', (msg) => {
@@ -6291,6 +7620,11 @@
               visorMesh.material.color.set(msg.color);
               visorMesh.material.emissive.set(msg.color);
             }
+          }
+        }
+        else if (msg.type === 'customize_full') {
+          if (remoteOpponent && remoteOpponent.mesh && remoteOpponent.mesh.userData && remoteOpponent.mesh.userData.applyCustomization) {
+            remoteOpponent.mesh.userData.applyCustomization(msg.custom);
           }
         }
         else if (msg.type === 'damage_pillar') {
@@ -6989,6 +8323,10 @@
 
     startBtn.addEventListener('click', () => {
       const tab = window.currentTab || 'online';
+      if (tab === 'operator') {
+        window.saveAndDeployOperator();
+        return;
+      }
       if (tab === 'settings') {
         window.closeSettingsMenu();
         return;
@@ -7017,6 +8355,20 @@
         }
       } else if (tab === 'solo') {
         if (!matchStarted) {
+          // Customize the solo Bot AI opponent with elite nemesis loadout
+          if (remoteOpponent && remoteOpponent.mesh && remoteOpponent.mesh.userData && remoteOpponent.mesh.userData.applyCustomization) {
+            remoteOpponent.mesh.userData.applyCustomization({
+              callsign: 'NEMESIS-01',
+              emblem: '💀',
+              tag: 'AI',
+              chassis: 'titan',
+              camo: 'hazard',
+              visorColor: '#ef4444',
+              attachment: 'nvg',
+              jetpack: 'quad',
+              thrusterFlameColor: '#f97316'
+            });
+          }
           window.startMatchCountdown();
           return;
         }
@@ -8251,31 +9603,43 @@ updateHUD(dt);
       if (tacticalWatch && tacticalWatch.ctx) {
         const wCtx = tacticalWatch.ctx;
         wCtx.fillStyle = '#030712'; wCtx.fillRect(14, 14, 228, 228);
-        wCtx.strokeStyle = '#10b981'; wCtx.lineWidth = 3;
+
+        // Dynamic Smartwatch HUD Theme Colors
+        const theme = window.pilotCustomization ? (window.pilotCustomization.watchTheme || 'emerald') : 'emerald';
+        let tPrimary = '#10b981', tClock = '#38bdf8', tAz = '#f59e0b', tPulse = '#ef4444';
+        if (theme === 'cyan') {
+          tPrimary = '#38bdf8'; tClock = '#7dd3fc'; tAz = '#0284c7'; tPulse = '#38bdf8';
+        } else if (theme === 'amber') {
+          tPrimary = '#f59e0b'; tClock = '#fbbf24'; tAz = '#d97706'; tPulse = '#f59e0b';
+        } else if (theme === 'redline') {
+          tPrimary = '#ef4444'; tClock = '#f87171'; tAz = '#dc2626'; tPulse = '#f43f5e';
+        }
+
+        wCtx.strokeStyle = tPrimary; wCtx.lineWidth = 3;
         wCtx.strokeRect(12, 12, 232, 232);
 
-        wCtx.fillStyle = '#10b981'; wCtx.font = 'bold 15px monospace';
+        wCtx.fillStyle = tPrimary; wCtx.font = 'bold 15px monospace';
         wCtx.fillText('■■■■ 98%  GPS:LOCK', 24, 40);
 
         const matchSec = Math.floor(currentTime * 0.001);
         const mm = String(Math.floor(matchSec / 60)).padStart(2, '0');
         const ss = String(matchSec % 60).padStart(2, '0');
         const ms1 = Math.floor((currentTime % 1000) / 100);
-        wCtx.fillStyle = '#38bdf8'; wCtx.font = 'bold 36px monospace';
+        wCtx.fillStyle = tClock; wCtx.font = 'bold 36px monospace';
         wCtx.fillText(`${mm}:${ss}.${ms1}`, 32, 100);
 
         const deg = Math.round(((-player.cameraYaw * 180 / Math.PI) % 360 + 360) % 360);
         const cardDirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
         const card = cardDirs[Math.floor(((deg + 22.5) % 360) / 45)];
-        wCtx.fillStyle = '#f59e0b'; wCtx.font = 'bold 20px monospace';
+        wCtx.fillStyle = tAz; wCtx.font = 'bold 20px monospace';
         wCtx.fillText(`AZ ${deg}° [${card}]`, 28, 145);
 
-        wCtx.fillStyle = '#ef4444'; wCtx.font = 'bold 16px monospace';
+        wCtx.fillStyle = tPulse; wCtx.font = 'bold 16px monospace';
         const hr = Math.round(132 + Math.min(player.vel.length() * 1.5, 50));
         wCtx.fillText(`PULSE: ${hr} BPM [NOMINAL]`, 24, 185);
 
         const pulseOffset = (currentTime * 0.08) % 100;
-        wCtx.strokeStyle = '#ef4444'; wCtx.lineWidth = 2.5;
+        wCtx.strokeStyle = tPulse; wCtx.lineWidth = 2.5;
         wCtx.beginPath();
         wCtx.moveTo(24, 218); wCtx.lineTo(60 + (pulseOffset * 0.2), 218);
         wCtx.lineTo(75 + (pulseOffset * 0.2), 202);
@@ -8285,6 +9649,11 @@ updateHUD(dt);
         wCtx.lineTo(232, 218); wCtx.stroke();
 
         tacticalWatch.texture.needsUpdate = true;
+      }
+
+      // Update 3D Armory Turntable Preview if active
+      if (window.armoryTurntable && window.armoryTurntable.active) {
+        window.armoryTurntable.update(dt);
       }
 
       if (composer && window.postProcessingEnabled !== false) {
