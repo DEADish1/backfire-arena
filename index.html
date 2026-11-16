@@ -1836,6 +1836,10 @@
         window.matGunBlue.color.set(colorHex);
         window.matGunBlue.emissive.set(colorHex);
       }
+      if (window.fpArmsNeonMat) {
+        window.fpArmsNeonMat.color.set(colorHex);
+        window.fpArmsNeonMat.emissive.set(colorHex);
+      }
       if (broadcast && window.sendNet) {
         window.sendNet({ type: 'customize', color: colorHex });
       }
@@ -3488,6 +3492,105 @@
       return tex;
     }
 
+    function createProceduralCarbonFiberNormalMap() {
+      const w = 128, h = 128;
+      const heightMap = new Float32Array(w * h);
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const u = (x % 8) / 8;
+          const diag = ((x + y) % 8) / 8;
+          const weave = Math.sin(diag * Math.PI * 2) * 0.4 + Math.cos(u * Math.PI * 2) * 0.15;
+          heightMap[y * w + x] = 0.5 + weave * 0.35;
+        }
+      }
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      const imgData = ctx.createImageData(w, h);
+      const data = imgData.data;
+      const strength = 3.2;
+      for (let y = 0; y < h; y++) {
+        const ym = (y - 1 + h) % h;
+        const yp = (y + 1) % h;
+        for (let x = 0; x < w; x++) {
+          const xm = (x - 1 + w) % w;
+          const xp = (x + 1) % w;
+          const dx = (heightMap[y * w + xp] - heightMap[y * w + xm]) * strength;
+          const dy = (heightMap[yp * w + x] - heightMap[ym * w + x]) * strength;
+          const len = Math.sqrt(dx * dx + dy * dy + 1.0);
+          const idx = (y * w + x) * 4;
+          data[idx] = Math.round((-dx / len * 0.5 + 0.5) * 255);
+          data[idx + 1] = Math.round((-dy / len * 0.5 + 0.5) * 255);
+          data[idx + 2] = Math.round((1.0 / len * 0.5 + 0.5) * 255);
+          data[idx + 3] = 255;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(6, 6);
+      return tex;
+    }
+
+    function createProceduralVisorTexture() {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#050a14'; ctx.fillRect(0, 0, 256, 128);
+
+      // Cybernetic Hexagonal Matrix
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.28)';
+      ctx.lineWidth = 1;
+      const hexR = 9;
+      const hexH = Math.sqrt(3) * hexR;
+      function drawHex(g, cx, cy, r) {
+        g.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const a = (i * Math.PI) / 3;
+          const hx = cx + r * Math.cos(a);
+          const hy = cy + r * Math.sin(a);
+          if (i === 0) g.moveTo(hx, hy); else g.lineTo(hx, hy);
+        }
+        g.closePath();
+        g.stroke();
+      }
+      for (let y = 0; y < 140; y += hexH) {
+        for (let x = 0; x < 270; x += hexR * 3) {
+          drawHex(ctx, x, y, hexR);
+          drawHex(ctx, x + hexR * 1.5, y + hexH / 2, hexR);
+        }
+      }
+
+      // Horizontal Scanlines
+      ctx.fillStyle = 'rgba(14, 165, 233, 0.15)';
+      for (let y = 0; y < 128; y += 4) {
+        ctx.fillRect(0, y, 256, 2);
+      }
+
+      // Tactical HUD Target Reticle Brackets
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(110, 56); ctx.lineTo(104, 56); ctx.lineTo(104, 72); ctx.lineTo(110, 72);
+      ctx.moveTo(146, 56); ctx.lineTo(152, 56); ctx.lineTo(152, 72); ctx.lineTo(146, 72);
+      ctx.stroke();
+
+      // Pitch ladder lines
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
+      ctx.beginPath();
+      ctx.moveTo(114, 46); ctx.lineTo(142, 46);
+      ctx.moveTo(118, 82); ctx.lineTo(138, 82);
+      ctx.stroke();
+
+      // Cyan Vignette
+      const grad = ctx.createLinearGradient(0, 0, 256, 0);
+      grad.addColorStop(0, 'rgba(56, 189, 248, 0.45)');
+      grad.addColorStop(0.5, 'rgba(56, 189, 248, 0.05)');
+      grad.addColorStop(1, 'rgba(56, 189, 248, 0.45)');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, 256, 128);
+
+      const tex = new THREE.CanvasTexture(c);
+      return tex;
+    }
+
     const floorDiffuseTex = createProceduralFloorTexture();
     const floorNormalTex = createProceduralFloorNormalMap();
     const floorRoughnessTex = createProceduralFloorRoughnessMap();
@@ -3496,6 +3599,8 @@
     const concreteTex = createProceduralConcreteTexture();
     const concreteNormalTex = createProceduralConcreteNormalMap();
     const lavaTex = createProceduralLavaTexture();
+    const carbonFiberNormalTex = createProceduralCarbonFiberNormalMap();
+    const visorHudTex = createProceduralVisorTexture();
     const skyDomeTex = createSkyDomeTexture();
     skyDomeMesh.material.map = skyDomeTex;
     skyDomeMesh.material.needsUpdate = true;
@@ -3614,6 +3719,138 @@
     wep2.add(rBody, rRailL, rRailR, rGrip, heatRail0, rCapacitor, arcLine);
     wep2.userData.arcLine = arcLine;
     wep2.visible = false; weaponRig.add(wep2); weaponModels.push(wep2);
+
+    // First-Person Viewmodel Tactical Cybernetic Arms & Combat Gloves
+    function createFirstPersonArms() {
+      const armGroup = new THREE.Group();
+
+      const matArmCarbon = new THREE.MeshStandardMaterial({
+        color: 0x182030,
+        roughness: 0.35,
+        metalness: 0.8,
+        normalMap: carbonFiberNormalTex,
+        normalScale: new THREE.Vector2(0.5, 0.5)
+      });
+      const matArmSuit = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85, metalness: 0.15 });
+      const matArmSteel = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.22, metalness: 0.95 });
+      const matArmNeon = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x38bdf8,
+        emissiveIntensity: 1.8
+      });
+      window.fpArmsNeonMat = matArmNeon;
+      const matGloveLeather = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.65, metalness: 0.25 });
+      const matGloveKnuckles = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2, metalness: 0.92 });
+
+      // --- RIGHT ARM (Holding Pistol Grip & Trigger) ---
+      const rArmGroup = new THREE.Group();
+
+      const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.45, 10), matArmSuit);
+      rUpperArm.rotation.set(0.72, -0.25, -0.35);
+      rUpperArm.position.set(0.16, -0.38, 0.4);
+
+      const rForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.08, 0.38, 10), matArmCarbon);
+      rForearm.rotation.set(0.65, -0.15, -0.22);
+      rForearm.position.set(0.08, -0.3, 0.28);
+
+      const rGauntletPlate = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.26, 0.035), matArmSteel);
+      rGauntletPlate.position.set(0.07, -0.28, 0.27);
+      rGauntletPlate.rotation.set(0.65, -0.15, -0.22);
+
+      const rConduit = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.24, 0.015), matArmNeon);
+      rConduit.position.set(0.08, -0.27, 0.29);
+      rConduit.rotation.set(0.65, -0.15, -0.22);
+
+      const rGlove = new THREE.Group();
+      rGlove.position.set(0, -0.2, 0.15); // Aligns precisely with bGrip0
+      rGlove.rotation.x = 0.25;
+
+      const rPalm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.11), matGloveLeather);
+      rPalm.position.set(0, 0, 0);
+
+      const rKnuckles = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.035, 0.045), matGloveKnuckles);
+      rKnuckles.position.set(0, 0.038, -0.05);
+
+      const rFingers = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.07, 0.07), matGloveLeather);
+      rFingers.position.set(0, -0.045, -0.045);
+
+      const rTrigFinger = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.015, 0.09, 6), matGloveLeather);
+      rTrigFinger.rotation.x = Math.PI / 2;
+      rTrigFinger.position.set(0.045, 0.015, -0.07);
+
+      const rThumb = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.075, 6), matGloveLeather);
+      rThumb.rotation.z = -0.65;
+      rThumb.position.set(-0.055, 0.01, 0.03);
+
+      rGlove.add(rPalm, rKnuckles, rFingers, rTrigFinger, rThumb);
+      rArmGroup.add(rUpperArm, rForearm, rGauntletPlate, rConduit, rGlove);
+      armGroup.add(rArmGroup);
+
+      // --- LEFT ARM (Holding Foregrip / Shotgun Pump) ---
+      const lArmGroup = new THREE.Group();
+
+      const lUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.45, 10), matArmSuit);
+      lUpperArm.rotation.set(0.65, 0.35, 0.4);
+      lUpperArm.position.set(-0.35, -0.38, 0.35);
+
+      const lForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.08, 0.38, 10), matArmCarbon);
+      lForearm.rotation.set(0.55, 0.28, 0.3);
+      lForearm.position.set(-0.24, -0.28, 0.18);
+
+      const lGauntletPlate = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.24, 0.035), matArmSteel);
+      lGauntletPlate.position.set(-0.23, -0.26, 0.17);
+      lGauntletPlate.rotation.set(0.55, 0.28, 0.3);
+
+      const lWristHud = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.035, 0.065), matArmNeon);
+      lWristHud.position.set(-0.21, -0.23, 0.18);
+
+      const lGlove = new THREE.Group();
+      lGlove.position.set(0, -0.05, -0.32);
+
+      const lPalm = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.09, 0.1), matGloveLeather);
+      const lKnuckles = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 0.04), matGloveKnuckles);
+      lKnuckles.position.set(0, 0.035, -0.04);
+      const lFingers = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.07), matGloveLeather);
+      lFingers.position.set(0, -0.035, -0.04);
+      const lThumb = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.017, 0.07, 6), matGloveLeather);
+      lThumb.rotation.z = 0.6;
+      lThumb.position.set(0.05, 0.01, 0.02);
+
+      lGlove.add(lPalm, lKnuckles, lFingers, lThumb);
+      lArmGroup.add(lUpperArm, lForearm, lGauntletPlate, lWristHud, lGlove);
+      armGroup.add(lArmGroup);
+
+      return {
+        group: armGroup,
+        lGlove: lGlove,
+        lForearm: lForearm,
+        lGauntletPlate: lGauntletPlate,
+        lUpperArm: lUpperArm,
+        lWristHud: lWristHud,
+        rGlove: rGlove,
+        update: function(dt, wepIdx, pumpZ) {
+          if (wepIdx === 0) {
+            lGlove.position.set(0, -0.05, pumpZ || -0.32);
+            lGlove.rotation.set(0.15, 0.1, -0.1);
+          } else if (wepIdx === 1) {
+            lGlove.position.set(0, -0.16, -0.18);
+            lGlove.rotation.set(0.28, 0.15, -0.22);
+          } else if (wepIdx === 2) {
+            lGlove.position.set(0, -0.04, -0.35);
+            lGlove.rotation.set(0.18, -0.1, 0.2);
+          }
+          lForearm.position.x = lGlove.position.x * 0.4 - 0.22;
+          lForearm.position.y = lGlove.position.y * 0.5 - 0.24;
+          lForearm.position.z = lGlove.position.z * 0.5 + 0.15;
+          lGauntletPlate.position.copy(lForearm.position).add(new THREE.Vector3(0.01, 0.02, -0.01));
+          lWristHud.position.copy(lForearm.position).add(new THREE.Vector3(0.03, 0.05, 0));
+        }
+      };
+    }
+
+    const fpArms = createFirstPersonArms();
+    weaponRig.add(fpArms.group);
+    window.fpArms = fpArms;
 
     weaponRig.position.set(0.32, -0.28, -0.6);
     let gunKickOffset = 0;
@@ -3784,23 +4021,42 @@
 
     // Bulletstorm-Style Armored Combat Boot Rig (First-Person Melee Shove)
     const bootRig = new THREE.Group();
-    const bootMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.85 });
-    const bootSoleMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.8, metalness: 0.2 });
+    const bootMat = new THREE.MeshStandardMaterial({
+      color: 0x182030,
+      roughness: 0.35,
+      metalness: 0.8,
+      normalMap: carbonFiberNormalTex,
+      normalScale: new THREE.Vector2(0.5, 0.5)
+    });
+    const bootSoleMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.88, metalness: 0.1 });
     const bootSteelMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.2, metalness: 0.95 });
-    const bootNeonMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 1.0 });
+    const bootNeonMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 1.4 });
+    const bootPistonMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.08, metalness: 1.0 });
 
     const bLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.5, 12), bootMat);
     bLeg.position.set(0, 0.25, 0.05); bLeg.rotation.x = -0.3;
+    const bShinPlate = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.36, 0.07), bootSteelMat);
+    bShinPlate.position.set(0, 0.22, 0.12); bShinPlate.rotation.x = -0.3;
+    const bPiston = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.24, 8), bootPistonMat);
+    bPiston.position.set(0, 0.22, -0.04); bPiston.rotation.x = -0.3;
+
     const bFoot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.16, 0.42), bootMat);
     bFoot.position.set(0, 0.06, -0.1);
     const bSole = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.05, 0.46), bootSoleMat);
     bSole.position.set(0, -0.04, -0.1);
+    for (let tr = 0; tr < 4; tr++) {
+      const rib = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.018, 0.035), bootSoleMat);
+      rib.position.set(0, -0.065, -0.25 + tr * 0.09);
+      bootRig.add(rib);
+    }
     const bToeSteel = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.09, 0.12), bootSteelMat);
     bToeSteel.position.set(0, 0.04, -0.32);
+    const bHeelBooster = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.08, 8), bootSteelMat);
+    bHeelBooster.position.set(0, 0.02, 0.12); bHeelBooster.rotation.x = -0.5;
     const bChevron1 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, 0.04), bootNeonMat);
     bChevron1.position.set(0, -0.07, -0.18);
     const bChevron2 = bChevron1.clone(); bChevron2.position.z = -0.05;
-    bootRig.add(bLeg, bFoot, bSole, bToeSteel, bChevron1, bChevron2);
+    bootRig.add(bLeg, bShinPlate, bPiston, bFoot, bSole, bToeSteel, bHeelBooster, bChevron1, bChevron2);
     bootRig.position.set(0.12, -0.65, -0.35);
     bootRig.rotation.set(-0.35, 0.1, -0.08);
     bootRig.visible = false;
@@ -4555,97 +4811,342 @@
     // --- REMOTE OPPONENT 3D ACTOR (CYBERNETIC ARENA MECH PILOT) ---
     function createOpponentMesh(colorHex) {
       const g = new THREE.Group();
-      const matArmorDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.32, metalness: 0.85 });
-      const matArmorSteel = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.22, metalness: 0.92 });
-      const matVisorGlow = new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 2.2, roughness: 0.1, metalness: 0.8 });
-      const matHazardYellow = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.4, metalness: 0.6 });
+      const matArmorDark = new THREE.MeshStandardMaterial({
+        color: 0x182030,
+        roughness: 0.35,
+        metalness: 0.8,
+        normalMap: carbonFiberNormalTex,
+        normalScale: new THREE.Vector2(0.6, 0.6)
+      });
+      const matArmorSteel = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.22, metalness: 0.95 });
+      const matVisorGlow = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        map: visorHudTex,
+        emissive: colorHex,
+        emissiveMap: visorHudTex,
+        emissiveIntensity: 2.5,
+        roughness: 0.08,
+        metalness: 0.9
+      });
+      const matReactorCore = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        emissive: colorHex,
+        emissiveIntensity: 3.5,
+        roughness: 0.1,
+        metalness: 0.5
+      });
+      const matTeamTrim = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.7 });
+      const matHazard = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.4, metalness: 0.6 });
+      const matRubber = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.88, metalness: 0.1 });
+      const matPiston = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.08, metalness: 1.0 });
+      const matUnderSuit = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85, metalness: 0.15 });
 
-      // 1. Head & Cybernetic Helmet
-      const headGroup = new THREE.Group();
-      headGroup.position.set(0, 1.65, 0);
-      const helmet = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.38, 0.44), matArmorDark);
-      helmet.castShadow = true;
-      const cheekL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.18, 0.26), matArmorSteel);
-      cheekL.position.set(-0.18, -0.06, 0.08); cheekL.rotation.y = 0.2;
-      const cheekR = cheekL.clone(); cheekR.position.x = 0.18; cheekR.rotation.y = -0.2;
-      // Glowing Panoramic Visor
-      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.16), matVisorGlow);
-      visor.position.set(0, 0.02, 0.22);
-      // Ear Comms & Sensor Pod
-      const earComm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.46, 8), matArmorSteel);
-      earComm.rotation.z = Math.PI / 2; earComm.position.set(0, 0, 0.02);
-      const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.35, 6), matArmorSteel);
-      antenna.position.set(-0.2, 0.22, -0.05); antenna.rotation.z = 0.15;
-      headGroup.add(helmet, cheekL, cheekR, visor, earComm, antenna);
-      g.add(headGroup);
+      // --- 1. PELVIS & ARTICULATED LEGS ---
+      const pelvisGroup = new THREE.Group();
+      pelvisGroup.position.set(0, 0.86, 0);
 
-      // 2. Chest Armor / Torso
+      const pelvisChassis = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.22, 0.32), matArmorDark);
+      pelvisChassis.castShadow = true; pelvisChassis.receiveShadow = true;
+      const groinGuard = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.12), matArmorSteel);
+      groinGuard.position.set(0, -0.04, 0.12); groinGuard.rotation.x = 0.2;
+      const canL = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.18, 8), matArmorSteel);
+      canL.position.set(-0.25, 0, 0); canL.rotation.z = Math.PI / 2;
+      const canR = canL.clone(); canR.position.x = 0.25;
+      pelvisGroup.add(pelvisChassis, groinGuard, canL, canR);
+
+      // Left Leg Pivot Hierarchy (Hip -> Knee -> Ankle -> Boot)
+      const hipPivotL = new THREE.Group();
+      hipPivotL.position.set(-0.18, -0.06, 0);
+      const hipJointL = new THREE.Mesh(new THREE.SphereGeometry(0.065, 8, 8), matArmorSteel);
+      const thighCoreL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.38, 0.2), matUnderSuit);
+      thighCoreL.position.set(0, -0.19, 0);
+      const thighPlateL = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.32, 0.08), matArmorDark);
+      thighPlateL.position.set(0, -0.18, 0.09);
+      const thighConduitL = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.32, 8), matTeamTrim);
+      thighConduitL.position.set(-0.1, -0.18, 0);
+
+      const kneePivotL = new THREE.Group();
+      kneePivotL.position.set(0, -0.38, 0);
+      const kneeCopL = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.14, 0.12), matArmorSteel);
+      kneeCopL.position.set(0, 0, 0.07);
+      const shockCylL = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.18, 8), matArmorDark);
+      shockCylL.position.set(0, 0, -0.07);
+      const shockPistonL = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.14, 8), matPiston);
+      shockPistonL.position.set(0, 0.04, -0.07);
+
+      const shinL = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.36, 0.18), matArmorDark);
+      shinL.position.set(0, -0.19, 0.02);
+      const shinRidgeL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.32, 0.06), matArmorSteel);
+      shinRidgeL.position.set(0, -0.18, 0.12);
+      const calfThrusterL = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.08, 8), matArmorSteel);
+      calfThrusterL.position.set(0, -0.22, -0.09); calfThrusterL.rotation.x = 0.5;
+
+      const anklePivotL = new THREE.Group();
+      anklePivotL.position.set(0, -0.38, 0);
+      const bootMainL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.18, 0.34), matArmorDark);
+      bootMainL.position.set(0, 0.06, 0.04);
+      const soleL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.06, 0.38), matRubber);
+      soleL.position.set(0, -0.04, 0.05);
+      const toeL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.09, 0.1), matArmorSteel);
+      toeL.position.set(0, 0.03, 0.18);
+      const heelNozzleL = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.06, 8), matArmorSteel);
+      heelNozzleL.position.set(0, 0.02, -0.12); heelNozzleL.rotation.x = -0.4;
+      anklePivotL.add(bootMainL, soleL, toeL, heelNozzleL);
+
+      kneePivotL.add(kneeCopL, shockCylL, shockPistonL, shinL, shinRidgeL, calfThrusterL, anklePivotL);
+      hipPivotL.add(hipJointL, thighCoreL, thighPlateL, thighConduitL, kneePivotL);
+      pelvisGroup.add(hipPivotL);
+
+      // Right Leg Pivot Hierarchy (Mirrored)
+      const hipPivotR = new THREE.Group();
+      hipPivotR.position.set(0.18, -0.06, 0);
+      const hipJointR = hipJointL.clone();
+      const thighCoreR = thighCoreL.clone();
+      const thighPlateR = thighPlateL.clone();
+      const thighConduitR = thighConduitL.clone(); thighConduitR.position.x = 0.1;
+
+      const kneePivotR = new THREE.Group();
+      kneePivotR.position.set(0, -0.38, 0);
+      const kneeCopR = kneeCopL.clone();
+      const shockCylR = shockCylL.clone();
+      const shockPistonR = shockPistonL.clone();
+      const shinR = shinL.clone();
+      const shinRidgeR = shinRidgeL.clone();
+      const calfThrusterR = calfThrusterL.clone();
+
+      const anklePivotR = new THREE.Group();
+      anklePivotR.position.set(0, -0.38, 0);
+      const bootMainR = bootMainL.clone();
+      const soleR = soleL.clone();
+      const toeR = toeL.clone();
+      const heelNozzleR = heelNozzleL.clone();
+      anklePivotR.add(bootMainR, soleR, toeR, heelNozzleR);
+
+      kneePivotR.add(kneeCopR, shockCylR, shockPistonR, shinR, shinRidgeR, calfThrusterR, anklePivotR);
+      hipPivotR.add(hipJointR, thighCoreR, thighPlateR, thighConduitR, kneePivotR);
+      pelvisGroup.add(hipPivotR);
+      g.add(pelvisGroup);
+
+      // --- 2. TORSO, COMPOSITE CHEST & SPINAL COLUMN ---
       const torsoGroup = new THREE.Group();
-      const chestPlate = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.62, 0.42), matArmorDark);
-      chestPlate.position.set(0, 1.22, 0); chestPlate.castShadow = true; chestPlate.receiveShadow = true;
-      // Glowing Core Reactor (Sternum)
-      const coreReactor = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 12), new THREE.MeshBasicMaterial({ color: colorHex }));
-      coreReactor.position.set(0, 1.32, 0.22);
-      // Chest Hazard Chevron Trim
-      const chevron = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.08, 0.06), matHazardYellow);
-      chevron.position.set(0, 1.44, 0.21);
-      // Shoulder Pauldrons (Left & Right)
-      const pauldronL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 0.32), matArmorSteel);
-      pauldronL.position.set(-0.46, 1.44, 0); pauldronL.rotation.z = -0.15;
-      const pauldronR = pauldronL.clone(); pauldronR.position.x = 0.46; pauldronR.rotation.z = 0.15;
-      torsoGroup.add(chestPlate, coreReactor, chevron, pauldronL, pauldronR);
-      g.add(torsoGroup);
+      torsoGroup.position.set(0, 0.86, 0);
 
-      // 3. Articulated Arms & 3D Held Weapon
-      const armL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.48, 0.16), matArmorDark);
-      armL.position.set(-0.42, 1.05, 0.08); armL.rotation.x = 0.3;
-      const armR = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.48, 0.16), matArmorDark);
-      armR.position.set(0.42, 1.05, 0.08); armR.rotation.x = 0.3;
-      // Tactical Carbine Rifle held in hands
-      const rifleGroup = new THREE.Group();
-      rifleGroup.position.set(0.22, 0.98, 0.32);
-      const rifleBody = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.16, 0.65), matArmorDark);
-      const rifleBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.65, 8), matArmorSteel);
-      rifleBarrel.rotation.x = Math.PI / 2; rifleBarrel.position.set(0, 0.04, -0.42);
-      const rifleGlow = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.32), matVisorGlow);
-      rifleGlow.position.set(0, 0.06, -0.15);
-      rifleGroup.add(rifleBody, rifleBarrel, rifleGlow);
-      g.add(armL, armR, rifleGroup);
+      // Abdominal Segmented Transverse Armor Plates
+      for (let ab = 0; ab < 3; ab++) {
+        const abPlate = new THREE.Mesh(new THREE.BoxGeometry(0.38 - ab * 0.02, 0.07, 0.28), matArmorSteel);
+        abPlate.position.set(0, 0.08 + ab * 0.09, 0.04);
+        torsoGroup.add(abPlate);
+      }
+      // Spinal Column Vertebrae
+      for (let sp = 0; sp < 5; sp++) {
+        const vert = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.08), matArmorSteel);
+        vert.position.set(0, 0.08 + sp * 0.09, -0.15);
+        torsoGroup.add(vert);
+      }
 
-      // 4. Pelvis, Thighs & Heavy Magnetic Boots
-      const pelvis = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.22, 0.36), matArmorDark);
-      pelvis.position.set(0, 0.82, 0);
-      const thighL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.44, 0.24), matArmorDark);
-      thighL.position.set(-0.18, 0.52, 0);
-      const thighR = thighL.clone(); thighR.position.x = 0.18;
-      const bootL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.22, 0.38), matArmorSteel);
-      bootL.position.set(-0.18, 0.16, 0.05);
-      const bootR = bootL.clone(); bootR.position.x = 0.18;
-      const soleL = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.06, 0.42), matArmorDark);
-      soleL.position.set(-0.18, 0.04, 0.05);
-      const soleR = soleL.clone(); soleR.position.x = 0.18;
-      g.add(pelvis, thighL, thighR, bootL, bootR, soleL, soleR);
+      // Beveled Composite Pectoral Plates
+      const chestL = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.16), matArmorDark);
+      chestL.position.set(-0.16, 0.42, 0.08); chestL.rotation.y = 0.12; chestL.rotation.z = -0.05;
+      const chestR = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.16), matArmorDark);
+      chestR.position.set(0.16, 0.42, 0.08); chestR.rotation.y = -0.12; chestR.rotation.z = 0.05;
+      // Team Colored Chevron Stripe
+      const chevron = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.06, 0.04), matTeamTrim);
+      chevron.position.set(0, 0.52, 0.16);
 
-      // 5. Dual Booster Jetpack & Exhaust Plumes
-      const thrusterL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.62, 12), matArmorSteel);
-      thrusterL.position.set(-0.25, 1.25, -0.32);
-      const thrusterR = thrusterL.clone(); thrusterR.position.x = 0.25;
-      const nozzleL = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.022, 8, 16), new THREE.MeshBasicMaterial({ color: 0x06b6d4 }));
-      nozzleL.rotation.x = Math.PI / 2; nozzleL.position.set(-0.25, 0.94, -0.32);
-      const nozzleR = nozzleL.clone(); nozzleR.position.x = 0.25;
+      // Glowing Sternum Fusion Reactor & Containment Bezel
+      const coreBezel = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.06, 8), matArmorSteel);
+      coreBezel.rotation.x = Math.PI / 2; coreBezel.position.set(0, 0.38, 0.16);
+      const coreReactor = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 12), matReactorCore);
+      coreReactor.position.set(0, 0.38, 0.18);
+
+      // Flexible Neck Compression Seal Collar
+      const neckCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.12, 12), matUnderSuit);
+      neckCollar.position.set(0, 0.6, 0);
+
+      // Articulated Shoulder Pauldrons
+      const pauldronL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.26), matArmorSteel);
+      pauldronL.position.set(-0.4, 0.54, 0); pauldronL.rotation.z = -0.2;
+      const pauldronStripeL = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.04, 0.27), matTeamTrim);
+      pauldronL.add(pauldronStripeL);
+
+      const pauldronR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.26), matArmorSteel);
+      pauldronR.position.set(0.4, 0.54, 0); pauldronR.rotation.z = 0.2;
+      const pauldronStripeR = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.04, 0.27), matTeamTrim);
+      pauldronR.add(pauldronStripeR);
+
+      torsoGroup.add(chestL, chestR, chevron, coreBezel, coreReactor, neckCollar, pauldronL, pauldronR);
+
+      // --- 3. DUAL-TURBINE VECTORING JETPACK & THRUSTER FLAMES ---
+      const jetpackGroup = new THREE.Group();
+      jetpackGroup.position.set(0, 0.42, -0.22);
+
+      const jetBody = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.46, 0.16), matArmorDark);
+      const jetHeatSink = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.14), matArmorSteel);
+      jetHeatSink.position.set(0, 0.24, 0);
+
+      const podL = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.52, 12), matArmorSteel);
+      podL.position.set(-0.24, -0.02, 0);
+      const podR = podL.clone(); podR.position.x = 0.24;
+
+      const nozzleL = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.02, 8, 16), matTeamTrim);
+      nozzleL.rotation.x = Math.PI / 2; nozzleL.position.set(-0.24, -0.28, 0);
+      const nozzleR = nozzleL.clone(); nozzleR.position.x = 0.24;
 
       // 3D Animated Thruster Jet Exhaust Flames
-      const flameGeo = new THREE.ConeGeometry(0.14, 0.75, 12);
-      flameGeo.rotateX(-Math.PI / 2); flameGeo.translate(0, 0, -0.38);
-      const flameMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
-      const flameL = new THREE.Mesh(flameGeo, flameMat); flameL.position.set(-0.25, 0.94, -0.32);
-      const flameR = flameL.clone(); flameR.position.x = 0.25;
+      const flameGeo = new THREE.ConeGeometry(0.1, 0.65, 10);
+      flameGeo.rotateX(Math.PI); flameGeo.translate(0, -0.32, 0);
+      const flameMat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+      const flameL = new THREE.Mesh(flameGeo, flameMat);
+      flameL.position.set(-0.24, -0.28, 0);
+      const flameR = flameL.clone(); flameR.position.x = 0.24;
 
-      g.add(thrusterL, thrusterR, nozzleL, nozzleR, flameL, flameR);
+      const beaconLight = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshBasicMaterial({ color: colorHex }));
+      beaconLight.position.set(0, 0.29, 0);
+
+      jetpackGroup.add(jetBody, jetHeatSink, podL, podR, nozzleL, nozzleR, flameL, flameR, beaconLight);
+      torsoGroup.add(jetpackGroup);
+
+      // --- 4. ARTICULATED HEAD & CYBERNETIC HELMET ---
+      const headGroup = new THREE.Group();
+      headGroup.position.set(0, 0.66, 0);
+
+      const helmet = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.34, 0.38), matArmorDark);
+      helmet.position.set(0, 0.16, 0);
+      const crest = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.36), matTeamTrim);
+      crest.position.set(0, 0.33, 0);
+
+      const mandibleL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.22), matArmorSteel);
+      mandibleL.position.set(-0.16, 0.08, 0.08); mandibleL.rotation.y = 0.22;
+      const mandibleR = mandibleL.clone(); mandibleR.position.x = 0.16; mandibleR.rotation.y = -0.22;
+
+      const rebreatherL = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.12, 8), matArmorSteel);
+      rebreatherL.position.set(-0.12, 0.03, 0.18); rebreatherL.rotation.x = 0.4;
+      const rebreatherR = rebreatherL.clone(); rebreatherR.position.x = 0.12;
+
+      // Tactical Optics Sensor Pod
+      const optics1 = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.06, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+      optics1.rotation.x = Math.PI / 2; optics1.position.set(-0.11, 0.24, 0.19);
+      const optics2 = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.05, 8), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+      optics2.rotation.x = Math.PI / 2; optics2.position.set(-0.06, 0.24, 0.19);
+
+      // Holographic Panoramic Visor
+      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.14, 0.12), matVisorGlow);
+      visor.position.set(0, 0.18, 0.18);
+
+      // Ear Comms & Signal Antenna
+      const earComm = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.42, 8), matArmorSteel);
+      earComm.rotation.z = Math.PI / 2; earComm.position.set(0, 0.16, 0);
+      const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.32, 6), matArmorSteel);
+      antenna.position.set(-0.18, 0.34, -0.06); antenna.rotation.z = 0.18;
+
+      headGroup.add(helmet, crest, mandibleL, mandibleR, rebreatherL, rebreatherR, optics1, optics2, visor, earComm, antenna);
+      torsoGroup.add(headGroup);
+
+      // --- 5. ARTICULATED ARMS & HELD TACTICAL WEAPON ---
+      // Left Arm Pivot Hierarchy
+      const shoulderPivotL = new THREE.Group();
+      shoulderPivotL.position.set(-0.36, 0.48, 0);
+
+      const bicepL = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.28, 0.14), matArmorDark);
+      bicepL.position.set(0, -0.14, 0);
+
+      const elbowPivotL = new THREE.Group();
+      elbowPivotL.position.set(0, -0.28, 0);
+      const elbowGuardL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.12), matArmorSteel);
+      const forearmL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.26, 0.13), matArmorDark);
+      forearmL.position.set(0, -0.13, 0);
+      const wristHudL = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.04, 0.08), matVisorGlow);
+      wristHudL.position.set(0, -0.16, 0.07);
+
+      const gloveL = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.1, 0.09), matRubber);
+      gloveL.position.set(0, -0.28, 0);
+      const fingersL = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.1), matArmorSteel);
+      fingersL.position.set(0, -0.28, 0.04);
+      elbowPivotL.add(elbowGuardL, forearmL, wristHudL, gloveL, fingersL);
+      shoulderPivotL.add(bicepL, elbowPivotL);
+      torsoGroup.add(shoulderPivotL);
+
+      // Right Arm Pivot Hierarchy
+      const shoulderPivotR = new THREE.Group();
+      shoulderPivotR.position.set(0.36, 0.48, 0);
+
+      const bicepR = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.28, 0.14), matArmorDark);
+      bicepR.position.set(0, -0.14, 0);
+
+      const elbowPivotR = new THREE.Group();
+      elbowPivotR.position.set(0, -0.28, 0);
+      const elbowGuardR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.12), matArmorSteel);
+      const forearmR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.26, 0.13), matArmorDark);
+      forearmR.position.set(0, -0.13, 0);
+
+      const gloveR = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.1, 0.09), matRubber);
+      gloveR.position.set(0, -0.28, 0);
+
+      // Held 3D Tactical Carbine
+      const carbineGroup = new THREE.Group();
+      carbineGroup.position.set(0, -0.26, 0.18);
+      carbineGroup.rotation.x = 0.32;
+
+      const carbineBody = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.16, 0.68), matArmorDark);
+      const carbineBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.65, 8), matArmorSteel);
+      carbineBarrel.rotation.x = Math.PI / 2; carbineBarrel.position.set(0, 0.04, -0.42);
+      const muzzleBrake = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.08), matArmorSteel);
+      muzzleBrake.position.set(0, 0.04, -0.76);
+      const holoSight = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.12), matArmorDark);
+      holoSight.position.set(0, 0.12, -0.1);
+      const carbineMag = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.14, 0.12), matVisorGlow);
+      carbineMag.position.set(0, -0.14, 0.04);
+      const laserEmitter = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.14, 8), matArmorSteel);
+      laserEmitter.position.set(0, -0.04, -0.32); laserEmitter.rotation.x = Math.PI / 2;
+
+      carbineGroup.add(carbineBody, carbineBarrel, muzzleBrake, holoSight, carbineMag, laserEmitter);
+      elbowPivotR.add(elbowGuardR, forearmR, gloveR, carbineGroup);
+      shoulderPivotR.add(bicepR, elbowPivotR);
+      torsoGroup.add(shoulderPivotR);
+
+      g.add(torsoGroup);
+
+      // Default Combat Poses for Arms
+      shoulderPivotL.rotation.set(0.45, 0.3, -0.15);
+      elbowPivotL.rotation.set(-0.65, 0, 0);
+      shoulderPivotR.rotation.set(0.35, -0.2, 0.1);
+      elbowPivotR.rotation.set(-0.55, 0, 0);
+
+      // UserData References for Animations, Hit Feedback & Networking
       g.userData.flameL = flameL;
       g.userData.flameR = flameR;
       g.userData.coreReactor = coreReactor;
       g.userData.visor = visor;
+      g.userData.flashHit = function() {
+        const origColor = matArmorDark.emissive.getHex();
+        matArmorDark.emissive.setHex(0xffffff);
+        matArmorDark.emissiveIntensity = 1.4;
+        setTimeout(() => {
+          matArmorDark.emissive.setHex(origColor);
+          matArmorDark.emissiveIntensity = 0;
+        }, 85);
+      };
+      g.userData.animState = {
+        gaitPhase: 0,
+        idleTime: 0,
+        recoilKick: 0,
+        torso: torsoGroup,
+        head: headGroup,
+        hipL: hipPivotL,
+        hipR: hipPivotR,
+        kneeL: kneePivotL,
+        kneeR: kneePivotR,
+        ankleL: anklePivotL,
+        ankleR: anklePivotR,
+        shoulderL: shoulderPivotL,
+        shoulderR: shoulderPivotR,
+        elbowL: elbowPivotL,
+        elbowR: elbowPivotR,
+        flameL: flameL,
+        flameR: flameR,
+        coreReactor: coreReactor
+      };
+
       g.position.set(0, 1.0, -22);
       scene.add(g);
       return g;
@@ -4694,6 +5195,10 @@
 
     function flashOpponentHit() {
       if (!remoteOpponent || !remoteOpponent.mesh) return;
+      if (remoteOpponent.mesh.userData && typeof remoteOpponent.mesh.userData.flashHit === 'function') {
+        remoteOpponent.mesh.userData.flashHit();
+        return;
+      }
       const body = remoteOpponent.mesh.children[0];
       if (body && body.material) {
         body.material.emissive.setHex(0xffffff);
@@ -5067,6 +5572,14 @@
         }
         else if (msg.type === 'customize') {
           if (remoteOpponent && remoteOpponent.mesh) {
+            if (remoteOpponent.mesh.userData && remoteOpponent.mesh.userData.visor && remoteOpponent.mesh.userData.visor.material) {
+              remoteOpponent.mesh.userData.visor.material.color.set(msg.color);
+              remoteOpponent.mesh.userData.visor.material.emissive.set(msg.color);
+            }
+            if (remoteOpponent.mesh.userData && remoteOpponent.mesh.userData.coreReactor && remoteOpponent.mesh.userData.coreReactor.material) {
+              remoteOpponent.mesh.userData.coreReactor.material.color.set(msg.color);
+              remoteOpponent.mesh.userData.coreReactor.material.emissive.set(msg.color);
+            }
             const visorMesh = remoteOpponent.mesh.children[1];
             if (visorMesh && visorMesh.material) {
               visorMesh.material.color.set(msg.color);
@@ -6672,6 +7185,11 @@
         wep2.userData.arcLine.geometry.attributes.position.needsUpdate = true;
       }
 
+      // First-person viewmodel cybernetic arms animation
+      if (window.fpArms) {
+        window.fpArms.update(dt, currentWeaponIdx, wep0.userData.pump ? wep0.userData.pump.position.z : -0.32);
+      }
+
       // Bulletstorm First-Person Boot Kick Animation
       if (kickCooldownTimer > 0) kickCooldownTimer -= dt;
       if (kickAnimTimer > 0) {
@@ -7282,6 +7800,9 @@ updateHUD(dt);
             aimDir.normalize();
 
             // Fire effects
+            if (remoteOpponent.mesh.userData && remoteOpponent.mesh.userData.animState) {
+              remoteOpponent.mesh.userData.animState.recoilKick = 0.35;
+            }
             if (botWep === 2) {
               audio.playRailgun();
               createBulletTracer(botEye, aimDir, 75, 0xf43f5e);
@@ -7345,6 +7866,108 @@ updateHUD(dt);
       }
 
       remoteOpponent.mesh.position.copy(remoteOpponent.pos);
+
+      // --- REALISTIC CYBERNETIC SKELETAL LOCOMOTION ANIMATION ---
+      if (remoteOpponent.mesh.visible && remoteOpponent.mesh.userData && remoteOpponent.mesh.userData.animState) {
+        const anim = remoteOpponent.mesh.userData.animState;
+        const velH = Math.sqrt(remoteOpponent.vel.x * remoteOpponent.vel.x + remoteOpponent.vel.z * remoteOpponent.vel.z);
+        const isAirborne = (remoteOpponent.pos.y > (currentMapId === 2 ? 10.5 : 1.25));
+
+        // 1. Dynamic Aim Elevation Tracking (torso and head pitch towards player)
+        const toPlayer = player.pos.clone().sub(remoteOpponent.pos);
+        const distH = Math.max(0.1, Math.sqrt(toPlayer.x * toPlayer.x + toPlayer.z * toPlayer.z));
+        const aimPitch = Math.atan2(toPlayer.y, distH);
+
+        // 2. Firing Recoil Decay
+        if (anim.recoilKick > 0.001) {
+          anim.recoilKick = THREE.MathUtils.lerp(anim.recoilKick, 0, dt * 14.0);
+        }
+
+        if (!isAirborne) {
+          // --- GROUNDED GAIT / RUN CYCLE ---
+          if (velH > 0.4) {
+            anim.gaitPhase += dt * velH * 2.8;
+            const stride = Math.min(velH / 12.0, 1.0) * 0.72;
+            const legSwing = Math.sin(anim.gaitPhase) * stride;
+
+            // Hip pitch: alternating leg swing
+            anim.hipL.rotation.x = legSwing;
+            anim.hipR.rotation.x = -legSwing;
+
+            // Knee flexion: knee bends backward when leg swings backward
+            anim.kneeL.rotation.x = Math.max(0, -legSwing * 1.35);
+            anim.kneeR.rotation.x = Math.max(0, legSwing * 1.35);
+
+            // Ankle toe flexion
+            anim.ankleL.rotation.x = -legSwing * 0.35;
+            anim.ankleR.rotation.x = legSwing * 0.35;
+
+            // Torso natural running bounce & subtle shoulder sway
+            anim.torso.position.y = 0.86 + Math.abs(Math.sin(anim.gaitPhase * 2)) * 0.045;
+            anim.torso.rotation.z = Math.sin(anim.gaitPhase) * 0.025;
+            anim.torso.rotation.y = -Math.sin(anim.gaitPhase) * 0.04;
+
+            // Arm counter-swing holding carbine
+            anim.shoulderL.rotation.x = 0.45 - legSwing * 0.3;
+            anim.shoulderR.rotation.x = 0.35 + legSwing * 0.2;
+          } else {
+            // --- IDLE COMBAT STANCE & BREATHING ---
+            anim.idleTime += dt * 2.2;
+            const breath = Math.sin(anim.idleTime) * 0.018;
+
+            anim.hipL.rotation.x = THREE.MathUtils.lerp(anim.hipL.rotation.x, 0.06, dt * 8);
+            anim.hipR.rotation.x = THREE.MathUtils.lerp(anim.hipR.rotation.x, -0.06, dt * 8);
+            anim.kneeL.rotation.x = THREE.MathUtils.lerp(anim.kneeL.rotation.x, 0.05, dt * 8);
+            anim.kneeR.rotation.x = THREE.MathUtils.lerp(anim.kneeR.rotation.x, 0.05, dt * 8);
+            anim.ankleL.rotation.x = THREE.MathUtils.lerp(anim.ankleL.rotation.x, 0, dt * 8);
+            anim.ankleR.rotation.x = THREE.MathUtils.lerp(anim.ankleR.rotation.x, 0, dt * 8);
+
+            anim.torso.position.y = 0.86 + breath;
+            anim.torso.rotation.z = THREE.MathUtils.lerp(anim.torso.rotation.z, 0, dt * 8);
+            anim.torso.rotation.y = THREE.MathUtils.lerp(anim.torso.rotation.y, 0, dt * 8);
+            anim.shoulderL.rotation.x = THREE.MathUtils.lerp(anim.shoulderL.rotation.x, 0.45, dt * 8);
+            anim.shoulderR.rotation.x = THREE.MathUtils.lerp(anim.shoulderR.rotation.x, 0.35, dt * 8);
+          }
+        } else {
+          // --- AIRBORNE ROCKET-JUMP / FALLING POSE ---
+          const airPitch = Math.min(Math.max(-remoteOpponent.vel.y * 0.025, -0.5), 0.4);
+          anim.hipL.rotation.x = THREE.MathUtils.lerp(anim.hipL.rotation.x, -0.38 + airPitch, dt * 10);
+          anim.hipR.rotation.x = THREE.MathUtils.lerp(anim.hipR.rotation.x, -0.28 + airPitch, dt * 10);
+          anim.kneeL.rotation.x = THREE.MathUtils.lerp(anim.kneeL.rotation.x, 0.52, dt * 10);
+          anim.kneeR.rotation.x = THREE.MathUtils.lerp(anim.kneeR.rotation.x, 0.42, dt * 10);
+          anim.ankleL.rotation.x = THREE.MathUtils.lerp(anim.ankleL.rotation.x, -0.25, dt * 10);
+          anim.ankleR.rotation.x = THREE.MathUtils.lerp(anim.ankleR.rotation.x, -0.25, dt * 10);
+
+          anim.torso.position.y = 0.86;
+          anim.torso.rotation.z = THREE.MathUtils.lerp(anim.torso.rotation.z, 0, dt * 8);
+        }
+
+        // Apply Aim Pitch to Torso and Head (aiming up and down at player)
+        anim.torso.rotation.x = -aimPitch * 0.42 + (anim.recoilKick * 0.3);
+        anim.head.rotation.x = -aimPitch * 0.58;
+        anim.shoulderR.rotation.x -= (anim.recoilKick * 0.45);
+
+        // Sternum Core Pulsing Glow
+        if (anim.coreReactor && anim.coreReactor.material) {
+          anim.coreReactor.material.emissiveIntensity = 2.8 + Math.sin(Date.now() * 0.007) * 1.0;
+        }
+
+        // Dual-Turbine Jetpack Plume Flare
+        if (anim.flameL && anim.flameR) {
+          if (isAirborne || velH > 14.0) {
+            const plumeScale = 1.2 + Math.sin(Date.now() * 0.04) * 0.35;
+            anim.flameL.scale.set(1.2, 1.2, plumeScale);
+            anim.flameR.scale.set(1.2, 1.2, plumeScale);
+            anim.flameL.visible = true;
+            anim.flameR.visible = true;
+          } else {
+            anim.flameL.visible = (velH > 2.0);
+            anim.flameR.visible = (velH > 2.0);
+            anim.flameL.scale.set(0.6, 0.6, 0.6);
+            anim.flameR.scale.set(0.6, 0.6, 0.6);
+          }
+        }
+      }
     }
 
     function updateJumpPads() {
