@@ -1710,13 +1710,52 @@
     }
     createJumpPad(-24, -24); createJumpPad(24, -24); createJumpPad(-24, 24); createJumpPad(24, 24);
 
-    // Pillars
-    function createPillar(x, z) {
-      const p = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 14, 20), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.6 }));
-      p.position.set(x, 7, z); p.castShadow = true; p.receiveShadow = true; scene.add(p);
-      colliders.push({ box: new THREE.Box3().setFromObject(p), mesh: p });
+        // --- DESTRUCTIBLE ARENA PILLARS ---
+    const arenaPillars = [];
+    function createPillar(x, z, idx) {
+      const p = new THREE.Mesh(
+        new THREE.CylinderGeometry(2, 2, 14, 20),
+        new THREE.MeshStandardMaterial({
+          color: 0x334155,
+          roughness: 0.45,
+          metalness: 0.65
+        })
+      );
+      p.position.set(x, 7, z);
+      p.castShadow = true; p.receiveShadow = true;
+      scene.add(p);
+      const col = { box: new THREE.Box3().setFromObject(p), mesh: p };
+      colliders.push(col);
+      arenaPillars.push({ mesh: p, collider: col, health: 3, maxHealth: 3, idx, x, z, destroyed: false });
     }
-    createPillar(-16, -16); createPillar(16, -16); createPillar(-16, 16); createPillar(16, 16);
+
+    function damagePillar(idx, amount = 1, broadcast = true) {
+      const pObj = arenaPillars[idx];
+      if (!pObj || pObj.destroyed) return;
+      pObj.health -= amount;
+      createSparks(new THREE.Vector3(pObj.x, 6, pObj.z), 25, 0x94a3b8, 14);
+      audio.playCrunch(0.8);
+
+      if (pObj.health <= 0) {
+        pObj.destroyed = true;
+        pObj.mesh.scale.set(1.15, 0.22, 1.15);
+        pObj.mesh.position.y = 1.5;
+        pObj.collider.box.setFromObject(pObj.mesh);
+        createSparks(new THREE.Vector3(pObj.x, 3, pObj.z), 60, 0x64748b, 20);
+        audio.playHazardPulverize();
+        screenShake = 0.4;
+        showPopup("💥 COVER PILLAR PULVERIZED!", "#f59e0b");
+      }
+      if (broadcast) {
+        sendNet({ type: 'damage_pillar', idx, amount });
+      }
+    }
+
+    createPillar(-16, -16, 0);
+    createPillar(16, -16, 1);
+    createPillar(-16, 16, 2);
+    createPillar(16, 16, 3);
+
 
 
     // --- ATMOSPHERIC EMBER PARTICLES ---
@@ -1763,6 +1802,28 @@
         }
       }
       emberGeom.attributes.position.needsUpdate = true;
+    }
+
+
+    // --- DYNAMIC ARENA EVENTS (Lava Tide & Turbine Vortex) ---
+    let eventCycleTimer = 25.0; // Trigger an event every 35-40s
+    let activeEvent = null;
+    let eventDuration = 0;
+
+    function triggerArenaEvent(type, broadcast = true) {
+      activeEvent = type;
+      if (type === 'LAVA_TIDE') {
+        eventDuration = 7.5;
+        audio.playTurbineSurge();
+        showPopup("🌋 ALERT: LAVA TIDE SURGE (ELEVATE NOW!)", "#ea580c");
+      } else if (type === 'TURBINE_VORTEX') {
+        eventDuration = 6.0;
+        audio.playTurbineSurge();
+        showPopup("🌀 ALERT: TURBINE SUCTION VORTEX ENGAGED!", "#f59e0b");
+      }
+      if (broadcast) {
+        sendNet({ type: 'arena_event', eventType: type });
+      }
     }
 
     // --- LOCAL HARPOON TETHER ---
@@ -2061,6 +2122,12 @@
               visorMesh.material.emissive.set(msg.color);
             }
           }
+        }
+        else if (msg.type === 'damage_pillar') {
+          damagePillar(msg.idx, msg.amount, false);
+        }
+        else if (msg.type === 'arena_event') {
+          triggerArenaEvent(msg.eventType, false);
         }
         else if (msg.type === 'hazard_overload') {
           if (msg.hazard === 'turbine') triggerTurbineOverload(false);
@@ -2712,6 +2779,47 @@
 updateHUD(dt);
       updateAtmosphericEmbers(dt);
 
+      
+      // Dynamic Arena Events Cycle
+      eventCycleTimer -= dt;
+      if (eventCycleTimer <= 0 && isHost) {
+        eventCycleTimer = 38.0;
+        const nextEvt = (Math.random() < 0.5) ? 'LAVA_TIDE' : 'TURBINE_VORTEX';
+        triggerArenaEvent(nextEvt, true);
+      }
+
+      if (activeEvent === 'LAVA_TIDE') {
+        eventDuration -= dt;
+        // Lava rises up to y = 2.0
+        lavaPit.position.y = THREE.MathUtils.lerp(lavaPit.position.y, 2.1, dt * 2.5);
+        lavaPit.scale.set(1.4, 1, 1.4);
+        hazards[0].box.setFromCenterAndSize(new THREE.Vector3(0, 1.8, 0), new THREE.Vector3(25, 4, 25));
+
+        if (eventDuration <= 0) {
+          activeEvent = null;
+          showPopup("🌋 LAVA TIDE RECEDING", "#10b981");
+        }
+      } else {
+        // Return lava to baseline
+        lavaPit.position.y = THREE.MathUtils.lerp(lavaPit.position.y, 0.2, dt * 2.0);
+        lavaPit.scale.set(1, 1, 1);
+        hazards[0].box.setFromCenterAndSize(new THREE.Vector3(0, 0.5, 0), new THREE.Vector3(17, 2, 17));
+      }
+
+      if (activeEvent === 'TURBINE_VORTEX') {
+        eventDuration -= dt;
+        // Strong suction wind force pulling towards West Wall (-X)
+        player.vel.x -= 16.0 * dt;
+        turbineOverloadTimer = 1.0; // keep blades at max spin
+        if (Math.random() < 0.3) {
+          createSparks(new THREE.Vector3(ARENA_HALF - 2, Math.random() * 8 + 2, (Math.random() - 0.5) * 30), 2, 0xf59e0b, 18);
+        }
+        if (eventDuration <= 0) {
+          activeEvent = null;
+          showPopup("🌀 TURBINE VORTEX STABILIZED", "#10b981");
+        }
+      }
+
       // Churn and animate lava surface
       lavaTex.offset.x += dt * 0.025;
       lavaTex.offset.y += dt * 0.015;
@@ -2818,6 +2926,16 @@ updateHUD(dt);
         player.isGrounded = true;
       } else {
         player.isGrounded = false;
+      }
+
+      // Check high-speed pillar impact
+      if (player.vel.length() > 14.0) {
+        for (let pObj of arenaPillars) {
+          if (!pObj.destroyed && pObj.collider.box.distanceToPoint(player.pos) < 0.8) {
+            damagePillar(pObj.idx, 1, true);
+            break;
+          }
+        }
       }
 
       const wallLimit = ARENA_HALF - 2.0;
