@@ -662,6 +662,66 @@
       color: #f43f5e;
       box-shadow: 0 0 40px rgba(244, 63, 94, 0.6);
     }
+    .knockout-banner.victim {
+      background: rgba(185, 28, 28, 0.45);
+      border: 3px solid #ef4444;
+      color: #ffffff;
+      box-shadow: 0 0 60px rgba(239, 68, 68, 0.95);
+      animation: knockoutShake 1.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+    }
+    .knockout-banner.killer {
+      background: rgba(16, 185, 129, 0.35);
+      border: 3px solid #10b981;
+      color: #ffffff;
+      box-shadow: 0 0 60px rgba(16, 185, 129, 0.9);
+      animation: knockoutZoom 1.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+    }
+    @keyframes knockoutShake {
+      0% { transform: translate(-50%, -50%) scale(1.15) rotate(-2deg); opacity: 0; }
+      15% { transform: translate(-50%, -50%) scale(1.0) rotate(2.5deg); opacity: 1; }
+      30% { transform: translate(-50%, -50%) scale(1.03) rotate(-1.5deg); }
+      75% { transform: translate(-50%, -50%) scale(1.0) rotate(0deg); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(0.9) translateY(-25px); opacity: 0; }
+    }
+
+    .hud-goal-banner {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.82);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 6px;
+      padding: 3px 12px;
+      text-transform: uppercase;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .core-goal-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      border-left: 4px solid #f59e0b;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      text-align: left;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+    .goal-header {
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      color: #fbbf24;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+    .goal-desc {
+      font-size: 11.5px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
 
     .skillshot-banner {
       display: none;
@@ -899,16 +959,21 @@
         <div id="match-mode-label" class="match-tag">ONLINE MULTIPLAYER ARENA <span id="ping-display" class="ping-tag">P2P</span></div>
       </div>
 
-      <!-- MATCH SCOREBOARD -->
-      <div class="scoreboard">
-        <div class="team-block">
-          <span class="team-name blue">BLUE</span>
-          <span id="blue-score" class="team-score" style="color: #38bdf8;">0</span>
+      <!-- MATCH SCOREBOARD & MISSION GOAL -->
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+        <div class="scoreboard">
+          <div class="team-block">
+            <span id="blue-team-label" class="team-name blue">BLUE</span>
+            <span id="blue-score" class="team-score" style="color: #38bdf8;">0</span>
+          </div>
+          <div class="score-divider">VS</div>
+          <div class="team-block">
+            <span id="red-team-label" class="team-name red">RED</span>
+            <span id="red-score" class="team-score" style="color: #f43f5e;">0</span>
+          </div>
         </div>
-        <div class="score-divider">VS</div>
-        <div class="team-block">
-          <span class="team-name red">RED</span>
-          <span id="red-score" class="team-score" style="color: #f43f5e;">0</span>
+        <div class="hud-goal-banner">
+          <span style="color: #fbbf24; font-weight: 900;">🎯 GOAL:</span> AVOID ALL TRAPS — HITTING A TRAP GIVES +1 PT TO OPPONENT
         </div>
       </div>
 
@@ -1093,6 +1158,16 @@
     <div class="modal-box">
       <div class="modal-title">BACK<span>FIRE</span></div>
       <div class="modal-subtitle">REAL-TIME MULTIPLAYER ARENA</div>
+
+      <!-- Core Objective Banner -->
+      <div class="core-goal-card">
+        <div class="goal-header">⚠️ OBJECTIVE: AVOID ALL TRAPS & HAZARDS</div>
+        <div class="goal-desc">
+          • Weapons deal <strong>0 direct damage</strong> — weapon recoil is your movement thruster engine.<br>
+          • <span style="color: #ef4444; font-weight: 800;">DO NOT HIT THE TRAPS!</span> Hitting spikes, lava, or the meatgrinder gives <strong>+1 POINT TO THE OTHER TEAM</strong>.<br>
+          • Blast, harpoon-tether, and boot-kick enemies into lethal hazards to score. First to 5 wins!
+        </div>
+      </div>
 
       <!-- Mode Tabs -->
       <div class="tab-bar">
@@ -1325,7 +1400,7 @@
       let count = 3;
       function tick() {
         if (count > 0) {
-          cdEl.innerText = count;
+          cdEl.innerHTML = `<div>${count}</div><div style="font-size: 22px; font-weight: 900; color: #fbbf24; margin-top: 12px; letter-spacing: 2px; text-shadow: 0 0 30px rgba(245, 158, 11, 0.9);">⚠️ GOAL: AVOID ALL TRAPS!</div>`;
           cdEl.style.color = '#fbbf24';
           cdEl.style.textShadow = '0 0 50px #f59e0b, 0 0 100px rgba(245, 158, 11, 0.9)';
           if (window.audio && window.audio.playPing) audio.playPing();
@@ -1333,7 +1408,7 @@
           count--;
           setTimeout(tick, 900);
         } else {
-          cdEl.innerText = 'ENGAGE!';
+          cdEl.innerHTML = `<div>ENGAGE!</div><div style="font-size: 22px; font-weight: 900; color: #38bdf8; margin-top: 12px; letter-spacing: 2px; text-shadow: 0 0 30px rgba(56, 189, 248, 0.9);">💥 FORCE OPPONENT INTO HAZARDS!</div>`;
           cdEl.style.color = '#38bdf8';
           cdEl.style.textShadow = '0 0 60px #38bdf8, 0 0 120px rgba(56, 189, 248, 0.95)';
           if (window.audio && window.audio.playTurbineSurge) audio.playTurbineSurge();
@@ -1358,17 +1433,32 @@
 
     window.updateRoleBadge = function() {
       const badge = document.getElementById('host-role-badge');
-      if (!badge) return;
-      if (window.isHost) {
-        badge.innerHTML = `👑 ROOM HOST (YOU CONTROL MATCH LAUNCH)`;
-        badge.style.background = 'rgba(56, 189, 248, 0.15)';
-        badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
-        badge.style.color = '#38bdf8';
-      } else {
-        badge.innerHTML = `🛡️ GUEST PILOT (WAITING FOR HOST TO LAUNCH)`;
-        badge.style.background = 'rgba(245, 158, 11, 0.15)';
-        badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
-        badge.style.color = '#fbbf24';
+      if (badge) {
+        if (window.isHost) {
+          badge.innerHTML = `👑 ROOM HOST (YOU CONTROL MATCH LAUNCH)`;
+          badge.style.background = 'rgba(56, 189, 248, 0.15)';
+          badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+          badge.style.color = '#38bdf8';
+        } else {
+          badge.innerHTML = `🛡️ GUEST PILOT (WAITING FOR HOST TO LAUNCH)`;
+          badge.style.background = 'rgba(245, 158, 11, 0.15)';
+          badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+          badge.style.color = '#fbbf24';
+        }
+      }
+
+      // Update scoreboard labels so pilots always know which score is theirs!
+      const blueTag = document.getElementById('blue-team-label');
+      const redTag = document.getElementById('red-team-label');
+      if (blueTag && redTag) {
+        if (window.isHost) {
+          blueTag.innerHTML = `BLUE <span style="font-size:10px; color:#38bdf8; font-weight:800; opacity:0.9;">(YOU)</span>`;
+          const oppLabel = (window.currentTab === 'solo') ? '(BOT)' : '(ENEMY)';
+          redTag.innerHTML = `RED <span style="font-size:10px; color:#f43f5e; font-weight:800; opacity:0.9;">${oppLabel}</span>`;
+        } else {
+          blueTag.innerHTML = `BLUE <span style="font-size:10px; color:#38bdf8; font-weight:800; opacity:0.9;">(HOST)</span>`;
+          redTag.innerHTML = `RED <span style="font-size:10px; color:#f43f5e; font-weight:800; opacity:0.9;">(YOU)</span>`;
+        }
       }
     };
 
@@ -1470,6 +1560,7 @@
       document.getElementById('settings-panel').style.display = tab === 'settings' ? 'block' : 'none';
       if (tab === 'settings' && window.renderKeybindsUI) window.renderKeybindsUI();
       window.updateStartButtonState();
+      window.updateRoleBadge();
     };
 
     setTimeout(() => {
@@ -3570,6 +3661,12 @@
         else if (msg.type === 'knockout') {
           handleKnockoutScore(msg.victimTeam, msg.hazardName);
         }
+        else if (msg.type === 'sync_scores') {
+          blueScore = msg.blueScore;
+          redScore = msg.redScore;
+          document.getElementById('blue-score').innerText = blueScore;
+          document.getElementById('red-score').innerText = redScore;
+        }
         else if (msg.type === 'ping') {
           if (dataConn && dataConn.open) dataConn.send({ type: 'pong', t: msg.t });
         }
@@ -3779,51 +3876,77 @@
       timeDilation = 0.5;
       if (window.triggerVisorSplatter) window.triggerVisorSplatter();
 
-      const banner = document.getElementById('knockout-banner');
-      if (banner) {
-        const scorerTeam = (victimTeam === 'blue') ? 'RED' : 'BLUE';
-        banner.className = 'knockout-banner ' + (scorerTeam === 'RED' ? 'red-team' : 'blue-team');
-        banner.innerHTML = `<div>${scorerTeam} SCORED!</div><div style="font-size: 14px; margin-top: 4px; color: #e2e8f0; font-weight: 700;">${victimTeam.toUpperCase()} IMPALED IN ${hazardName}</div>`;
-        banner.style.display = 'block';
-        setTimeout(() => { if (banner) banner.style.display = 'none'; }, 1300);
-      }
+      const myTeam = isHost ? 'blue' : 'red';
+      const isMyScore = (victimTeam !== myTeam);
+      const scorerTeam = (victimTeam === 'blue') ? 'RED' : 'BLUE';
 
+      // HITTING A TRAP GIVES THE OTHER TEAM A POINT!
       if (victimTeam === 'blue') {
         redScore++;
         document.getElementById('red-score').innerText = redScore;
-        showPopup(`RED SCORED! (BLUE IMPALED IN ${hazardName})`, "#f43f5e");
       } else {
         blueScore++;
         document.getElementById('blue-score').innerText = blueScore;
-        showPopup(`BLUE SCORED! (RED IMPALED IN ${hazardName})`, "#38bdf8");
       }
 
-      // Detect & Award Bulletstorm Skillshot
-      const myTeam = isHost ? 'blue' : 'red';
-      const isMyScore = (victimTeam !== myTeam);
-      const skillshot = (typeof detectSkillshot === 'function') ? detectSkillshot(victimTeam, hazardName) : null;
+      // Sync updated match scores to multiplayer peers
+      if (isHost && typeof sendNet === 'function') {
+        sendNet({
+          type: 'sync_scores',
+          blueScore: blueScore,
+          redScore: redScore
+        });
+      }
 
-      if (skillshot) {
-        audio.playSkillshot();
-        if (window.triggerRumble) triggerRumble(0.8, 1.0, 350);
-
-        const victimPos = (victimTeam === (isHost ? 'blue' : 'red')) ? player.pos : remoteOpponent.pos;
-        createWorldSkillshotBadge(victimPos, skillshot.name, skillshot.points);
-
-        const skBanner = document.getElementById('skillshot-banner');
-        const skTitle = document.getElementById('skillshot-title');
-        const skPts = document.getElementById('skillshot-pts');
-        const skSub = document.getElementById('skillshot-sub');
-
-        if (skBanner && skTitle && skPts && skSub) {
-          skTitle.innerText = `⚡ SKILLSHOT: ${skillshot.name}`;
-          skPts.innerText = `+${skillshot.points} PTS`;
-          skSub.innerText = skillshot.desc;
-          skBanner.style.display = 'block';
-          setTimeout(() => { if (skBanner) skBanner.style.display = 'none'; }, 1800);
+      const banner = document.getElementById('knockout-banner');
+      if (banner) {
+        if (!isMyScore) {
+          // YOU (LOCAL PILOT) HIT A TRAP!
+          banner.className = 'knockout-banner victim';
+          banner.innerHTML = `
+            <div style="font-size: 28px; font-weight: 900; color: #fca5a5; text-shadow: 0 0 25px #ef4444;">💀 YOU HIT A TRAP!</div>
+            <div style="font-size: 15px; margin-top: 6px; color: #ffffff; font-weight: 800; letter-spacing: 1px;">+1 POINT TO OPPONENT (${scorerTeam})</div>
+            <div style="font-size: 12px; margin-top: 6px; color: #f87171; font-weight: 700; letter-spacing: 1px;">HAZARD: ${hazardName}</div>
+          `;
+          showPopup(`💀 YOU FELL INTO ${hazardName}! (+1 POINT TO ENEMY)`, "#ef4444");
+          if (window.audio && window.audio.playCrunch) audio.playCrunch(1.3);
+          screenShake = 0.85;
+        } else {
+          // OPPONENT / BOT HIT A TRAP!
+          banner.className = 'knockout-banner killer';
+          banner.innerHTML = `
+            <div style="font-size: 28px; font-weight: 900; color: #6ee7b7; text-shadow: 0 0 25px #10b981;">💥 ENEMY HIT A TRAP!</div>
+            <div style="font-size: 15px; margin-top: 6px; color: #ffffff; font-weight: 800; letter-spacing: 1px;">+1 POINT TO YOUR TEAM (${scorerTeam})</div>
+            <div style="font-size: 12px; margin-top: 6px; color: #34d399; font-weight: 700; letter-spacing: 1px;">HAZARD KNOCKOUT: ${hazardName}</div>
+          `;
+          showPopup(`🎯 ENEMY KNOCKED INTO TRAP! +1 POINT TO YOUR TEAM`, "#10b981");
+          if (window.audio && window.audio.playSkillshot) audio.playSkillshot();
+          if (window.triggerRumble) triggerRumble(0.8, 1.0, 350);
         }
+        banner.style.display = 'block';
+        setTimeout(() => { if (banner) banner.style.display = 'none'; }, 1800);
+      }
 
-        if (isMyScore) {
+      // Detect & Award Bulletstorm Skillshot ONLY TO THE SCORING TEAM (NEVER TO THE DEAD VICTIM!)
+      if (isMyScore) {
+        const skillshot = (typeof detectSkillshot === 'function') ? detectSkillshot(victimTeam, hazardName) : null;
+        if (skillshot) {
+          const victimPos = (victimTeam === 'blue') ? player.pos : remoteOpponent.pos;
+          createWorldSkillshotBadge(victimPos, skillshot.name, skillshot.points);
+
+          const skBanner = document.getElementById('skillshot-banner');
+          const skTitle = document.getElementById('skillshot-title');
+          const skPts = document.getElementById('skillshot-pts');
+          const skSub = document.getElementById('skillshot-sub');
+
+          if (skBanner && skTitle && skPts && skSub) {
+            skTitle.innerText = `⚡ SKILLSHOT: ${skillshot.name}`;
+            skPts.innerText = `+${skillshot.points} PTS`;
+            skSub.innerText = skillshot.desc;
+            skBanner.style.display = 'block';
+            setTimeout(() => { if (skBanner) skBanner.style.display = 'none'; }, 1800);
+          }
+
           window.matchStats.skillshotScore = (window.matchStats.skillshotScore || 0) + skillshot.points;
           if (!window.matchStats.skillshots) window.matchStats.skillshots = [];
           window.matchStats.skillshots.push(skillshot);
@@ -3832,13 +3955,13 @@
       }
 
       if (blueScore >= WIN_SCORE || redScore >= WIN_SCORE) {
-        const winner = blueScore >= WIN_SCORE ? "BLUE TEAM WINS" : "RED TEAM WINS";
-        const isBlueWin = blueScore >= WIN_SCORE;
+        const isBlueWin = (blueScore >= WIN_SCORE);
+        const myWin = (isBlueWin && isHost) || (!isBlueWin && !isHost);
         const mvpModal = document.getElementById('mvp-modal');
         const mvpTitle = document.getElementById('mvp-title');
         if (mvpTitle) {
-          mvpTitle.innerText = winner;
-          mvpTitle.style.color = isBlueWin ? '#38bdf8' : '#f43f5e';
+          mvpTitle.innerText = myWin ? "🏆 VICTORY! YOUR TEAM WON" : "💀 DEFEAT! OPPONENT WON";
+          mvpTitle.style.color = myWin ? '#10b981' : '#ef4444';
         }
         document.getElementById('stat-max-speed').innerText = window.matchStats.maxSpeed.toFixed(1) + ' M/S';
         document.getElementById('stat-hazard-kills').innerText = (blueScore + redScore);
@@ -5426,6 +5549,12 @@ updateHUD(dt);
       if (!isRespawning) {
         for (let hazard of hazards) {
           if (hazard.box.containsPoint(player.pos)) {
+            // In Map 1, check if player is safe on the central crossing bridge over the molten pit
+            if (hazard.type === 'MOLTEN_PIT' && currentMapId === 1) {
+              if (Math.abs(player.pos.x) < 2.0 && Math.abs(player.pos.z) < 12.0 && player.pos.y >= 0.8) {
+                continue; // Safe on bridge!
+              }
+            }
             triggerLocalKnockout(hazard.name);
             break;
           }
@@ -5687,6 +5816,12 @@ updateHUD(dt);
         // Hazard Collision Check for Bot
         for (let hazard of hazards) {
           if (hazard.box.containsPoint(remoteOpponent.pos)) {
+            // In Map 1, check if bot is safe on the central crossing bridge over the molten pit
+            if (hazard.type === 'MOLTEN_PIT' && currentMapId === 1) {
+              if (Math.abs(remoteOpponent.pos.x) < 2.0 && Math.abs(remoteOpponent.pos.z) < 12.0 && remoteOpponent.pos.y >= 0.8) {
+                continue; // Safe on bridge!
+              }
+            }
             createSparks(remoteOpponent.pos, 40, 0xf43f5e, 16);
             handleKnockoutScore('red', hazard.name);
             remoteOpponent.pos.set(0, (currentMapId === 2 ? 14 : 2.0), -22);
