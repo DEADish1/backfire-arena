@@ -1297,28 +1297,37 @@
       transform: scale(1.12);
       box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
     }
-    .op-chassis-grid {
+    .op-chassis-grid, .op-class-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
     }
-    .op-chassis-card {
-      background: rgba(15, 23, 42, 0.6);
+    .op-chassis-card, .op-class-card {
+      background: rgba(15, 23, 42, 0.75);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 8px;
-      padding: 10px 8px;
-      text-align: center;
+      padding: 10px 10px;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.18s ease;
+      position: relative;
+      overflow: hidden;
     }
-    .op-chassis-card:hover, .op-chassis-card.active {
+    .op-chassis-card:hover, .op-chassis-card.active, .op-class-card:hover, .op-class-card.active {
       border-color: #38bdf8;
       background: rgba(56, 189, 248, 0.16);
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.28);
+      transform: translateY(-2px);
+    }
+    .op-class-card.active::before, .op-chassis-card.active::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 4px; height: 100%;
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
     }
     .op-card-icon {
       font-size: 20px;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
     .op-card-title {
       font-size: 11px;
@@ -1425,6 +1434,12 @@
   <script>
     if (typeof THREE.GLTFLoader === 'undefined') {
       document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><\/script>');
+    }
+  </script>
+  <script src="js/SkeletonUtils.js"></script>
+  <script>
+    if (typeof THREE.SkeletonUtils === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"><\/script>');
     }
   </script>
   <script src="js/CopyShader.js"></script>
@@ -1555,7 +1570,16 @@
           </div>
         </div>
         <!-- Sleek Kinetic Ability Dock -->
-        <div style="display: flex; gap: 6px; margin-top: 8px;">
+        <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+          <div id="hud-badge-class-ability" style="background: rgba(15,23,42,0.92); border: 1.5px solid #38bdf8; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px; box-shadow: 0 0 14px rgba(56,189,248,0.35); position: relative; overflow: hidden; min-width: 135px;">
+            <div id="ability-cooldown-fill" style="position: absolute; left: 0; bottom: 0; top: 0; width: 0%; background: rgba(56,189,248,0.22); pointer-events: none; transition: width 0.1s linear;"></div>
+            <span id="hud-class-icon" style="font-size: 15px; position: relative; z-index: 2;">⚡</span>
+            <span id="label-ability-key" style="background: rgba(56,189,248,0.25); padding: 1px 5px; border-radius: 3px; font-weight: 900; color: #fff; position: relative; z-index: 2;">[F]</span>
+            <div style="display: flex; flex-direction: column; line-height: 1.1; position: relative; z-index: 2;">
+              <span id="text-ability-name" style="letter-spacing: 1px; color: #fff; font-size: 9.5px;">OVERDRIVE</span>
+              <span id="text-ability-status" style="font-size: 8.5px; color: #10b981; font-weight: 900;">READY</span>
+            </div>
+          </div>
           <div id="hud-badge-kick" style="background: rgba(15,23,42,0.85); border: 1px solid rgba(245,158,11,0.5); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; color: #f59e0b; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.4);">
             <span id="label-kick-key" style="background: rgba(245,158,11,0.2); padding: 1px 4px; border-radius: 3px;">[E]</span>
             <span id="text-kick-status">BOOT KICK</span>
@@ -1765,24 +1789,59 @@
               </div>
             </div>
 
-            <!-- Section 2: Chassis Suit Archetype -->
+            <!-- Section 2: Combat Operator Class & Tactical Archetype -->
             <div class="op-section">
-              <div class="op-section-title">CHASSIS SUIT ARCHETYPE</div>
-              <div class="op-chassis-grid">
-                <div class="op-chassis-card active" id="chassis-vanguard" onclick="setChassis('vanguard')">
-                  <div class="op-card-icon">🎖️</div>
-                  <div class="op-card-title">VANGUARD</div>
-                  <div class="op-card-sub">Assault Soldier</div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="op-section-title" style="margin-bottom: 0;">COMBAT OPERATOR CLASS & ARCHETYPE</div>
+                <span id="active-class-badge" style="font-size: 10px; font-weight: 900; color: #38bdf8; background: rgba(56,189,248,0.18); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.4);">🎖️ ASSAULT // STRIKER</span>
+              </div>
+              <div class="op-class-grid">
+                <div class="op-class-card op-chassis-card active" id="class-assault" onclick="setClass('assault')">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="op-card-icon">🎖️</span>
+                      <span class="op-card-title">ASSAULT</span>
+                    </div>
+                    <span style="font-size: 9px; font-weight: 900; background: rgba(56,189,248,0.2); color: #38bdf8; padding: 2px 6px; border-radius: 4px;">STRIKER</span>
+                  </div>
+                  <div class="op-card-sub" style="color: #38bdf8; font-weight: 800; margin-top: 5px;">⚡ OVERDRIVE THRUSTER [F]</div>
+                  <div style="font-size: 9px; color: #94a3b8; margin-top: 3px; line-height: 1.25;">Active: +24 m/s Scramjet Boost & Rapid Recoil Recovery.<br><span style="color: #64748b;">Passive: Kinetic Draft (+25% Dash Velocity).</span></div>
                 </div>
-                <div class="op-chassis-card" id="chassis-phantom" onclick="setChassis('phantom')">
-                  <div class="op-card-icon">🥷</div>
-                  <div class="op-card-title">PHANTOM</div>
-                  <div class="op-card-sub">Spec-Ops Stealth</div>
+
+                <div class="op-class-card op-chassis-card" id="class-recon" onclick="setClass('recon')">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="op-card-icon">🥷</span>
+                      <span class="op-card-title">RECON</span>
+                    </div>
+                    <span style="font-size: 9px; font-weight: 900; background: rgba(168,85,247,0.2); color: #c084fc; padding: 2px 6px; border-radius: 4px;">PHANTOM</span>
+                  </div>
+                  <div class="op-card-sub" style="color: #c084fc; font-weight: 800; margin-top: 5px;">📡 TACTICAL SONAR PING [F]</div>
+                  <div style="font-size: 9px; color: #94a3b8; margin-top: 3px; line-height: 1.25;">Active: 3D Holographic Pulse scans enemy & trajectory vectors.<br><span style="color: #64748b;">Passive: Tether Overreach (+40% Grapple Reach).</span></div>
                 </div>
-                <div class="op-chassis-card" id="chassis-titan" onclick="setChassis('titan')">
-                  <div class="op-card-icon">🦾</div>
-                  <div class="op-card-title">TITAN</div>
-                  <div class="op-card-sub">Heavy Juggernaut</div>
+
+                <div class="op-class-card op-chassis-card" id="class-juggernaut" onclick="setClass('juggernaut')">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="op-card-icon">🦾</span>
+                      <span class="op-card-title">JUGGERNAUT</span>
+                    </div>
+                    <span style="font-size: 9px; font-weight: 900; background: rgba(245,158,11,0.2); color: #fbbf24; padding: 2px 6px; border-radius: 4px;">TITAN</span>
+                  </div>
+                  <div class="op-card-sub" style="color: #fbbf24; font-weight: 800; margin-top: 5px;">🛡️ KINETIC FORTRESS [F]</div>
+                  <div style="font-size: 9px; color: #94a3b8; margin-top: 3px; line-height: 1.25;">Active: Heavy Shield Dome absorbs 75% knockback.<br><span style="color: #64748b;">Passive: Seismic Stomp (+60% Shockwave Radius).</span></div>
+                </div>
+
+                <div class="op-class-card op-chassis-card" id="class-engineer" onclick="setClass('engineer')">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="op-card-icon">⚡</span>
+                      <span class="op-card-title">ENGINEER</span>
+                    </div>
+                    <span style="font-size: 9px; font-weight: 900; background: rgba(16,185,129,0.2); color: #34d399; padding: 2px 6px; border-radius: 4px;">TACTICIAN</span>
+                  </div>
+                  <div class="op-card-sub" style="color: #34d399; font-weight: 800; margin-top: 5px;">💥 REPULSION NOVA [F]</div>
+                  <div style="font-size: 9px; color: #94a3b8; margin-top: 3px; line-height: 1.25;">Active: 360° Shockwave launches enemies away & deflects traps.<br><span style="color: #64748b;">Passive: Overclocked Venting (Rapid Recoil Cooling).</span></div>
                 </div>
               </div>
             </div>
@@ -2264,6 +2323,7 @@
       </div>
 
       <div class="controls-grid" id="lobby-controls-grid">
+        <div class="ctrl-item"><b>F / LB</b> Class Tactical Ability</div>
         <div class="ctrl-item"><b>L-CLICK / RT</b> Fire / Recoil Thrust</div>
         <div class="ctrl-item"><b>R-CLICK / RB</b> Kinetic Harpoon / Tether</div>
         <div class="ctrl-item"><b>Q / LT</b> Weapon Alt-Fire Mode</div>
@@ -2292,6 +2352,7 @@
       <button class="touch-btn" id="btn-touch-slide" style="background: #06b6d4; color: black;">SLIDE</button>
       <button class="touch-btn" id="btn-touch-tether" style="background: #3b82f6; color: white;">HOOK</button>
       <button class="touch-btn" id="btn-touch-alt" style="background: #a855f7; color: white;">ALT</button>
+      <button class="touch-btn" id="btn-touch-ability" style="background: #38bdf8; color: black; font-weight: 900; grid-column: span 3; padding: 10px 0;">⚡ CLASS ABILITY</button>
     </div>
   </div>
 
@@ -2328,11 +2389,102 @@
       }
     };
 
+    window.CHARACTER_CLASSES = {
+      assault: {
+        id: 'assault',
+        aliases: ['vanguard'],
+        name: 'ASSAULT',
+        tag: 'STRIKER',
+        sub: 'Kinetic Assault Operator',
+        icon: '🎖️',
+        color: '#38bdf8',
+        abilityId: 'overdrive',
+        abilityName: 'OVERDRIVE THRUSTER',
+        abilityIcon: '⚡',
+        abilityDesc: '+24 m/s Scramjet Boost & Rapid Recoil Recovery',
+        abilityCooldown: 10,
+        passiveName: 'Kinetic Draft',
+        passiveDesc: '+25% Dash Velocity & Low Aerial Drag',
+        modelScale: { x: 1.0, y: 1.0, z: 1.0 },
+        defaultAttachment: 'clean',
+        defaultJetpack: 'vector'
+      },
+      recon: {
+        id: 'recon',
+        aliases: ['phantom'],
+        name: 'RECON',
+        tag: 'PHANTOM',
+        sub: 'Spec-Ops Stealth Scout',
+        icon: '🥷',
+        color: '#c084fc',
+        abilityId: 'sonar_ping',
+        abilityName: 'TACTICAL SONAR PING',
+        abilityIcon: '📡',
+        abilityDesc: 'Holographic Radar scans enemy & hazard vectors',
+        abilityCooldown: 12,
+        passiveName: 'Tether Overreach',
+        passiveDesc: '+40% Grapple Tether Range & +20% Reel Speed',
+        modelScale: { x: 0.96, y: 1.03, z: 0.96 },
+        defaultAttachment: 'nvg',
+        defaultJetpack: 'wings'
+      },
+      juggernaut: {
+        id: 'juggernaut',
+        aliases: ['titan'],
+        name: 'JUGGERNAUT',
+        tag: 'TITAN',
+        sub: 'Heavy Concussive Tank',
+        icon: '🦾',
+        color: '#fbbf24',
+        abilityId: 'kinetic_fortress',
+        abilityName: 'KINETIC FORTRESS',
+        abilityIcon: '🛡️',
+        abilityDesc: 'Heavy Kinetic Dome absorbs 75% knockback',
+        abilityCooldown: 14,
+        passiveName: 'Seismic Stomp',
+        passiveDesc: '+60% Shockwave Stomp Radius & Heavy Resistance',
+        modelScale: { x: 1.15, y: 1.06, z: 1.18 },
+        defaultAttachment: 'shield',
+        defaultJetpack: 'quad'
+      },
+      engineer: {
+        id: 'engineer',
+        aliases: ['tactician'],
+        name: 'ENGINEER',
+        tag: 'TACTICIAN',
+        sub: 'Overclock Field Tactician',
+        icon: '⚡',
+        color: '#34d399',
+        abilityId: 'repulsion_nova',
+        abilityName: 'REPULSION NOVA',
+        abilityIcon: '💥',
+        abilityDesc: '360° Shockwave blasts enemies away & clears hazards',
+        abilityCooldown: 11,
+        passiveName: 'Overclocked Venting',
+        passiveDesc: 'Rapid Recoil Cooling & Instant Grapple Recharge',
+        modelScale: { x: 1.02, y: 1.0, z: 1.04 },
+        defaultAttachment: 'antennas',
+        defaultJetpack: 'vector'
+      }
+    };
+
+    window.resolveClassKey = function(key) {
+      if (!key) return 'assault';
+      const k = String(key).toLowerCase();
+      if (k === 'vanguard') return 'assault';
+      if (k === 'phantom') return 'recon';
+      if (k === 'titan') return 'juggernaut';
+      if (k === 'tactician') return 'engineer';
+      if (window.CHARACTER_CLASSES[k]) return k;
+      return 'assault';
+    };
+
     window.DEFAULT_CUSTOMIZATION = {
       callsign: 'VIPER',
       emblem: '💀',
       tag: '141',
-      chassis: 'vanguard', // 'vanguard' | 'phantom' | 'titan'
+      classId: 'assault',
+      chassis: 'assault', // 'assault' | 'recon' | 'juggernaut' | 'engineer' (with legacy aliases)
       camo: 'onyx', // 'onyx' | 'desert' | 'arctic' | 'damascus' | 'hazard' | 'bloodline'
       visorColor: '#38bdf8', // 8 radiant swatches
       attachment: 'clean', // 'clean' | 'nvg' | 'antennas' | 'shield'
@@ -2382,10 +2534,24 @@
         btn.classList.toggle('active', btn.getAttribute('data-emblem') === c.emblem);
       });
 
-      // Chassis
-      document.querySelectorAll('.op-chassis-card').forEach(card => {
-        card.classList.toggle('active', card.id === `chassis-${c.chassis}`);
+      // Operator Classes & Chassis
+      const currentClassKey = window.resolveClassKey(c.classId || c.chassis);
+      document.querySelectorAll('.op-class-card, .op-chassis-card').forEach(card => {
+        const id = card.id;
+        const isActive = (id === `class-${currentClassKey}`) || (id === `chassis-${currentClassKey}`) ||
+          (currentClassKey === 'assault' && id === 'chassis-vanguard') ||
+          (currentClassKey === 'recon' && id === 'chassis-phantom') ||
+          (currentClassKey === 'juggernaut' && id === 'chassis-titan');
+        card.classList.toggle('active', isActive);
       });
+
+      const activeBadge = document.getElementById('active-class-badge');
+      const clsObj = window.CHARACTER_CLASSES[currentClassKey] || window.CHARACTER_CLASSES.assault;
+      if (activeBadge) {
+        activeBadge.innerText = `${clsObj.icon} ${clsObj.name} // ${clsObj.tag}`;
+        activeBadge.style.color = clsObj.color;
+        activeBadge.style.borderColor = clsObj.color;
+      }
 
       // Camo
       document.querySelectorAll('.op-camo-card').forEach(card => {
@@ -2415,9 +2581,8 @@
       // Active label in Turntable
       const labelEl = document.getElementById('turntable-active-label');
       if (labelEl) {
-        const chassisNames = { vanguard: 'VANGUARD ASSAULT', phantom: 'PHANTOM SPEC-OPS', titan: 'TITAN JUGGERNAUT' };
         const camoNames = { onyx: 'TACTICAL ONYX', desert: 'DESERT DIGITAL', arctic: 'ARCTIC HEX', damascus: 'DAMASCUS STEEL', hazard: 'HAZARD CHEVRON', bloodline: 'BLOODLINE CRIMSON' };
-        labelEl.innerText = `${chassisNames[c.chassis] || 'OPERATOR'} • ${camoNames[c.camo] || 'TACTICAL'}`;
+        labelEl.innerText = `${clsObj.name} ${clsObj.tag} • ${camoNames[c.camo] || 'TACTICAL'}`;
       }
 
       // Update Turntable 3D Model
@@ -2461,7 +2626,22 @@
     };
 
     window.setChassis = function(chassisId) {
-      window.pilotCustomization.chassis = chassisId;
+      window.setClass(chassisId);
+    };
+
+    window.setClass = function(classId) {
+      const clsKey = window.resolveClassKey(classId);
+      window.pilotCustomization.classId = clsKey;
+      window.pilotCustomization.chassis = clsKey;
+      const cls = window.CHARACTER_CLASSES[clsKey];
+      if (cls) {
+        if (!window.pilotCustomization.attachment || window.pilotCustomization.attachment === 'clean') {
+          window.pilotCustomization.attachment = cls.defaultAttachment;
+        }
+        if (!window.pilotCustomization.jetpack || window.pilotCustomization.jetpack === 'vector') {
+          window.pilotCustomization.jetpack = cls.defaultJetpack;
+        }
+      }
       window.syncCustomizationUI();
       window.saveCustomizationToStorage();
       if (window.audio && window.audio.playPing) window.audio.playPing();
@@ -2504,7 +2684,7 @@
     };
 
     window.randomizeCustomization = function() {
-      const chassisList = ['vanguard', 'phantom', 'titan'];
+      const classList = ['assault', 'recon', 'juggernaut', 'engineer'];
       const camoList = ['onyx', 'desert', 'arctic', 'damascus', 'hazard', 'bloodline'];
       const visorList = ['#38bdf8', '#f43f5e', '#10b981', '#facc15', '#c084fc', '#ffffff', '#f97316', '#ec4899'];
       const attachList = ['clean', 'nvg', 'antennas', 'shield'];
@@ -2515,7 +2695,9 @@
       const watchList = ['emerald', 'cyan', 'amber', 'redline'];
 
       const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-      window.pilotCustomization.chassis = pick(chassisList);
+      const pickedClass = pick(classList);
+      window.pilotCustomization.classId = pickedClass;
+      window.pilotCustomization.chassis = pickedClass;
       window.pilotCustomization.camo = pick(camoList);
       window.pilotCustomization.visorColor = pick(visorList);
       window.pilotCustomization.thrusterFlameColor = window.pilotCustomization.visorColor;
@@ -3686,6 +3868,98 @@
         osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.23);
       }
+      playOverdrive() {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.18);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.45);
+        gain.gain.setValueAtTime(0.85, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.connect(gain); gain.connect(this.dest());
+        osc.start(now); osc.stop(now + 0.52);
+
+        const sub = this.ctx.createOscillator();
+        const subGain = this.ctx.createGain();
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(90, now);
+        sub.frequency.exponentialRampToValueAtTime(25, now + 0.4);
+        subGain.gain.setValueAtTime(0.9, now);
+        subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.42);
+        sub.connect(subGain); subGain.connect(this.dest());
+        sub.start(now); sub.stop(now + 0.45);
+      }
+      playSonarPing() {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1800, now);
+        osc.frequency.exponentialRampToValueAtTime(750, now + 0.28);
+        gain.gain.setValueAtTime(0.7, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.connect(gain); gain.connect(this.dest());
+        osc.start(now); osc.stop(now + 0.36);
+
+        const blip = this.ctx.createOscillator();
+        const blipGain = this.ctx.createGain();
+        blip.type = 'triangle';
+        blip.frequency.setValueAtTime(2800, now + 0.08);
+        blip.frequency.setValueAtTime(3600, now + 0.15);
+        blipGain.gain.setValueAtTime(0.35, now + 0.08);
+        blipGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        blip.connect(blipGain); blipGain.connect(this.dest());
+        blip.start(now + 0.08); blip.stop(now + 0.26);
+      }
+      playKineticFortress() {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(90, now);
+        osc.frequency.linearRampToValueAtTime(240, now + 0.15);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.5);
+        gain.gain.setValueAtTime(0.75, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.52);
+        osc.connect(gain); gain.connect(this.dest());
+        osc.start(now); osc.stop(now + 0.55);
+      }
+      playRepulsionNova() {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(28, now + 0.35);
+        gain.gain.setValueAtTime(0.9, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
+        osc.connect(gain); gain.connect(this.dest());
+        osc.start(now); osc.stop(now + 0.4);
+
+        const nBuf = this.createNoiseBuffer(0.22);
+        if (nBuf) {
+          const nSrc = this.ctx.createBufferSource();
+          nSrc.buffer = nBuf;
+          const bpf = this.ctx.createBiquadFilter();
+          bpf.type = 'bandpass'; bpf.frequency.setValueAtTime(2200, now);
+          bpf.frequency.exponentialRampToValueAtTime(180, now + 0.22);
+          const nGain = this.ctx.createGain();
+          nGain.gain.setValueAtTime(0.8, now);
+          nGain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+          nSrc.connect(bpf); bpf.connect(nGain); nGain.connect(this.dest());
+          nSrc.start(now);
+        }
+      }
       playJump() {
         if (!this.ctx) return;
         this.ensureActive();
@@ -4641,13 +4915,14 @@
       return tex;
     }
 
-    function createCallsignBillboard(callsign, emblem, tag, teamColorHex) {
+    function createCallsignBillboard(callsign, emblem, tag, teamColorHex, className) {
       const c = document.createElement('canvas');
       c.width = 512;
       c.height = 128;
       const ctx = c.getContext('2d');
 
       let colStr = typeof teamColorHex === 'string' ? teamColorHex : ('#' + ('000000' + (teamColorHex || 0x38bdf8).toString(16)).slice(-6));
+      let currentClassName = className || 'ASSAULT';
 
       function drawTag() {
         ctx.clearRect(0, 0, 512, 128);
@@ -4702,7 +4977,8 @@
 
         ctx.fillStyle = '#94a3b8';
         ctx.font = 'bold 16px monospace';
-        ctx.fillText('ONLINE // COMBAT-READY', x + 110, y + 83);
+        const subText = (currentClassName ? (currentClassName.toUpperCase() + ' // ') : '') + 'COMBAT-READY';
+        ctx.fillText(subText, x + 110, y + 83);
       }
 
       drawTag();
@@ -4718,11 +4994,12 @@
         canvas: c,
         ctx: ctx,
         texture: tex,
-        update: function(newCallsign, newEmblem, newTag, newColor) {
+        update: function(newCallsign, newEmblem, newTag, newColor, newClass) {
           if (newCallsign) callsign = newCallsign;
           if (newEmblem) emblem = newEmblem;
           if (newTag) tag = newTag;
           if (newColor) colStr = typeof newColor === 'string' ? newColor : ('#' + ('000000' + (newColor || 0x38bdf8).toString(16)).slice(-6));
+          if (newClass) currentClassName = newClass;
           drawTag();
           tex.needsUpdate = true;
         }
@@ -6456,14 +6733,124 @@
     );
     remoteTetherLine.visible = false; scene.add(remoteTetherLine);
 
-    // --- REMOTE OPPONENT 3D ACTOR (CYBERNETIC ARENA MECH PILOT) ---
+    // --- GLOBAL ASSET PRELOADER: REALISTIC 3D SOLDIER RIG (GLTF) ---
+    let CACHED_SOLDIER_GLTF = null;
+    let soldierLoadWaiters = [];
+
+    function preloadSoldierModel() {
+      if (typeof THREE.GLTFLoader === 'undefined') return;
+      const loader = new THREE.GLTFLoader();
+      loader.load('models/Soldier.glb', function(gltf) {
+        CACHED_SOLDIER_GLTF = gltf;
+        while (soldierLoadWaiters.length > 0) {
+          const waiter = soldierLoadWaiters.shift();
+          try { waiter(gltf); } catch (e) { console.error('Soldier waiter error:', e); }
+        }
+      }, undefined, function(err) {
+        console.warn('Soldier.glb preload notice:', err);
+      });
+    }
+    preloadSoldierModel();
+
+    function attachClonedSoldier(g, gltf, customData, effectiveColor, effectiveCamoTex, jetpackGroup, coreReactor, carbineGroup, headGroup, proceduralBody) {
+      if (!gltf || !gltf.scene) return;
+      const soldier = (typeof THREE.SkeletonUtils !== 'undefined') ? THREE.SkeletonUtils.clone(gltf.scene) : gltf.scene.clone(true);
+
+      const classKey = window.resolveClassKey(customData.classId || customData.chassis);
+      const classInfo = window.CHARACTER_CLASSES[classKey] || window.CHARACTER_CLASSES.assault;
+      const s = classInfo.modelScale || { x: 1.0, y: 1.0, z: 1.0 };
+      soldier.scale.set(s.x, s.y, s.z);
+      soldier.position.set(0, 0, 0);
+
+      soldier.traverse(function(child) {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          if (child.material) {
+            child.material = child.material.clone();
+            if (child.material.name === 'Vanguard_VisorMat') {
+              child.material.color.set(effectiveColor);
+              child.material.emissive.set(effectiveColor);
+              child.material.emissiveIntensity = 2.4;
+            } else if (child.material.name === 'VanguardBodyMat') {
+              if (effectiveCamoTex) {
+                child.material.map = effectiveCamoTex;
+                child.material.needsUpdate = true;
+              }
+            }
+          }
+        }
+      });
+
+      // Setup AnimationMixer
+      const mixer = new THREE.AnimationMixer(soldier);
+      const idleClip = gltf.animations.find(a => a.name === 'Idle') || gltf.animations[0];
+      const runClip = gltf.animations.find(a => a.name === 'Run') || gltf.animations[1];
+      const idleAction = mixer.clipAction(idleClip);
+      const runAction = mixer.clipAction(runClip);
+      idleAction.play();
+
+      g.userData.mixer = mixer;
+      g.userData.idleAction = idleAction;
+      g.userData.runAction = runAction;
+
+      // Attach cybernetic jetpack with animated thruster flames to soldier spine bone
+      const spineBone = soldier.getObjectByName('mixamorig:Spine1') || soldier.getObjectByName('mixamorigSpine1');
+      if (spineBone) {
+        jetpackGroup.position.set(0, 0.15, -0.22);
+        jetpackGroup.rotation.set(0, 0, 0);
+        spineBone.add(jetpackGroup);
+      } else {
+        jetpackGroup.position.set(0, 1.15, -0.22);
+        soldier.add(jetpackGroup);
+      }
+
+      // Attach glowing fusion reactor to chest
+      if (spineBone) {
+        coreReactor.position.set(0, 0.22, 0.16);
+        spineBone.add(coreReactor);
+      } else {
+        coreReactor.position.set(0, 1.25, 0.16);
+        soldier.add(coreReactor);
+      }
+
+      // Attach 3D tactical carbine to right hand bone
+      const rHand = soldier.getObjectByName('mixamorig:RightHand') || soldier.getObjectByName('mixamorigRightHand');
+      if (rHand) {
+        carbineGroup.position.set(0.04, 0.12, 0.02);
+        carbineGroup.rotation.set(0, -Math.PI / 2, Math.PI / 2);
+        rHand.add(carbineGroup);
+      } else {
+        carbineGroup.position.set(0.25, 0.95, 0.25);
+        soldier.add(carbineGroup);
+      }
+
+      // Attach helmet attachments to head bone
+      const headBone = soldier.getObjectByName('mixamorig:Head') || soldier.getObjectByName('mixamorigHead');
+      if (headBone && headGroup) {
+        headGroup.position.set(0, 0.13, 0.03);
+        headBone.add(headGroup);
+        if (headGroup.userData && headGroup.userData.baseHelmet) {
+          headGroup.userData.baseHelmet.visible = false;
+        }
+      }
+
+      // Real 3D Soldier takes over completely — hide procedural fallback!
+      if (proceduralBody) proceduralBody.visible = false;
+      soldier.visible = true;
+      g.add(soldier);
+      g.userData.soldierScene = soldier;
+    }
+
+    // --- REALISTIC 3D OPERATOR MESH (NO MINECRAFT BOXES) ---
     function createOpponentMesh(colorHex, initialCustom, addToScene = true) {
       const g = new THREE.Group();
       const customData = Object.assign({
         callsign: 'VIPER',
         emblem: '💀',
         tag: '141',
-        chassis: 'vanguard',
+        classId: 'assault',
+        chassis: 'assault',
         camo: 'onyx',
         visorColor: colorHex,
         attachment: 'clean',
@@ -6505,154 +6892,119 @@
       const matPiston = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.08, metalness: 1.0 });
       const matUnderSuit = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85, metalness: 0.15 });
 
-      // --- 1. PELVIS & ARTICULATED LEGS ---
+      // --- PROCEDURAL HUMAN ANATOMY (ORGANIC CURVES ONLY - ZERO MINECRAFT BOXES) ---
       const proceduralBody = new THREE.Group();
       g.add(proceduralBody);
       g.userData.proceduralBody = proceduralBody;
 
+      // Pelvis & Waist Harness
       const pelvisGroup = new THREE.Group();
       pelvisGroup.position.set(0, 0.86, 0);
 
-      const pelvisChassis = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.22, 0.32), matArmorDark);
+      const pelvisChassis = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.20, 0.20, 16), matArmorDark);
       pelvisChassis.castShadow = true; pelvisChassis.receiveShadow = true;
-      const groinGuard = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.12), matArmorSteel);
+      const groinGuard = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.06, 0.18, 12), matArmorSteel);
       groinGuard.position.set(0, -0.04, 0.12); groinGuard.rotation.x = 0.2;
-      const canL = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.18, 8), matArmorSteel);
-      canL.position.set(-0.25, 0, 0); canL.rotation.z = Math.PI / 2;
-      const canR = canL.clone(); canR.position.x = 0.25;
-      pelvisGroup.add(pelvisChassis, groinGuard, canL, canR);
+      pelvisGroup.add(pelvisChassis, groinGuard);
 
       // Left Leg Pivot Hierarchy (Hip -> Knee -> Ankle -> Boot)
       const hipPivotL = new THREE.Group();
-      hipPivotL.position.set(-0.18, -0.06, 0);
-      const hipJointL = new THREE.Mesh(new THREE.SphereGeometry(0.065, 8, 8), matArmorSteel);
-      const thighCoreL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.38, 0.2), matUnderSuit);
+      hipPivotL.position.set(-0.16, -0.06, 0);
+      const hipJointL = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 10), matArmorSteel);
+      const thighCoreL = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.075, 0.38, 14), matUnderSuit);
       thighCoreL.position.set(0, -0.19, 0);
-      const thighPlateL = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.32, 0.08), matArmorDark);
-      thighPlateL.position.set(0, -0.18, 0.09);
-      const thighConduitL = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.32, 8), matTeamTrim);
-      thighConduitL.position.set(-0.1, -0.18, 0);
+      const thighPlateL = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.082, 0.32, 14, 1, false, -Math.PI*0.4, Math.PI*0.8), matArmorDark);
+      thighPlateL.position.set(0, -0.18, 0.02);
 
       const kneePivotL = new THREE.Group();
       kneePivotL.position.set(0, -0.38, 0);
-      const kneeCopL = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.14, 0.12), matArmorSteel);
-      kneeCopL.position.set(0, 0, 0.07);
-      const shockCylL = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.18, 8), matArmorDark);
-      shockCylL.position.set(0, 0, -0.07);
-      const shockPistonL = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.14, 8), matPiston);
-      shockPistonL.position.set(0, 0.04, -0.07);
-
-      const shinL = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.36, 0.18), matArmorDark);
-      shinL.position.set(0, -0.19, 0.02);
-      const shinRidgeL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.32, 0.06), matArmorSteel);
-      shinRidgeL.position.set(0, -0.18, 0.12);
-      const calfThrusterL = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.08, 8), matArmorSteel);
-      calfThrusterL.position.set(0, -0.22, -0.09); calfThrusterL.rotation.x = 0.5;
+      const kneeCopL = new THREE.Mesh(new THREE.SphereGeometry(0.072, 12, 10), matArmorSteel);
+      kneeCopL.position.set(0, 0, 0.04);
+      const shinL = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.065, 0.36, 14), matArmorDark);
+      shinL.position.set(0, -0.19, 0.01);
 
       const anklePivotL = new THREE.Group();
       anklePivotL.position.set(0, -0.38, 0);
-      const bootMainL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.18, 0.34), matArmorDark);
-      bootMainL.position.set(0, 0.06, 0.04);
-      const soleL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.06, 0.38), matRubber);
-      soleL.position.set(0, -0.04, 0.05);
-      const toeL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.09, 0.1), matArmorSteel);
-      toeL.position.set(0, 0.03, 0.18);
-      const heelNozzleL = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.06, 8), matArmorSteel);
-      heelNozzleL.position.set(0, 0.02, -0.12); heelNozzleL.rotation.x = -0.4;
-      anklePivotL.add(bootMainL, soleL, toeL, heelNozzleL);
+      const bootMainL = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.16, 12), matArmorDark);
+      bootMainL.position.set(0, 0.08, 0);
+      const soleL = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.10, 0.05, 12), matRubber);
+      soleL.position.set(0, -0.02, 0.04);
+      soleL.scale.set(1.0, 1.0, 1.4);
+      const toeL = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 10), matArmorSteel);
+      toeL.position.set(0, 0.02, 0.10);
+      toeL.scale.set(1.0, 0.8, 1.2);
+      anklePivotL.add(bootMainL, soleL, toeL);
 
-      kneePivotL.add(kneeCopL, shockCylL, shockPistonL, shinL, shinRidgeL, calfThrusterL, anklePivotL);
-      hipPivotL.add(hipJointL, thighCoreL, thighPlateL, thighConduitL, kneePivotL);
+      kneePivotL.add(kneeCopL, shinL, anklePivotL);
+      hipPivotL.add(hipJointL, thighCoreL, thighPlateL, kneePivotL);
       pelvisGroup.add(hipPivotL);
 
       // Right Leg Pivot Hierarchy (Mirrored)
       const hipPivotR = new THREE.Group();
-      hipPivotR.position.set(0.18, -0.06, 0);
+      hipPivotR.position.set(0.16, -0.06, 0);
       const hipJointR = hipJointL.clone();
       const thighCoreR = thighCoreL.clone();
       const thighPlateR = thighPlateL.clone();
-      const thighConduitR = thighConduitL.clone(); thighConduitR.position.x = 0.1;
 
       const kneePivotR = new THREE.Group();
       kneePivotR.position.set(0, -0.38, 0);
       const kneeCopR = kneeCopL.clone();
-      const shockCylR = shockCylL.clone();
-      const shockPistonR = shockPistonL.clone();
       const shinR = shinL.clone();
-      const shinRidgeR = shinRidgeL.clone();
-      const calfThrusterR = calfThrusterL.clone();
 
       const anklePivotR = new THREE.Group();
       anklePivotR.position.set(0, -0.38, 0);
       const bootMainR = bootMainL.clone();
       const soleR = soleL.clone();
       const toeR = toeL.clone();
-      const heelNozzleR = heelNozzleL.clone();
-      anklePivotR.add(bootMainR, soleR, toeR, heelNozzleR);
+      anklePivotR.add(bootMainR, soleR, toeR);
 
-      kneePivotR.add(kneeCopR, shockCylR, shockPistonR, shinR, shinRidgeR, calfThrusterR, anklePivotR);
-      hipPivotR.add(hipJointR, thighCoreR, thighPlateR, thighConduitR, kneePivotR);
+      kneePivotR.add(kneeCopR, shinR, anklePivotR);
+      hipPivotR.add(hipJointR, thighCoreR, thighPlateR, kneePivotR);
       pelvisGroup.add(hipPivotR);
       proceduralBody.add(pelvisGroup);
 
-      // --- 2. TORSO, COMPOSITE CHEST & SPINAL COLUMN ---
+      // --- TORSO, COMPOSITE CHEST & SPINAL COLUMN ---
       const torsoGroup = new THREE.Group();
       torsoGroup.position.set(0, 0.86, 0);
 
-      // Abdominal Segmented Transverse Armor Plates
-      for (let ab = 0; ab < 3; ab++) {
-        const abPlate = new THREE.Mesh(new THREE.BoxGeometry(0.38 - ab * 0.02, 0.07, 0.28), matArmorSteel);
-        abPlate.position.set(0, 0.08 + ab * 0.09, 0.04);
-        torsoGroup.add(abPlate);
-      }
-      // Spinal Column Vertebrae
-      for (let sp = 0; sp < 5; sp++) {
-        const vert = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.08), matArmorSteel);
-        vert.position.set(0, 0.08 + sp * 0.09, -0.15);
-        torsoGroup.add(vert);
-      }
+      // Ergonomic Abdominal Core
+      const abCore = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.21, 0.26, 16), matUnderSuit);
+      abCore.position.set(0, 0.16, 0);
+      torsoGroup.add(abCore);
 
-      // Beveled Composite Pectoral Plates
-      const chestL = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.16), matArmorDark);
-      chestL.position.set(-0.16, 0.42, 0.08); chestL.rotation.y = 0.12; chestL.rotation.z = -0.05;
-      const chestR = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.16), matArmorDark);
-      chestR.position.set(0.16, 0.42, 0.08); chestR.rotation.y = -0.12; chestR.rotation.z = 0.05;
-      // Team Colored Chevron Stripe
-      const chevron = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.06, 0.04), matTeamTrim);
-      chevron.position.set(0, 0.52, 0.16);
+      // Pectoral Plate Carrier
+      const chestPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.23, 0.28, 16, 1, false, -Math.PI*0.45, Math.PI*0.9), matArmorDark);
+      chestPlate.position.set(0, 0.42, 0.04);
+      const chevron = new THREE.Mesh(new THREE.CylinderGeometry(0.255, 0.235, 0.05, 16, 1, false, -Math.PI*0.4, Math.PI*0.8), matTeamTrim);
+      chevron.position.set(0, 0.50, 0.04);
 
-      // Glowing Sternum Fusion Reactor & Containment Bezel
-      const coreBezel = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.06, 8), matArmorSteel);
+      // Glowing Sternum Fusion Reactor
+      const coreBezel = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.06, 12), matArmorSteel);
       coreBezel.rotation.x = Math.PI / 2; coreBezel.position.set(0, 0.38, 0.16);
       const coreReactor = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 12), matReactorCore);
       coreReactor.position.set(0, 0.38, 0.18);
 
-      // Flexible Neck Compression Seal Collar
-      const neckCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.12, 12), matUnderSuit);
-      neckCollar.position.set(0, 0.6, 0);
+      // Flexible Neck Collar
+      const neckCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.14, 16), matUnderSuit);
+      neckCollar.position.set(0, 0.62, 0);
 
-      // Articulated Shoulder Pauldrons
-      const pauldronL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.26), matArmorSteel);
-      pauldronL.position.set(-0.4, 0.54, 0); pauldronL.rotation.z = -0.2;
-      const pauldronStripeL = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.04, 0.27), matTeamTrim);
-      pauldronL.add(pauldronStripeL);
+      // Pauldrons (Curved Deltoid Bells)
+      const pauldronL = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10, 0, Math.PI, 0, Math.PI * 0.7), matArmorSteel);
+      pauldronL.position.set(-0.36, 0.52, 0); pauldronL.rotation.z = -0.3;
+      const pauldronR = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10, 0, Math.PI, 0, Math.PI * 0.7), matArmorSteel);
+      pauldronR.position.set(0.36, 0.52, 0); pauldronR.rotation.z = 0.3; pauldronR.rotation.y = Math.PI;
 
-      const pauldronR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.26), matArmorSteel);
-      pauldronR.position.set(0.4, 0.54, 0); pauldronR.rotation.z = 0.2;
-      const pauldronStripeR = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.04, 0.27), matTeamTrim);
-      pauldronR.add(pauldronStripeR);
+      torsoGroup.add(chestPlate, chevron, coreBezel, coreReactor, neckCollar, pauldronL, pauldronR);
 
-      torsoGroup.add(chestL, chestR, chevron, coreBezel, coreReactor, neckCollar, pauldronL, pauldronR);
-
-      // --- 3. DUAL-TURBINE VECTORING JETPACK & THRUSTER FLAMES ---
+      // --- DUAL-TURBINE VECTORING JETPACK & THRUSTER FLAMES ---
       const jetpackGroup = new THREE.Group();
       jetpackGroup.position.set(0, 0.42, -0.22);
 
-      const jetBody = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.46, 0.16), matArmorDark);
-      const jetHeatSink = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.14), matArmorSteel);
-      jetHeatSink.position.set(0, 0.24, 0);
+      const jetBody = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.16, 0.42, 16), matArmorDark);
+      const jetHeatSink = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.08, 16), matArmorSteel);
+      jetHeatSink.position.set(0, 0.22, 0);
 
-      // Jetpack Style 1: Vector Nacelles (Twin heavy turbines)
+      // Jetpack Style 1: Vector Nacelles
       const jetpackVariantVector = new THREE.Group();
       const podL = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.52, 12), matArmorSteel);
       podL.position.set(-0.24, -0.02, 0);
@@ -6670,7 +7022,7 @@
       const flameR = flameL.clone(); flameR.position.x = 0.24;
       jetpackVariantVector.add(podL, podR, nozzleL, nozzleR, flameL, flameR);
 
-      // Jetpack Style 2: Quad Exhaust (4-nozzle high-velocity boost array)
+      // Jetpack Style 2: Quad Exhaust
       const jetpackVariantQuad = new THREE.Group();
       for (let q = 0; q < 4; q++) {
         const qx = (q % 2 === 0) ? -0.21 : 0.21;
@@ -6686,17 +7038,13 @@
         jetpackVariantQuad.add(qPod, qNoz, qFl);
       }
 
-      // Jetpack Style 3: Aero Wings (Swept flight fins for atmospheric glide)
+      // Jetpack Style 3: Aero Wings
       const jetpackVariantWings = new THREE.Group();
-      const wingL = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.03, 0.26), matArmorDark);
+      const wingL = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.22, 0.46, 3), matArmorDark);
       wingL.position.set(-0.36, 0.04, -0.04); wingL.rotation.set(-0.15, 0.2, 0.35);
-      const wingRimL = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.035, 0.04), matTeamTrim);
-      wingRimL.position.set(-0.36, 0.04, 0.08); wingRimL.rotation.set(-0.15, 0.2, 0.35);
-      const wingR = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.03, 0.26), matArmorDark);
+      const wingR = wingL.clone();
       wingR.position.set(0.36, 0.04, -0.04); wingR.rotation.set(-0.15, -0.2, -0.35);
-      const wingRimR = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.035, 0.04), matTeamTrim);
-      wingRimR.position.set(0.36, 0.04, 0.08); wingRimR.rotation.set(-0.15, -0.2, -0.35);
-      jetpackVariantWings.add(wingL, wingRimL, wingR, wingRimR, podL.clone(), podR.clone(), flameL.clone(), flameR.clone());
+      jetpackVariantWings.add(wingL, wingR, podL.clone(), podR.clone(), flameL.clone(), flameR.clone());
 
       const beaconLight = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshBasicMaterial({ color: effectiveColor }));
       beaconLight.position.set(0, 0.29, 0);
@@ -6709,154 +7057,119 @@
       jetpackVariantQuad.visible = (customData.jetpack === 'quad');
       jetpackVariantWings.visible = (customData.jetpack === 'wings');
 
-      // --- 4. ARTICULATED HEAD & CYBERNETIC HELMET ---
+      // --- ARTICULATED HEAD & BALLISTIC COMBAT HELMET ---
       const headGroup = new THREE.Group();
-      headGroup.position.set(0, 0.66, 0);
+      headGroup.position.set(0, 0.68, 0);
 
-      const helmet = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.34, 0.38), matArmorDark);
-      helmet.position.set(0, 0.16, 0);
-      const crest = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.36), matTeamTrim);
-      crest.position.set(0, 0.33, 0);
+      // Realistic Cranial Dome (Curved Sphere)
+      const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.165, 18, 16), matArmorDark);
+      helmet.position.set(0, 0.14, 0);
+      headGroup.userData.baseHelmet = helmet;
 
-      const mandibleL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.22), matArmorSteel);
-      mandibleL.position.set(-0.16, 0.08, 0.08); mandibleL.rotation.y = 0.22;
-      const mandibleR = mandibleL.clone(); mandibleR.position.x = 0.16; mandibleR.rotation.y = -0.22;
+      // Contoured Panoramic Curved Visor
+      const visor = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.11, 16, 1, false, -Math.PI*0.35, Math.PI*0.7), matVisorGlow);
+      visor.position.set(0, 0.14, 0.02);
 
-      const rebreatherL = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.12, 8), matArmorSteel);
-      rebreatherL.position.set(-0.12, 0.03, 0.18); rebreatherL.rotation.x = 0.4;
-      const rebreatherR = rebreatherL.clone(); rebreatherR.position.x = 0.12;
+      // Tactical Rebreathers
+      const rebreatherL = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.10, 8), matArmorSteel);
+      rebreatherL.position.set(-0.09, 0.05, 0.12); rebreatherL.rotation.x = 0.4;
+      const rebreatherR = rebreatherL.clone(); rebreatherR.position.x = 0.09;
 
-      // Tactical Optics Sensor Pod
-      const optics1 = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.06, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
-      optics1.rotation.x = Math.PI / 2; optics1.position.set(-0.11, 0.24, 0.19);
-      const optics2 = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.05, 8), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
-      optics2.rotation.x = Math.PI / 2; optics2.position.set(-0.06, 0.24, 0.19);
-
-      // Holographic Panoramic Visor
-      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.14, 0.12), matVisorGlow);
-      visor.position.set(0, 0.18, 0.18);
-
-      // Ear Comms & Signal Antenna
-      const earComm = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.42, 8), matArmorSteel);
-      earComm.rotation.z = Math.PI / 2; earComm.position.set(0, 0.16, 0);
-      const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.32, 6), matArmorSteel);
-      antenna.position.set(-0.18, 0.34, -0.06); antenna.rotation.z = 0.18;
-
-      // Modular Tactical Helmet Attachments
+      // Modular Helmet Attachments
       const nvgCluster = new THREE.Group();
-      const nvgMount = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.08), matArmorSteel);
-      nvgMount.position.set(0, 0.28, 0.21);
+      const nvgMount = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.16, 8), matArmorSteel);
+      nvgMount.rotation.z = Math.PI / 2; nvgMount.position.set(0, 0.22, 0.16);
       nvgCluster.add(nvgMount);
       const matNvgLens = new THREE.MeshBasicMaterial({ color: 0x10b981 });
       for (let t = 0; t < 4; t++) {
         const xOffset = -0.09 + t * 0.06;
         const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.024, 0.12, 8), matArmorSteel);
-        tube.rotation.x = Math.PI / 2; tube.position.set(xOffset, 0.25, 0.25);
+        tube.rotation.x = Math.PI / 2; tube.position.set(xOffset, 0.21, 0.21);
         const lens = new THREE.Mesh(new THREE.CircleGeometry(0.019, 8), matNvgLens);
-        lens.position.set(xOffset, 0.25, 0.312);
+        lens.position.set(xOffset, 0.21, 0.272);
         nvgCluster.add(tube, lens);
       }
 
       const antennaCluster = new THREE.Group();
       const antL = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.009, 0.42, 6), matArmorSteel);
-      antL.position.set(-0.20, 0.38, -0.08); antL.rotation.set(0.1, 0, 0.22);
-      const ledL = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), new THREE.MeshBasicMaterial({ color: 0x10b981 }));
-      ledL.position.set(-0.25, 0.58, -0.09);
-      const antR = antL.clone(); antR.position.x = 0.20; antR.rotation.z = -0.22;
-      const ledR = ledL.clone(); ledR.position.x = 0.25;
-      antennaCluster.add(antL, ledL, antR, ledR);
+      antL.position.set(-0.16, 0.32, -0.08); antL.rotation.set(0.1, 0, 0.22);
+      const antR = antL.clone(); antR.position.x = 0.16; antR.rotation.z = -0.22;
+      antennaCluster.add(antL, antR);
 
       const blastShield = new THREE.Group();
-      const shieldPlate = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.12, 0.06), matArmorSteel);
-      shieldPlate.position.set(0, 0.26, 0.21); shieldPlate.rotation.x = -0.15;
-      const shieldStripe = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.02, 0.065), matHazard);
-      shieldStripe.position.set(0, 0.26, 0.21); shieldStripe.rotation.x = -0.15;
-      blastShield.add(shieldPlate, shieldStripe);
+      const shieldPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.10, 16, 1, false, -Math.PI*0.38, Math.PI*0.76), matArmorSteel);
+      shieldPlate.position.set(0, 0.16, 0.04);
+      blastShield.add(shieldPlate);
 
-      headGroup.add(helmet, crest, mandibleL, mandibleR, rebreatherL, rebreatherR, optics1, optics2, visor, earComm, antenna, nvgCluster, antennaCluster, blastShield);
+      headGroup.add(helmet, visor, rebreatherL, rebreatherR, nvgCluster, antennaCluster, blastShield);
       torsoGroup.add(headGroup);
 
-      // Attachment visibility
       nvgCluster.visible = (customData.attachment === 'nvg');
       antennaCluster.visible = (customData.attachment === 'antennas');
       blastShield.visible = (customData.attachment === 'shield');
 
-      // --- 5. ARTICULATED ARMS & HELD TACTICAL WEAPON ---
-      // Left Arm Pivot Hierarchy
+      // --- ARTICULATED ARMS & HELD WEAPON ---
       const shoulderPivotL = new THREE.Group();
-      shoulderPivotL.position.set(-0.36, 0.48, 0);
-
-      const bicepL = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.28, 0.14), matArmorDark);
+      shoulderPivotL.position.set(-0.34, 0.48, 0);
+      const bicepL = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.28, 12), matArmorDark);
       bicepL.position.set(0, -0.14, 0);
 
       const elbowPivotL = new THREE.Group();
       elbowPivotL.position.set(0, -0.28, 0);
-      const elbowGuardL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.12), matArmorSteel);
-      const forearmL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.26, 0.13), matArmorDark);
+      const elbowGuardL = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), matArmorSteel);
+      const forearmL = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.052, 0.26, 12), matArmorDark);
       forearmL.position.set(0, -0.13, 0);
-      const wristHudL = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.04, 0.08), matVisorGlow);
-      wristHudL.position.set(0, -0.16, 0.07);
-
-      const gloveL = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.1, 0.09), matRubber);
-      gloveL.position.set(0, -0.28, 0);
-      const fingersL = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.1), matArmorSteel);
-      fingersL.position.set(0, -0.28, 0.04);
-      elbowPivotL.add(elbowGuardL, forearmL, wristHudL, gloveL, fingersL);
+      const gloveL = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), matRubber);
+      gloveL.position.set(0, -0.26, 0);
+      elbowPivotL.add(elbowGuardL, forearmL, gloveL);
       shoulderPivotL.add(bicepL, elbowPivotL);
       torsoGroup.add(shoulderPivotL);
 
-      // Right Arm Pivot Hierarchy
       const shoulderPivotR = new THREE.Group();
-      shoulderPivotR.position.set(0.36, 0.48, 0);
-
-      const bicepR = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.28, 0.14), matArmorDark);
+      shoulderPivotR.position.set(0.34, 0.48, 0);
+      const bicepR = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.28, 12), matArmorDark);
       bicepR.position.set(0, -0.14, 0);
 
       const elbowPivotR = new THREE.Group();
       elbowPivotR.position.set(0, -0.28, 0);
-      const elbowGuardR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.12), matArmorSteel);
-      const forearmR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.26, 0.13), matArmorDark);
+      const elbowGuardR = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), matArmorSteel);
+      const forearmR = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.052, 0.26, 12), matArmorDark);
       forearmR.position.set(0, -0.13, 0);
-
-      const gloveR = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.1, 0.09), matRubber);
-      gloveR.position.set(0, -0.28, 0);
+      const gloveR = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), matRubber);
+      gloveR.position.set(0, -0.26, 0);
 
       // Held 3D Tactical Carbine
       const carbineGroup = new THREE.Group();
       carbineGroup.position.set(0, -0.26, 0.18);
       carbineGroup.rotation.x = 0.32;
+      const carbineBody = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.62, 8), matArmorDark);
+      carbineBody.rotation.x = Math.PI / 2;
+      const carbineBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.65, 8), matArmorSteel);
+      carbineBarrel.rotation.x = Math.PI / 2; carbineBarrel.position.set(0, 0.03, -0.42);
+      const holoSight = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 8), matArmorDark);
+      holoSight.position.set(0, 0.09, -0.1);
+      carbineGroup.add(carbineBody, carbineBarrel, holoSight);
 
-      const carbineBody = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.16, 0.68), matArmorDark);
-      const carbineBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.65, 8), matArmorSteel);
-      carbineBarrel.rotation.x = Math.PI / 2; carbineBarrel.position.set(0, 0.04, -0.42);
-      const muzzleBrake = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.08), matArmorSteel);
-      muzzleBrake.position.set(0, 0.04, -0.76);
-      const holoSight = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.12), matArmorDark);
-      holoSight.position.set(0, 0.12, -0.1);
-      const carbineMag = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.14, 0.12), matVisorGlow);
-      carbineMag.position.set(0, -0.14, 0.04);
-      const laserEmitter = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.14, 8), matArmorSteel);
-      laserEmitter.position.set(0, -0.04, -0.32); laserEmitter.rotation.x = Math.PI / 2;
-
-      carbineGroup.add(carbineBody, carbineBarrel, muzzleBrake, holoSight, carbineMag, laserEmitter);
       elbowPivotR.add(elbowGuardR, forearmR, gloveR, carbineGroup);
       shoulderPivotR.add(bicepR, elbowPivotR);
       torsoGroup.add(shoulderPivotR);
 
       proceduralBody.add(torsoGroup);
 
-      // Default Combat Poses for Arms
+      // Poses
       shoulderPivotL.rotation.set(0.45, 0.3, -0.15);
       elbowPivotL.rotation.set(-0.65, 0, 0);
       shoulderPivotR.rotation.set(0.35, -0.2, 0.1);
       elbowPivotR.rotation.set(-0.55, 0, 0);
 
       // 3D In-World Floating Callsign Billboard Sprite
-      const billboard = createCallsignBillboard(customData.callsign, customData.emblem, customData.tag, effectiveColor);
+      const classKey = window.resolveClassKey(customData.classId || customData.chassis);
+      const initialClassName = (window.CHARACTER_CLASSES[classKey] ? window.CHARACTER_CLASSES[classKey].name : 'ASSAULT');
+      const billboard = createCallsignBillboard(customData.callsign, customData.emblem, customData.tag, effectiveColor, initialClassName);
       g.add(billboard.sprite);
       g.userData.billboard = billboard;
 
-      // UserData References for Animations, Hit Feedback & Networking
+      // UserData References
       g.userData.flameL = flameL;
       g.userData.flameR = flameR;
       g.userData.coreReactor = coreReactor;
@@ -6877,6 +7190,14 @@
           const cTex = createProceduralCamoTexture(c.camo);
           matArmorDark.map = cTex;
           matArmorDark.needsUpdate = true;
+          if (g.userData.soldierScene) {
+            g.userData.soldierScene.traverse(function(child) {
+              if (child.isMesh && child.material && child.material.name === 'VanguardBodyMat') {
+                child.material.map = cTex;
+                child.material.needsUpdate = true;
+              }
+            });
+          }
         }
         if (c.visorColor) {
           const vCol = new THREE.Color(c.visorColor);
@@ -6909,21 +7230,18 @@
           const tCol = new THREE.Color(thrusterColHex);
           flameMat.color.copy(tCol);
         }
-        if (billboard && (c.callsign || c.emblem || c.tag || c.visorColor)) {
-          billboard.update(c.callsign, c.emblem, c.tag, c.visorColor);
+
+        // Apply Class Scaling & Title
+        const cKey = window.resolveClassKey(c.classId || c.chassis);
+        const classObj = window.CHARACTER_CLASSES[cKey] || window.CHARACTER_CLASSES.assault;
+        if (g.userData.soldierScene) {
+          const sc = classObj.modelScale || { x: 1.0, y: 1.0, z: 1.0 };
+          g.userData.soldierScene.scale.set(sc.x, sc.y, sc.z);
+          g.userData.soldierScene.visible = true;
+          if (proceduralBody) proceduralBody.visible = false;
         }
-        if (c.chassis) {
-          if (c.chassis === 'titan') {
-            proceduralBody.visible = true;
-            if (g.userData.soldierScene) g.userData.soldierScene.visible = false;
-          } else {
-            if (g.userData.soldierScene) {
-              g.userData.soldierScene.visible = true;
-              proceduralBody.visible = false;
-            } else {
-              proceduralBody.visible = true;
-            }
-          }
+        if (billboard && (c.callsign || c.emblem || c.tag || c.visorColor || c.classId || c.chassis)) {
+          billboard.update(c.callsign, c.emblem, c.tag, c.visorColor, classObj.name);
         }
       };
 
@@ -6948,83 +7266,12 @@
         coreReactor: coreReactor
       };
 
-      // --- REALISTIC 3D VANGUARD CYBERNETIC SOLDIER (GLTF LOADER) ---
-      if (typeof THREE.GLTFLoader !== 'undefined') {
-        const loader = new THREE.GLTFLoader();
-        loader.load('models/Soldier.glb', function(gltf) {
-          const soldier = gltf.scene;
-          soldier.scale.set(1.0, 1.0, 1.0);
-          soldier.position.set(0, 0, 0);
-
-          soldier.traverse(function(child) {
-            if (child.isMesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-              if (child.material) {
-                if (child.material.name === 'Vanguard_VisorMat') {
-                  child.material.color.set(effectiveColor);
-                  child.material.emissive.set(effectiveColor);
-                  child.material.emissiveIntensity = 2.4;
-                }
-              }
-            }
-          });
-
-          // Setup AnimationMixer
-          const mixer = new THREE.AnimationMixer(soldier);
-          const idleClip = gltf.animations.find(a => a.name === 'Idle') || gltf.animations[0];
-          const runClip = gltf.animations.find(a => a.name === 'Run') || gltf.animations[1];
-          const idleAction = mixer.clipAction(idleClip);
-          const runAction = mixer.clipAction(runClip);
-          idleAction.play();
-
-          g.userData.mixer = mixer;
-          g.userData.idleAction = idleAction;
-          g.userData.runAction = runAction;
-
-          // Attach cybernetic jetpack with animated thruster flames to soldier's back
-          const spineBone = soldier.getObjectByName('mixamorig:Spine1') || soldier.getObjectByName('mixamorigSpine1');
-          if (spineBone) {
-            jetpackGroup.position.set(0, 0.15, -0.22);
-            jetpackGroup.rotation.set(0, 0, 0);
-            spineBone.add(jetpackGroup);
-          } else {
-            jetpackGroup.position.set(0, 1.15, -0.22);
-            soldier.add(jetpackGroup);
-          }
-
-          // Attach glowing fusion reactor to chest
-          if (spineBone) {
-            coreReactor.position.set(0, 0.22, 0.16);
-            spineBone.add(coreReactor);
-          } else {
-            coreReactor.position.set(0, 1.25, 0.16);
-            soldier.add(coreReactor);
-          }
-
-          // Attach 3D tactical carbine to right hand bone
-          const rHand = soldier.getObjectByName('mixamorig:RightHand') || soldier.getObjectByName('mixamorigRightHand');
-          if (rHand) {
-            carbineGroup.position.set(0.04, 0.12, 0.02);
-            carbineGroup.rotation.set(0, -Math.PI / 2, Math.PI / 2);
-            rHand.add(carbineGroup);
-          } else {
-            carbineGroup.position.set(0.25, 0.95, 0.25);
-            soldier.add(carbineGroup);
-          }
-
-          // Real 3D Vanguard Soldier takes over smoothly!
-          if (customData.chassis === 'titan') {
-            soldier.visible = false;
-            if (g.userData.proceduralBody) g.userData.proceduralBody.visible = true;
-          } else {
-            if (g.userData.proceduralBody) g.userData.proceduralBody.visible = false;
-            soldier.visible = true;
-          }
-          g.add(soldier);
-          g.userData.soldierScene = soldier;
-        }, undefined, function(err) {
-          console.warn('Soldier.glb load notice:', err);
+      // ATTACH REALISTIC 3D GLTF SKELETAL SOLDIER (PRELOADED INSTANTLY)
+      if (CACHED_SOLDIER_GLTF) {
+        attachClonedSoldier(g, CACHED_SOLDIER_GLTF, customData, effectiveColor, effectiveCamoTex, jetpackGroup, coreReactor, carbineGroup, headGroup, proceduralBody);
+      } else {
+        soldierLoadWaiters.push((gltf) => {
+          attachClonedSoldier(g, gltf, customData, effectiveColor, effectiveCamoTex, jetpackGroup, coreReactor, carbineGroup, headGroup, proceduralBody);
         });
       }
 
@@ -7273,7 +7520,8 @@
       fireTimer: 1.2,
       strafeTimer: 0,
       strafeDir: 1,
-      jumpTimer: 2.2
+      jumpTimer: 2.2,
+      abilityTimer: 8.0
     };
 
     // =============================================
@@ -7590,11 +7838,15 @@
           const pPos = player.pos.clone();
           const sOrigin = new THREE.Vector3(msg.origin[0], msg.origin[1], msg.origin[2]);
           const dist = pPos.distanceTo(sOrigin);
-          if (dist < 14.0) {
+          const maxRadius = msg.radius || 14.0;
+          if (dist < maxRadius) {
             const pushDir = pPos.sub(sOrigin).normalize();
             pushDir.y = 0.45;
             pushDir.normalize();
-            player.vel.add(pushDir.multiplyScalar(30.0 * (1.0 - dist / 15.0)));
+            const cls = (typeof getPlayerClass === 'function') ? getPlayerClass() : { id: 'assault' };
+            const isFortressActive = (typeof classAbilityActiveTimer !== 'undefined' && classAbilityActiveTimer > 0 && currentActiveAbility === 'kinetic_fortress');
+            const knockMult = isFortressActive ? 0.25 : (cls.id === 'juggernaut' ? 0.80 : 1.0);
+            player.vel.add(pushDir.multiplyScalar((msg.force || 30.0) * (1.0 - dist / (maxRadius + 1.0)) * knockMult));
             audio.playCrunch(0.8);
             screenShake = 0.4;
           }
@@ -7640,12 +7892,27 @@
         }
         else if (msg.type === 'kick_shove') {
           const kDir = new THREE.Vector3(msg.dir[0], msg.dir[1], msg.dir[2]);
-          player.vel.add(kDir.multiplyScalar(msg.force || 36.0));
-          player.vel.y += 8.0;
-          screenShake = 0.55;
+          const cls = (typeof getPlayerClass === 'function') ? getPlayerClass() : { id: 'assault' };
+          const isFortressActive = (typeof classAbilityActiveTimer !== 'undefined' && classAbilityActiveTimer > 0 && currentActiveAbility === 'kinetic_fortress');
+          const knockMult = isFortressActive ? 0.25 : (cls.id === 'juggernaut' ? 0.80 : 1.0);
+          player.vel.add(kDir.multiplyScalar((msg.force || 36.0) * knockMult));
+          player.vel.y += 8.0 * knockMult;
+          screenShake = 0.55 * knockMult;
           audio.playCrunch(1.2);
           if (window.triggerRumble) triggerRumble(0.6, 0.9, 250);
-          showPopup("👢 SHOVED BY OPPONENT BOOT KICK!", "#f43f5e");
+          showPopup(isFortressActive ? "🛡️ FORTRESS SHIELDED BOOT SHOVE!" : "👢 SHOVED BY OPPONENT BOOT KICK!", isFortressActive ? "#fbbf24" : "#f43f5e");
+        }
+        else if (msg.type === 'class_ability') {
+          if (typeof handleRemoteClassAbility === 'function') handleRemoteClassAbility(msg);
+        }
+        else if (msg.type === 'kinetic_impulse') {
+          const cls = (typeof getPlayerClass === 'function') ? getPlayerClass() : { id: 'assault' };
+          const isFortressActive = (typeof classAbilityActiveTimer !== 'undefined' && classAbilityActiveTimer > 0 && currentActiveAbility === 'kinetic_fortress');
+          const knockMult = isFortressActive ? 0.25 : (cls.id === 'juggernaut' ? 0.80 : 1.0);
+          player.vel.add(new THREE.Vector3(msg.impulse[0] * knockMult, msg.impulse[1] * knockMult, msg.impulse[2] * knockMult));
+          audio.playCrunch(0.9);
+          triggerDamageFlash();
+          screenShake = Math.max(screenShake, 0.45 * knockMult);
         }
         else if (msg.type === 'tactical_ping') {
           renderTacticalPingBeacon(msg.pingText, msg.color, new THREE.Vector3(msg.origin[0], msg.origin[1], msg.origin[2]));
@@ -7963,6 +8230,7 @@
       jump: 'Space',
       slideDash: 'ShiftLeft',
       kick: 'KeyE',
+      classAbility: 'KeyF',
       altFire: 'KeyQ',
       weapon1: 'Digit1',
       weapon2: 'Digit2',
@@ -7992,6 +8260,7 @@
       jump: 'Pneumatic Jump / Stomp',
       slideDash: 'Power Slide / Air-Dash',
       kick: 'Concussive Boot Kick',
+      classAbility: 'Class Tactical Ability',
       altFire: 'Weapon Alt-Fire',
       weapon1: 'Slot 1 (Breaker 12G)',
       weapon2: 'Slot 2 (Jackhammer)',
@@ -8039,9 +8308,11 @@
       const kKick = document.getElementById('label-kick-key');
       const kSlide = document.getElementById('label-slide-key');
       const kJump = document.getElementById('label-jump-key');
+      const kAbility = document.getElementById('label-ability-key');
       if (kKick) kKick.innerText = `[${formatKeyDisplay(keyBinds.kick)}]`;
       if (kSlide) kSlide.innerText = `[${formatKeyDisplay(keyBinds.slideDash)}]`;
       if (kJump) kJump.innerText = `[${formatKeyDisplay(keyBinds.jump)}]`;
+      if (kAbility) kAbility.innerText = `[${formatKeyDisplay(keyBinds.classAbility || 'KeyF')}]`;
     }
 
     // --- GAMEPAD & CONTROLLER ENGINE ---
@@ -8077,10 +8348,12 @@
       const kKick = document.getElementById('label-kick-key');
       const kSlide = document.getElementById('label-slide-key');
       const kJump = document.getElementById('label-jump-key');
+      const kAbility = document.getElementById('label-ability-key');
       if (connected) {
         if (kKick) kKick.innerText = '(X)';
         if (kSlide) kSlide.innerText = '(B)';
         if (kJump) kJump.innerText = '(A)';
+        if (kAbility) kAbility.innerText = '(LB)';
       } else {
         updateHUDKeyLabels();
       }
@@ -8179,8 +8452,13 @@
       }
 
       // Slide / Air-Dash
-      if ((btnB && !prevGpState.btnB) || (btnLB && !prevGpState.btnLB)) {
+      if (btnB && !prevGpState.btnB) {
         trySlideOrDash();
+      }
+
+      // Class Tactical Ability (Left Bumper)
+      if (btnLB && !prevGpState.btnLB) {
+        tryUseClassAbility();
       }
 
       // Boot Kick
@@ -8262,10 +8540,14 @@
           dashDir = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, player.cameraYaw, 0));
         }
 
-        player.vel.add(dashDir.multiplyScalar(22.0));
+        const cls = getPlayerClass();
+        const isAssault = (cls.id === 'assault');
+        const dashSpeed = isAssault ? 27.5 : 22.0;
+
+        player.vel.add(dashDir.multiplyScalar(dashSpeed));
         emitThrusterParticles(player.pos, dashDir.clone().negate(), 20, 0x06b6d4);
         screenShake = 0.25;
-        showPopup("💨 THRUSTER AIR-DASH!", "#06b6d4");
+        showPopup(isAssault ? "💨 KINETIC DRAFT AIR-DASH! [+27.5 M/S]" : "💨 THRUSTER AIR-DASH!", "#06b6d4");
       }
     }
 
@@ -8286,20 +8568,29 @@
       const dot = toOpp.clone().normalize().dot(fwd);
 
       if (dist < 4.2 && dot > 0.45) {
-        const kickImpulse = fwd.clone().multiplyScalar(36.0);
+        const cls = getPlayerClass();
+        const isFortressActive = (classAbilityActiveTimer > 0 && currentActiveAbility === 'kinetic_fortress');
+        const forceMult = isFortressActive ? 1.7 : 1.0;
+        let kickForce = 36.0 * forceMult;
+        if (remoteOpponent.fortressTimer > 0) {
+          kickForce *= 0.25;
+          showPopup("🛡️ HIT OPPONENT FORTRESS! [75% DEFLECTED]", "#f59e0b");
+        } else {
+          showPopup(isFortressActive ? "🦾 FORTRESS IMPACT BOOT! [+61 M/S TITAN SLAM]" : "👢 BRUTAL BOOT SHOT! [+36 M/S SHOVEMASTER]", "#f59e0b");
+        }
+        const kickImpulse = fwd.clone().multiplyScalar(kickForce);
         kickImpulse.y = 8.5;
         remoteOpponent.vel.add(kickImpulse);
         audio.playCrunch(1.3);
         audio.playHitMarker(true);
         screenShake = 0.55;
-        showPopup("👢 BRUTAL BOOT SHOT! [+36 M/S SHOVEMASTER]", "#f59e0b");
         triggerRumble(0.7, 1.0, 260);
         createSparks(remoteOpponent.pos.clone().add(new THREE.Vector3(0, 1.0, 0)), 35, 0xf59e0b, 18);
 
         sendNet({
           type: 'kick_shove',
           dir: [fwd.x, 0.22, fwd.z],
-          force: 36.0
+          force: kickForce
         });
       }
 
@@ -8311,6 +8602,280 @@
           showPopup("💥 BOOT SHATTERED PILLAR!", "#f59e0b");
           break;
         }
+      }
+    }
+
+    // =============================================
+    //  CLASS TACTICAL ABILITIES & PASSIVE TRAITS ENGINE
+    // =============================================
+    let classAbilityCooldownTimer = 0;
+    let classAbilityActiveTimer = 0;
+    let currentActiveAbility = null;
+    let sonarTrajectoryLine = null;
+    let playerFortressShield = null;
+    let sonarPulseVisualRing = null;
+    let repulsionNovaRing = null;
+
+    function getPlayerClass() {
+      const c = window.pilotCustomization || window.DEFAULT_CUSTOMIZATION;
+      const classKey = window.resolveClassKey(c.classId || c.chassis);
+      return window.CHARACTER_CLASSES[classKey] || window.CHARACTER_CLASSES.assault;
+    }
+
+    function tryUseClassAbility() {
+      if (!matchStarted || classAbilityCooldownTimer > 0) return;
+      const cls = getPlayerClass();
+      classAbilityCooldownTimer = cls.abilityCooldown || 10;
+      currentActiveAbility = cls.abilityId;
+
+      if (cls.abilityId === 'overdrive') {
+        // ASSAULT: OVERDRIVE THRUSTER
+        classAbilityActiveTimer = 3.5;
+        let dir = new THREE.Vector3();
+        if (isActionActive('forward')) dir.z -= 1;
+        if (isActionActive('backward')) dir.z += 1;
+        if (isActionActive('strafeLeft')) dir.x -= 1;
+        if (isActionActive('strafeRight')) dir.x += 1;
+        if (dir.lengthSq() > 0) {
+          dir.normalize().applyEuler(new THREE.Euler(0, player.cameraYaw, 0));
+        } else {
+          dir = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, player.cameraYaw, 0));
+        }
+        player.vel.add(dir.multiplyScalar(24.0));
+        player.vel.y += 3.5;
+        emitThrusterParticles(player.pos, dir.clone().negate(), 40, 0x38bdf8);
+        screenShake = 0.45;
+        if (audio.playOverdrive) audio.playOverdrive();
+        triggerRumble(0.6, 0.9, 250);
+        showPopup("⚡ OVERDRIVE THRUST! [+24 M/S RECOIL TURBO]", "#38bdf8");
+        sendNet({
+          type: 'class_ability',
+          ability: 'overdrive',
+          pos: [player.pos.x, player.pos.y, player.pos.z],
+          dir: [dir.x, dir.y, dir.z]
+        });
+      } else if (cls.abilityId === 'sonar_ping') {
+        // RECON: TACTICAL SONAR PING
+        classAbilityActiveTimer = 6.0;
+        triggerSonarPingVisual(player.pos.clone());
+        if (audio.playSonarPing) audio.playSonarPing();
+        triggerRumble(0.3, 0.6, 200);
+        showPopup("📡 TACTICAL SONAR PING! [TARGET & VECTORS TRACKED]", "#c084fc");
+        sendNet({
+          type: 'class_ability',
+          ability: 'sonar_ping',
+          pos: [player.pos.x, player.pos.y, player.pos.z]
+        });
+      } else if (cls.abilityId === 'kinetic_fortress') {
+        // JUGGERNAUT: KINETIC FORTRESS
+        classAbilityActiveTimer = 4.0;
+        if (audio.playKineticFortress) audio.playKineticFortress();
+        triggerRumble(0.5, 0.8, 220);
+        showPopup("🛡️ KINETIC FORTRESS ENGAGED! [-75% KNOCKBACK RESIST]", "#fbbf24");
+        sendNet({
+          type: 'class_ability',
+          ability: 'kinetic_fortress',
+          pos: [player.pos.x, player.pos.y, player.pos.z]
+        });
+      } else if (cls.abilityId === 'repulsion_nova') {
+        // ENGINEER: REPULSION NOVA
+        classAbilityActiveTimer = 1.0;
+        triggerRepulsionNovaVisual(player.pos.clone());
+        if (audio.playRepulsionNova) audio.playRepulsionNova();
+        screenShake = 0.6;
+        triggerRumble(0.8, 1.0, 300);
+
+        // Blast away remote opponent if within 14 meters
+        const toOpp = remoteOpponent.pos.clone().sub(player.pos);
+        const dist = toOpp.length();
+        if (dist < 14.0) {
+          toOpp.normalize();
+          toOpp.y = Math.max(0.35, toOpp.y);
+          toOpp.normalize();
+          const force = Math.max(14.0, (1.0 - dist / 14.0) * 32.0);
+          const impulse = toOpp.clone().multiplyScalar(force);
+          remoteOpponent.vel.add(impulse);
+          showPopup(`💥 REPULSION BLAST! [+${force.toFixed(0)} M/S DISPLACEMENT]`, "#34d399");
+          sendNet({
+            type: 'kinetic_impulse',
+            impulse: [impulse.x, impulse.y, impulse.z]
+          });
+        } else {
+          showPopup("💥 REPULSION NOVA DISCHARGED!", "#34d399");
+        }
+
+        sendNet({
+          type: 'class_ability',
+          ability: 'repulsion_nova',
+          pos: [player.pos.x, player.pos.y, player.pos.z]
+        });
+      }
+    }
+
+    function triggerSonarPingVisual(origin) {
+      if (!sonarPulseVisualRing) {
+        const ringGeo = new THREE.RingGeometry(0.5, 1.0, 32);
+        ringGeo.rotateX(Math.PI / 2);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xc084fc, side: THREE.DoubleSide, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+        sonarPulseVisualRing = new THREE.Mesh(ringGeo, ringMat);
+        scene.add(sonarPulseVisualRing);
+      }
+      sonarPulseVisualRing.position.copy(origin).add(new THREE.Vector3(0, 0.4, 0));
+      sonarPulseVisualRing.scale.set(1, 1, 1);
+      sonarPulseVisualRing.userData.scaleRate = 35.0;
+      sonarPulseVisualRing.userData.maxScale = 45.0;
+      sonarPulseVisualRing.visible = true;
+    }
+
+    function triggerRepulsionNovaVisual(origin) {
+      if (!repulsionNovaRing) {
+        const ringGeo = new THREE.RingGeometry(0.8, 1.6, 32);
+        ringGeo.rotateX(Math.PI / 2);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x34d399, side: THREE.DoubleSide, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+        repulsionNovaRing = new THREE.Mesh(ringGeo, ringMat);
+        scene.add(repulsionNovaRing);
+      }
+      repulsionNovaRing.position.copy(origin).add(new THREE.Vector3(0, 0.4, 0));
+      repulsionNovaRing.scale.set(1, 1, 1);
+      repulsionNovaRing.userData.scaleRate = 32.0;
+      repulsionNovaRing.userData.maxScale = 14.0;
+      repulsionNovaRing.visible = true;
+      createSparks(origin.clone().add(new THREE.Vector3(0, 0.5, 0)), 30, 0x34d399, 16);
+    }
+
+    function handleRemoteClassAbility(msg) {
+      if (!msg || !msg.ability) return;
+      if (msg.ability === 'overdrive') {
+        const oPos = remoteOpponent.pos.clone();
+        emitThrusterParticles(oPos, new THREE.Vector3(0, 0, -1), 30, 0x38bdf8);
+        if (audio.playOverdrive) audio.playOverdrive();
+      } else if (msg.ability === 'sonar_ping') {
+        triggerSonarPingVisual(remoteOpponent.pos.clone());
+        if (audio.playSonarPing) audio.playSonarPing();
+      } else if (msg.ability === 'kinetic_fortress') {
+        remoteOpponent.fortressTimer = 4.0;
+        if (audio.playKineticFortress) audio.playKineticFortress();
+      } else if (msg.ability === 'repulsion_nova') {
+        triggerRepulsionNovaVisual(remoteOpponent.pos.clone());
+        if (audio.playRepulsionNova) audio.playRepulsionNova();
+      }
+    }
+
+    function updateClassAbilityHUD(dt) {
+      if (classAbilityCooldownTimer > 0) {
+        classAbilityCooldownTimer = Math.max(0, classAbilityCooldownTimer - dt);
+      }
+      if (classAbilityActiveTimer > 0) {
+        classAbilityActiveTimer = Math.max(0, classAbilityActiveTimer - dt);
+      }
+
+      const cls = getPlayerClass();
+      const iconEl = document.getElementById('hud-class-icon');
+      const nameEl = document.getElementById('text-ability-name');
+      const statusEl = document.getElementById('text-ability-status');
+      const fillEl = document.getElementById('ability-cooldown-fill');
+      const badgeEl = document.getElementById('hud-badge-class-ability');
+
+      if (iconEl) iconEl.innerText = cls.abilityIcon || '⚡';
+      if (nameEl) nameEl.innerText = cls.abilityName.split(' ')[0];
+
+      if (classAbilityActiveTimer > 0) {
+        if (statusEl) {
+          statusEl.innerText = `ACTIVE (${classAbilityActiveTimer.toFixed(1)}s)`;
+          statusEl.style.color = '#38bdf8';
+        }
+        if (badgeEl) badgeEl.style.borderColor = '#38bdf8';
+        if (fillEl) fillEl.style.width = '100%';
+      } else if (classAbilityCooldownTimer > 0) {
+        if (statusEl) {
+          statusEl.innerText = `${classAbilityCooldownTimer.toFixed(1)}s`;
+          statusEl.style.color = '#f59e0b';
+        }
+        if (badgeEl) badgeEl.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        const pct = ((cls.abilityCooldown - classAbilityCooldownTimer) / cls.abilityCooldown) * 100;
+        if (fillEl) fillEl.style.width = `${pct}%`;
+      } else {
+        if (statusEl) {
+          statusEl.innerText = 'READY';
+          statusEl.style.color = '#10b981';
+        }
+        if (badgeEl) badgeEl.style.borderColor = cls.color || '#38bdf8';
+        if (fillEl) fillEl.style.width = '0%';
+      }
+
+      // Animate Visual Rings
+      if (sonarPulseVisualRing && sonarPulseVisualRing.visible) {
+        const curScale = sonarPulseVisualRing.scale.x + dt * sonarPulseVisualRing.userData.scaleRate;
+        sonarPulseVisualRing.scale.set(curScale, curScale, 1);
+        const maxS = sonarPulseVisualRing.userData.maxScale;
+        sonarPulseVisualRing.material.opacity = Math.max(0, 1.0 - (curScale / maxS));
+        if (curScale >= maxS) sonarPulseVisualRing.visible = false;
+      }
+      if (repulsionNovaRing && repulsionNovaRing.visible) {
+        const curScale = repulsionNovaRing.scale.x + dt * repulsionNovaRing.userData.scaleRate;
+        repulsionNovaRing.scale.set(curScale, curScale, 1);
+        const maxS = repulsionNovaRing.userData.maxScale;
+        repulsionNovaRing.material.opacity = Math.max(0, 1.0 - (curScale / maxS));
+        if (curScale >= maxS) repulsionNovaRing.visible = false;
+      }
+
+      // Sonar Trajectory Vector Line (Recon ping active)
+      if (classAbilityActiveTimer > 0 && currentActiveAbility === 'sonar_ping') {
+        if (!sonarTrajectoryLine) {
+          const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+          const mat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 3 });
+          sonarTrajectoryLine = new THREE.Line(geo, mat);
+          scene.add(sonarTrajectoryLine);
+        }
+        sonarTrajectoryLine.visible = remoteOpponent.mesh.visible;
+        if (sonarTrajectoryLine.visible) {
+          const startPt = remoteOpponent.pos.clone().add(new THREE.Vector3(0, 1.0, 0));
+          const endPt = startPt.clone().add(remoteOpponent.vel.clone().multiplyScalar(1.2));
+          let nearTrap = false;
+          if (currentMapId === 1) {
+            if (new THREE.Vector2(endPt.x, endPt.z).length() < 12.0 || Math.abs(endPt.x) > 33.0 || Math.abs(endPt.z) > 33.0) nearTrap = true;
+          } else if (currentMapId === 2) {
+            if (endPt.y < 8.0) nearTrap = true;
+          }
+          sonarTrajectoryLine.material.color.setHex(nearTrap ? 0xef4444 : 0xc084fc);
+          const posAttr = sonarTrajectoryLine.geometry.attributes.position;
+          posAttr.setXYZ(0, startPt.x, startPt.y, startPt.z);
+          posAttr.setXYZ(1, endPt.x, endPt.y, endPt.z);
+          posAttr.needsUpdate = true;
+        }
+      } else if (sonarTrajectoryLine) {
+        sonarTrajectoryLine.visible = false;
+      }
+
+      // Player Kinetic Fortress Energy Shield Visual
+      if (classAbilityActiveTimer > 0 && currentActiveAbility === 'kinetic_fortress') {
+        if (!playerFortressShield) {
+          const sGeo = new THREE.SphereGeometry(1.6, 16, 12);
+          const sMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, wireframe: true, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending });
+          playerFortressShield = new THREE.Mesh(sGeo, sMat);
+          scene.add(playerFortressShield);
+        }
+        playerFortressShield.visible = true;
+        playerFortressShield.position.copy(player.pos).add(new THREE.Vector3(0, 0.9, 0));
+        playerFortressShield.rotation.y += dt * 1.5;
+      } else if (playerFortressShield) {
+        playerFortressShield.visible = false;
+      }
+
+      // Remote Opponent Kinetic Fortress Shield Visual
+      if (remoteOpponent.fortressTimer > 0) {
+        remoteOpponent.fortressTimer -= dt;
+        if (!remoteOpponent.fortressMesh) {
+          const sGeo = new THREE.SphereGeometry(1.6, 16, 12);
+          const sMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, wireframe: true, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+          remoteOpponent.fortressMesh = new THREE.Mesh(sGeo, sMat);
+          scene.add(remoteOpponent.fortressMesh);
+        }
+        remoteOpponent.fortressMesh.visible = remoteOpponent.mesh.visible;
+        remoteOpponent.fortressMesh.position.copy(remoteOpponent.pos).add(new THREE.Vector3(0, 0.9, 0));
+        remoteOpponent.fortressMesh.rotation.y += dt * 1.5;
+      } else if (remoteOpponent.fortressMesh) {
+        remoteOpponent.fortressMesh.visible = false;
       }
     }
 
@@ -8361,10 +8926,11 @@
               callsign: 'NEMESIS-01',
               emblem: '💀',
               tag: 'AI',
-              chassis: 'titan',
+              classId: 'juggernaut',
+              chassis: 'juggernaut',
               camo: 'hazard',
               visorColor: '#ef4444',
-              attachment: 'nvg',
+              attachment: 'shield',
               jetpack: 'quad',
               thrusterFlameColor: '#f97316'
             });
@@ -8469,8 +9035,9 @@
       if (e.code === keyBinds.weapon2) selectWeapon(1);
       if (e.code === keyBinds.weapon3) selectWeapon(2);
       if (e.code === keyBinds.altFire) tryFireAltWeapon();
-      if (e.code === keyBinds.kick || e.code === 'KeyF') tryBootKick();
+      if (e.code === keyBinds.kick) tryBootKick();
       if (e.code === keyBinds.slideDash || e.code === 'KeyC') trySlideOrDash();
+      if (e.code === (keyBinds.classAbility || 'KeyF')) tryUseClassAbility();
     });
 
     window.addEventListener('keyup', (e) => {
@@ -8543,6 +9110,7 @@
     const tSlide = document.getElementById('btn-touch-slide');
     const tHook = document.getElementById('btn-touch-tether');
     const tAlt = document.getElementById('btn-touch-alt');
+    const tAbility = document.getElementById('btn-touch-ability');
     if (tFire) tFire.addEventListener('touchstart', (e) => { e.preventDefault(); tryFireWeapon(); });
     if (tJump) {
       tJump.addEventListener('touchstart', (e) => {
@@ -8561,6 +9129,7 @@
       tHook.addEventListener('touchend', (e) => { e.preventDefault(); releaseTether(); });
     }
     if (tAlt) tAlt.addEventListener('touchstart', (e) => { e.preventDefault(); tryFireAltWeapon(); });
+    if (tAbility) tAbility.addEventListener('touchstart', (e) => { e.preventDefault(); tryUseClassAbility(); });
 
     function selectWeapon(idx) {
       if (currentWeaponIdx !== idx) {
@@ -8580,10 +9149,13 @@
       const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.cameraPitch, player.cameraYaw, 0, 'YXZ')).normalize();
       const origin = camera.position.clone();
 
-      let closestDist = tether.maxDistance;
+      const pCls = getPlayerClass();
+      const maxDistance = (pCls.id === 'recon') ? 85.0 : tether.maxDistance;
+
+      let closestDist = maxDistance;
       let hitPoint = null;
 
-      const raycaster = new THREE.Raycaster(origin, forward, 0.1, tether.maxDistance);
+      const raycaster = new THREE.Raycaster(origin, forward, 0.1, maxDistance);
       const meshes = colliders.map(c => c.mesh);
       const intersects = raycaster.intersectObjects(meshes);
       if (intersects.length > 0) {
@@ -9171,6 +9743,9 @@
       const dt = rawDt * timeDilation;
 
       if (weaponCooldownTimer > 0) weaponCooldownTimer -= dt;
+      if (classAbilityActiveTimer > 0 && currentActiveAbility === 'overdrive') {
+        if (weaponCooldownTimer > 0) weaponCooldownTimer -= dt * 1.5; // Overdrive turbo recoil recovery
+      }
       if (isMouseDown && WEAPONS[currentWeaponIdx].type === "auto") {
         tryFireWeapon();
       }
@@ -9370,9 +9945,12 @@
         }
         geom.attributes.position.needsUpdate = true;
       }
-      // Heat Dissipation & Overheat State
+      // Heat Dissipation & Overheat State (Engineer Overclocked Venting Passive)
       if (altCooldownTimer > 0) altCooldownTimer -= dt;
-      weaponHeat = Math.max(0, weaponHeat - dt * 20.0);
+      const pCls = getPlayerClass();
+      const heatCoolRate = (pCls.id === 'engineer') ? 34.0 : 20.0;
+      weaponHeat = Math.max(0, weaponHeat - dt * heatCoolRate);
+      if (pCls.id === 'engineer' && weaponCooldownTimer > 0) weaponCooldownTimer -= dt * 0.25;
       const heatBar = document.getElementById('heat-bar');
       const heatDisplay = document.getElementById('heat-val-display');
       const overheatBadge = document.getElementById('overheat-badge');
@@ -9402,7 +9980,8 @@
       }
 
       updateShockwaves(dt);
-updateHUD(dt);
+      updateHUD(dt);
+      updateClassAbilityHUD(dt);
       updateAtmosphericEmbers(dt);
 
       
@@ -9705,13 +10284,16 @@ updateHUD(dt);
           createSparks(player.pos, 12, 0x94a3b8, 10);
           triggerRumble(0.2, 0.3, 100);
         } else {
-          // Air-Brake Shockwave Stomp (Space while airborne + looking steeply down)
-          if (player.cameraPitch < -0.75 && !player.isStomping) {
+          // Air-Brake Shockwave Stomp (Space while airborne + looking steeply down or Titan heavy fall)
+          const isJuggernaut = (getPlayerClass().id === 'juggernaut');
+          const pitchReq = isJuggernaut ? -0.55 : -0.75;
+          const speedReq = isJuggernaut ? -12.0 : -18.0;
+          if ((player.cameraPitch < pitchReq || player.vel.y < speedReq) && !player.isStomping) {
             player.isStomping = true;
             player.vel.x = 0;
             player.vel.z = 0;
-            player.vel.y = -42.0; // Slam down violently
-            createSparks(player.pos, 15, 0x06b6d4, 14);
+            player.vel.y = isJuggernaut ? -48.0 : -42.0; // Slam down violently
+            createSparks(player.pos, 20, isJuggernaut ? 0xf59e0b : 0x06b6d4, 16);
             audio.playCrunch(0.8);
             triggerRumble(0.4, 0.8, 150);
           } else {
@@ -9755,8 +10337,9 @@ updateHUD(dt);
       }
 
       player.vel.y -= 26.0 * dt;
+      const isAssault = (getPlayerClass().id === 'assault');
       const groundDrag = isSliding ? Math.pow(0.92, dt) : Math.pow(0.6, dt);
-      const airDrag = Math.pow(0.965, dt);
+      const airDrag = Math.pow(isAssault ? 0.985 : 0.965, dt);
       const currentDrag = player.isGrounded ? groundDrag : airDrag;
       player.vel.x *= currentDrag;
       player.vel.z *= currentDrag;
@@ -9768,20 +10351,25 @@ updateHUD(dt);
         if (player.isStomping) {
           player.isStomping = false;
           lastPlayerAction = { type: 'STOMP', time: performance.now() };
+          const isJuggernaut = (getPlayerClass().id === 'juggernaut');
+          const shockRadius = isJuggernaut ? 22.4 : 14.0;
+          const baseForce = isJuggernaut ? 43.0 : 32.0;
+
           createShockwaveRing(player.pos);
-          createSparks(player.pos, 45, 0x38bdf8, 20);
-          audio.playCrunch(1.0);
-          screenShake = 0.55;
-          showPopup("💥 RETRO-STOMP SHOCKWAVE!", "#38bdf8");
-          triggerRumble(0.7, 1.0, 250);
+          createSparks(player.pos, isJuggernaut ? 60 : 45, isJuggernaut ? 0xf59e0b : 0x38bdf8, 22);
+          audio.playCrunch(1.1);
+          screenShake = isJuggernaut ? 0.7 : 0.55;
+          showPopup(isJuggernaut ? "🌋 TITAN SEISMIC STOMP! [+43 M/S QUAKE]" : "💥 RETRO-STOMP SHOCKWAVE!", isJuggernaut ? "#f59e0b" : "#38bdf8");
+          triggerRumble(0.8, 1.0, 300);
 
           // Radial blast onto opponent
           const toOpp = remoteOpponent.pos.clone().sub(player.pos);
           const oppDist = toOpp.length();
-          if (oppDist < 14.0) {
+          if (oppDist < shockRadius) {
             toOpp.y = 0.5;
             toOpp.normalize();
-            const blastImpulse = toOpp.multiplyScalar(32.0 * (1.0 - oppDist / 15.0));
+            let blastImpulse = toOpp.multiplyScalar(baseForce * (1.0 - oppDist / shockRadius));
+            if (remoteOpponent.fortressTimer > 0) blastImpulse.multiplyScalar(0.25);
             remoteOpponent.vel.add(blastImpulse);
           }
           sendNet({
@@ -9848,17 +10436,22 @@ updateHUD(dt);
       const toAnchor = tether.anchorPoint.clone().sub(player.pos);
       const dist = toAnchor.length();
 
+      const pCls = getPlayerClass();
+      const isRecon = (pCls.id === 'recon');
+      const snapLimit = isRecon ? 72 : 52;
+      const pullMult = isRecon ? 1.25 : 1.0;
+
       // Dynamic line color based on tension
-      if (dist > 35) {
+      if (dist > (isRecon ? 48 : 35)) {
         tether.line.material.color.setHex(0xf59e0b); // Warning amber
-      } else if (dist > 44) {
+      } else if (dist > (isRecon ? 62 : 44)) {
         tether.line.material.color.setHex(0xef4444); // Critical red
       } else {
-        tether.line.material.color.setHex(0x38bdf8); // Standard cyan
+        tether.line.material.color.setHex(isRecon ? 0xc084fc : 0x38bdf8); // Recon purple / Standard cyan
       }
 
       // Slingshot snap on extreme tension
-      if (dist > 52) {
+      if (dist > snapLimit) {
         releaseTether();
         audio.playCrunch(0.5);
         showPopup("⚡ TETHER OVERLOAD SNAPPED!", "#f43f5e");
@@ -9868,7 +10461,7 @@ updateHUD(dt);
 
       if (dist > 1.5) {
         toAnchor.normalize();
-        const pullStrength = Math.min(dist * tether.stiffness, 95.0);
+        const pullStrength = Math.min(dist * tether.stiffness * pullMult, 120.0);
         player.vel.add(toAnchor.clone().multiplyScalar(pullStrength * dt));
 
         if (tether.targetIsOpponent) {
@@ -9957,16 +10550,34 @@ updateHUD(dt);
         }
         moveForce.add(strafeVec.clone().multiplyScalar(13.0));
 
+        // Tactical Class Ability usage for Solo AI Bot (NEMESIS-01 Juggernaut)
+        if (!botAI.abilityTimer) botAI.abilityTimer = 8.0 + Math.random() * 3.0;
+        botAI.abilityTimer -= dt;
+        if (botAI.abilityTimer <= 0) {
+          botAI.abilityTimer = 11.0 + Math.random() * 4.0;
+          remoteOpponent.fortressTimer = 4.0;
+          if (audio.playKineticFortress) audio.playKineticFortress();
+          createSparks(botPos.clone().add(new THREE.Vector3(0, 1.0, 0)), 35, 0xfbbf24, 20);
+          showPopup("🛡️ NEMESIS-01 ACTIVATED KINETIC FORTRESS!", "#f59e0b");
+        }
+
         // Close-quarters Bot Counter-Boot Kick
         if (distToPlayer < 3.2 && (!botAI.kickTimer || botAI.kickTimer <= 0)) {
           botAI.kickTimer = 2.4;
-          player.vel.add(toPlayerDir.clone().multiplyScalar(30.0));
-          player.vel.y += 8.0;
+          const isPlayerFortress = (classAbilityActiveTimer > 0 && currentActiveAbility === 'kinetic_fortress');
+          const isBotFortress = (remoteOpponent.fortressTimer > 0);
+          const kickForce = (isBotFortress ? 52.0 : 30.0) * (isPlayerFortress ? 0.25 : 1.0);
+          player.vel.add(toPlayerDir.clone().multiplyScalar(kickForce));
+          player.vel.y += isPlayerFortress ? 2.5 : 8.0;
           screenShake = 0.5;
           audio.playBootKick();
           audio.playCrunch(1.1);
           triggerRumble(0.6, 0.9, 220);
-          showPopup("👢 BOT COUNTER-BOOTED YOU!", "#f43f5e");
+          if (isPlayerFortress) {
+            showPopup("🛡️ FORTRESS DEFLECTED BOT COUNTER-BOOT! [-75% IMPACT]", "#fbbf24");
+          } else {
+            showPopup(isBotFortress ? "🦾 TITAN BOT OVERPOWER BOOTED YOU! [+52 M/S]" : "👢 BOT COUNTER-BOOTED YOU!", "#f43f5e");
+          }
         }
         if (botAI.kickTimer > 0) botAI.kickTimer -= dt;
 
@@ -10070,16 +10681,22 @@ updateHUD(dt);
               const closestP = botEye.clone().add(aimDir.clone().multiplyScalar(pProj));
               if (closestP.distanceTo(playerChest) < player.radius + 0.45) {
                 // PLAYER HIT CONFIRMED!
-                const impulseMag = (botWep === 2) ? 26.0 : 18.0;
+                const isPlayerFortress = (classAbilityActiveTimer > 0 && currentActiveAbility === 'kinetic_fortress');
+                let impulseMag = (botWep === 2) ? 26.0 : 18.0;
+                if (isPlayerFortress) impulseMag *= 0.25;
                 const playerImpulse = aimDir.clone().multiplyScalar(impulseMag);
-                playerImpulse.y += 4.0;
+                playerImpulse.y += isPlayerFortress ? 1.0 : 4.0;
                 player.vel.add(playerImpulse);
 
                 triggerDamageFlash();
                 screenShake = Math.max(screenShake, (botWep === 2) ? 0.55 : 0.38);
                 audio.playCrunch(0.75);
                 createSparks(player.pos, 18, 0xf43f5e, 12);
-                showPopup(`⚠️ HIT BY BOT! (+${Math.round(impulseMag)} M/S IMPACT)`, "#f43f5e");
+                if (isPlayerFortress) {
+                  showPopup(`🛡️ FORTRESS SHIELD ABSORBED HIT! (+${Math.round(impulseMag)} M/S IMPACT)`, "#fbbf24");
+                } else {
+                  showPopup(`⚠️ HIT BY BOT! (+${Math.round(impulseMag)} M/S IMPACT)`, "#f43f5e");
+                }
               }
             }
           }
