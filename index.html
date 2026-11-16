@@ -939,9 +939,10 @@
       <!-- Arena Map Selection -->
       <div style="margin-bottom: 16px; text-align: left; background: rgba(0,0,0,0.35); padding: 12px 16px; border-radius: 10px;">
         <div style="font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: #94a3b8; margin-bottom: 8px;">SELECT COMBAT ARENA:</div>
-        <div style="display: flex; gap: 10px;">
-          <button id="map-btn-1" class="action-sub-btn" style="flex: 1; padding: 10px; font-size: 11px;" onclick="selectArenaMap(1)">FOUNDRY (ARENA)</button>
-          <button id="map-btn-2" class="action-sub-btn" style="flex: 1; padding: 10px; font-size: 11px; background: rgba(15, 23, 42, 0.6); color: #94a3b8; border-color: rgba(255,255,255,0.2);" onclick="selectArenaMap(2)">THE CORE (VERTICAL SILO)</button>
+        <div style="display: flex; gap: 8px;">
+          <button id="map-btn-1" class="action-sub-btn" style="flex: 1; padding: 10px 4px; font-size: 10.5px;" onclick="selectArenaMap(1)">FOUNDRY</button>
+          <button id="map-btn-2" class="action-sub-btn" style="flex: 1; padding: 10px 4px; font-size: 10.5px; background: rgba(15, 23, 42, 0.6); color: #94a3b8; border-color: rgba(255,255,255,0.2);" onclick="selectArenaMap(2)">THE CORE</button>
+          <button id="map-btn-3" class="action-sub-btn" style="flex: 1; padding: 10px 4px; font-size: 10.5px; background: rgba(15, 23, 42, 0.6); color: #94a3b8; border-color: rgba(255,255,255,0.2);" onclick="selectArenaMap(3)">STYGIA DAM</button>
         </div>
       </div>
 
@@ -1434,60 +1435,81 @@
     });
 
 
-    // --- THREE.JS SCENE SETUP ---
+    // --- THREE.JS SCENE SETUP (Bulletstorm Sun-Drenched Stygia Aesthetic) ---
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x07090e);
-    scene.fog = new THREE.FogExp2(0x07090e, 0.011);
+    scene.background = new THREE.Color(0x18100b);
+    scene.fog = new THREE.FogExp2(0x18100b, 0.0075);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 3, 22);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.18;
+    renderer.toneMappingExposure = 1.30;
     renderer.outputEncoding = THREE.sRGBEncoding;
     container.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0x1e293b, 1.1); scene.add(ambientLight);
-    const sunLight = new THREE.DirectionalLight(0xffedd5, 1.45);
-    sunLight.position.set(28, 48, 28);
+    // Warm baked rust & soil ambient bounce
+    const ambientLight = new THREE.AmbientLight(0x4a3628, 1.35); scene.add(ambientLight);
+
+    // Scorched Stygian directional sunlight
+    const sunLight = new THREE.DirectionalLight(0xfffaed, 2.3);
+    sunLight.position.set(34, 54, 26);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
     sunLight.shadow.camera.near = 0.5;
-    sunLight.shadow.camera.far = 130;
-    sunLight.shadow.camera.left = -44;
-    sunLight.shadow.camera.right = 44;
-    sunLight.shadow.camera.top = 44;
-    sunLight.shadow.camera.bottom = -44;
-    sunLight.shadow.bias = -0.0004;
+    sunLight.shadow.camera.far = 140;
+    sunLight.shadow.camera.left = -48;
+    sunLight.shadow.camera.right = 48;
+    sunLight.shadow.camera.top = 48;
+    sunLight.shadow.camera.bottom = -48;
+    sunLight.shadow.bias = -0.0003;
     scene.add(sunLight);
 
+    // Golden-Hour atmospheric rim light
+    const rimSunLight = new THREE.DirectionalLight(0xf59e0b, 0.85);
+    rimSunLight.position.set(-34, 20, -26);
+    scene.add(rimSunLight);
+
     // Dynamic Atmospheric Accent Lights
-    const cyanLight = new THREE.PointLight(0x06b6d4, 2.6, 50); cyanLight.position.set(-28, 8, -25); scene.add(cyanLight);
-    const redLight = new THREE.PointLight(0xff4757, 2.8, 60); redLight.position.set(28, 8, -28); scene.add(redLight);
-    const lavaLight = new THREE.PointLight(0xf97316, 4.0, 36); lavaLight.position.set(0, 2.0, 0); scene.add(lavaLight);
+    const cyanLight = new THREE.PointLight(0x06b6d4, 2.8, 55); cyanLight.position.set(-28, 9, -25); scene.add(cyanLight);
+    const redLight = new THREE.PointLight(0xf43f5e, 3.0, 60); redLight.position.set(28, 9, -28); scene.add(redLight);
+    const lavaLight = new THREE.PointLight(0xff5500, 4.8, 42); lavaLight.position.set(0, 2.5, 0); scene.add(lavaLight);
 
     // Dynamic Muzzle Flash PointLight attached to camera
     const muzzleLight = new THREE.PointLight(0x38bdf8, 0, 18);
     muzzleLight.position.set(0.3, -0.2, -0.8);
     camera.add(muzzleLight);
 
+    // Panoramic Atmospheric Stygia Sky Dome
+    const skyDomeGeo = new THREE.SphereGeometry(240, 32, 16);
+    const skyDomeMat = new THREE.MeshBasicMaterial({ side: THREE.BackSide, fog: false });
+    const skyDomeMesh = new THREE.Mesh(skyDomeGeo, skyDomeMat);
+    scene.add(skyDomeMesh);
 
-    // --- PROCEDURAL SCI-FI TEXTURE GENERATORS ---
+    // --- PROCEDURAL BULLETSTORM TEXTURE GENERATORS ---
     function createProceduralFloorTexture() {
       const c = document.createElement('canvas'); c.width = 512; c.height = 512;
       const ctx = c.getContext('2d');
-      // Dark slate-metallic base
-      ctx.fillStyle = '#0b111e'; ctx.fillRect(0, 0, 512, 512);
+      // Dark weathered rusted iron base
+      ctx.fillStyle = '#1c1917'; ctx.fillRect(0, 0, 512, 512);
 
-      // Panel grid
-      ctx.strokeStyle = '#182338'; ctx.lineWidth = 4;
+      // Rust patches & grime
+      const rustColors = ['rgba(120, 53, 15, 0.3)', 'rgba(180, 83, 9, 0.22)', 'rgba(68, 64, 60, 0.35)'];
+      for (let i = 0; i < 40; i++) {
+        ctx.fillStyle = rustColors[i % 3];
+        const rx = Math.random() * 512, ry = Math.random() * 512, rrad = 15 + Math.random() * 45;
+        ctx.beginPath(); ctx.arc(rx, ry, rrad, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Panel grid seams (heavy steel floor slabs)
+      ctx.strokeStyle = '#0c0a09'; ctx.lineWidth = 5;
       for (let x = 0; x <= 512; x += 128) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
       }
@@ -1495,35 +1517,56 @@
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
       }
 
-      // Panel bevels & inner plates
-      for (let x = 0; x < 512; x += 128) {
-        for (let y = 0; y < 512; y += 128) {
-          ctx.fillStyle = '#0f172a';
-          ctx.fillRect(x + 6, y + 6, 116, 116);
+      // Diamond Tread Crosshatch pattern inside each panel
+      for (let px = 0; px < 512; px += 128) {
+        for (let py = 0; py < 512; py += 128) {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'; ctx.lineWidth = 1.5;
+          ctx.strokeRect(px + 4, py + 4, 120, 120);
 
-          // Subtle brushed diagonal lines
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)'; ctx.lineWidth = 1;
-          for (let d = 0; d < 116; d += 16) {
-            ctx.beginPath(); ctx.moveTo(x + 6 + d, y + 6); ctx.lineTo(x + 6, y + 6 + d); ctx.stroke();
+          // Diamond treads
+          ctx.strokeStyle = '#3e352f'; ctx.lineWidth = 2.5;
+          for (let tx = 14; tx < 114; tx += 14) {
+            for (let ty = 14; ty < 114; ty += 14) {
+              ctx.beginPath();
+              ctx.moveTo(px + tx - 3, py + ty - 1.5);
+              ctx.lineTo(px + tx + 3, py + ty + 1.5);
+              ctx.stroke();
+            }
           }
 
-          // Corner rivets
-          ctx.fillStyle = '#334155';
-          ctx.fillRect(x + 10, y + 10, 4, 4);
-          ctx.fillRect(x + 114, y + 10, 4, 4);
-          ctx.fillRect(x + 10, y + 114, 4, 4);
-          ctx.fillRect(x + 114, y + 114, 4, 4);
+          // Corner heavy hex bolts
+          ctx.fillStyle = '#78716c';
+          [ [10,10], [118,10], [10,118], [118,118] ].forEach(([bx, by]) => {
+            ctx.beginPath(); ctx.arc(px + bx, py + by, 3, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#1c1917';
+            ctx.fillRect(px + bx - 1, py + by - 1, 2, 2);
+            ctx.fillStyle = '#78716c';
+          });
         }
       }
 
-      // Cyan glowing data trace line
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.28)'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(256, 0); ctx.lineTo(256, 512); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, 256); ctx.lineTo(512, 256); ctx.stroke();
+      // Stenciled industrial markings
+      ctx.fillStyle = 'rgba(234, 179, 8, 0.65)';
+      ctx.font = 'bold 15px monospace';
+      ctx.fillText('STYGIA // SECTOR 04', 16, 40);
+      ctx.fillStyle = 'rgba(244, 63, 94, 0.65)';
+      ctx.font = 'bold 13px monospace';
+      ctx.fillText('DANGER: LIVE RAIL 50KV', 140, 290);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.fillText('REF-884-B', 270, 160);
+
+      // Weathered hazard yellow/black stripes on middle dividing seam
+      for (let s = 0; s < 512; s += 20) {
+        ctx.fillStyle = (s % 40 === 0) ? 'rgba(234, 179, 8, 0.55)' : 'rgba(28, 25, 23, 0.8)';
+        ctx.beginPath();
+        ctx.moveTo(s, 250); ctx.lineTo(s + 12, 250);
+        ctx.lineTo(s + 2, 262); ctx.lineTo(s - 10, 262);
+        ctx.fill();
+      }
 
       const tex = new THREE.CanvasTexture(c);
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(10, 10);
+      tex.repeat.set(12, 12);
       return tex;
     }
 
@@ -1532,48 +1575,88 @@
       const ctx = c.getContext('2d');
       ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, 256, 256);
 
-      ctx.strokeStyle = '#202020'; ctx.lineWidth = 6;
+      ctx.strokeStyle = '#101010'; ctx.lineWidth = 6;
       for (let x = 0; x <= 256; x += 64) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 256); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, x); ctx.lineTo(256, x); ctx.stroke();
       }
-      ctx.fillStyle = '#ffffff';
-      for (let x = 0; x < 256; x += 64) {
-        for (let y = 0; y < 256; y += 64) {
-          ctx.fillRect(x + 6, y + 6, 4, 4);
-          ctx.fillRect(x + 54, y + 6, 4, 4);
-          ctx.fillRect(x + 6, y + 54, 4, 4);
-          ctx.fillRect(x + 54, y + 54, 4, 4);
+
+      // Diamond tread bump relief
+      ctx.strokeStyle = '#d4d4d8'; ctx.lineWidth = 3;
+      for (let px = 0; px < 256; px += 64) {
+        for (let py = 0; py < 256; py += 64) {
+          for (let tx = 8; tx < 56; tx += 8) {
+            for (let ty = 8; ty < 56; ty += 8) {
+              ctx.beginPath();
+              ctx.moveTo(px + tx - 2, py + ty - 1);
+              ctx.lineTo(px + tx + 2, py + ty + 1);
+              ctx.stroke();
+            }
+          }
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(px + 4, py + 4, 3, 3);
+          ctx.fillRect(px + 57, py + 4, 3, 3);
+          ctx.fillRect(px + 4, py + 57, 3, 3);
+          ctx.fillRect(px + 57, py + 57, 3, 3);
         }
       }
+
       const tex = new THREE.CanvasTexture(c);
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(10, 10);
+      tex.repeat.set(12, 12);
       return tex;
     }
 
     function createProceduralWallTexture() {
       const c = document.createElement('canvas'); c.width = 512; c.height = 256;
       const ctx = c.getContext('2d');
-      ctx.fillStyle = '#111827'; ctx.fillRect(0, 0, 512, 256);
 
-      // Steel bulkhead cross beams
-      ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 8;
-      ctx.strokeRect(4, 4, 504, 248);
-      ctx.beginPath(); ctx.moveTo(4, 4); ctx.lineTo(508, 248); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(508, 4); ctx.lineTo(4, 248); ctx.stroke();
+      // Heavy industrial concrete / weathered cast steel
+      ctx.fillStyle = '#262626'; ctx.fillRect(0, 0, 512, 256);
 
-      // Top Hazard Chevron Warning Stripe (Yellow / Black)
-      const stripeW = 24;
-      for (let i = -50; i < 550; i += stripeW * 2) {
+      // Vertical rust drippings and rain streaks
+      for (let s = 0; s < 512; s += 6) {
+        const streakAlpha = 0.05 + Math.random() * 0.15;
+        ctx.fillStyle = `rgba(120, 53, 15, ${streakAlpha})`;
+        const sLen = 40 + Math.random() * 180;
+        ctx.fillRect(s, 0, 2 + Math.random() * 3, sLen);
+      }
+
+      // Corrugated steel vertical ribs
+      for (let x = 0; x < 512; x += 16) {
+        ctx.fillStyle = (x % 32 === 0) ? '#1c1c1c' : '#2b2b2b';
+        ctx.fillRect(x, 32, 14, 192);
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+        ctx.strokeRect(x, 32, 14, 192);
+      }
+
+      // Top & Bottom Heavy Hazard Chevron Girders (Bulletstorm Yellow/Black)
+      const stripeW = 28;
+      for (let i = -60; i < 570; i += stripeW * 2) {
         ctx.fillStyle = '#eab308';
         ctx.beginPath();
         ctx.moveTo(i, 0); ctx.lineTo(i + stripeW, 0);
-        ctx.lineTo(i + stripeW - 24, 28); ctx.lineTo(i - 24, 28);
+        ctx.lineTo(i + stripeW - 28, 32); ctx.lineTo(i - 28, 32);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(i, 224); ctx.lineTo(i + stripeW, 224);
+        ctx.lineTo(i + stripeW - 28, 256); ctx.lineTo(i - 28, 256);
         ctx.fill();
       }
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 28, 512, 3);
+
+      // Dark steel trim borders
+      ctx.fillStyle = '#0c0a09';
+      ctx.fillRect(0, 31, 512, 3);
+      ctx.fillRect(0, 222, 512, 3);
+
+      // Warning Stencils
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('STYGIA BULKHEAD // LEVEL 03', 20, 80);
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.85)';
+      ctx.font = 'bold 14px monospace';
+      ctx.fillText('⚡ HIGH VOLTAGE REBAR GRID', 20, 110);
 
       const tex = new THREE.CanvasTexture(c);
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -1582,26 +1665,99 @@
     }
 
     function createProceduralLavaTexture() {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 512;
+      const ctx = c.getContext('2d');
+
+      // Multi-layer churning volcanic magma
+      const grad = ctx.createRadialGradient(256, 256, 20, 256, 256, 260);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.12, '#fef08a');
+      grad.addColorStop(0.35, '#f97316');
+      grad.addColorStop(0.65, '#dc2626');
+      grad.addColorStop(0.9, '#7f1d1d');
+      grad.addColorStop(1, '#450a0a');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, 512, 512);
+
+      // Glowing fracture fissure veins
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3;
+      for (let i = 0; i < 16; i++) {
+        ctx.beginPath();
+        ctx.moveTo(Math.random() * 512, Math.random() * 512);
+        ctx.quadraticCurveTo(Math.random() * 512, Math.random() * 512, Math.random() * 512, Math.random() * 512);
+        ctx.stroke();
+      }
+
+      // Cooling dark iron slag crust islands
+      ctx.fillStyle = '#18120c';
+      for (let i = 0; i < 30; i++) {
+        const cx = Math.random() * 512, cy = Math.random() * 512;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 18 + Math.random() * 32, 10 + Math.random() * 20, Math.random() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#f97316'; ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 2);
+      return tex;
+    }
+
+    function createProceduralConcreteTexture() {
       const c = document.createElement('canvas'); c.width = 256; c.height = 256;
       const ctx = c.getContext('2d');
-      const grad = ctx.createRadialGradient(128, 128, 10, 128, 128, 128);
-      grad.addColorStop(0, '#fef08a');
-      grad.addColorStop(0.3, '#f97316');
-      grad.addColorStop(0.7, '#ea580c');
-      grad.addColorStop(1, '#7c2d12');
-      ctx.fillStyle = grad; ctx.fillRect(0, 0, 256, 256);
+      ctx.fillStyle = '#3f3f46'; ctx.fillRect(0, 0, 256, 256);
 
-      // Magma veins
-      ctx.strokeStyle = 'rgba(254, 240, 138, 0.45)'; ctx.lineWidth = 4;
-      for (let i = 0; i < 8; i++) {
+      // Concrete aggregate speckles
+      for (let i = 0; i < 1500; i++) {
+        ctx.fillStyle = (Math.random() < 0.5) ? '#27272a' : '#52525b';
+        ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+      }
+      // Structural stress fractures / cracks
+      ctx.strokeStyle = '#18181b'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 5; i++) {
         ctx.beginPath();
-        ctx.moveTo(Math.random() * 256, Math.random() * 256);
-        ctx.quadraticCurveTo(Math.random() * 256, Math.random() * 256, Math.random() * 256, Math.random() * 256);
+        let cx = Math.random() * 256, cy = Math.random() * 256;
+        ctx.moveTo(cx, cy);
+        for (let s = 0; s < 4; s++) {
+          cx += (Math.random() - 0.5) * 40;
+          cy += (Math.random() - 0.5) * 40;
+          ctx.lineTo(cx, cy);
+        }
         ctx.stroke();
       }
       const tex = new THREE.CanvasTexture(c);
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(2, 2);
+      tex.repeat.set(2, 4);
+      return tex;
+    }
+
+    function createSkyDomeTexture() {
+      const c = document.createElement('canvas'); c.width = 1024; c.height = 512;
+      const ctx = c.getContext('2d');
+      const grad = ctx.createLinearGradient(0, 0, 0, 512);
+      grad.addColorStop(0, '#0c0a09');
+      grad.addColorStop(0.35, '#292524');
+      grad.addColorStop(0.65, '#78350f');
+      grad.addColorStop(0.85, '#d97706');
+      grad.addColorStop(1, '#9a3412');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, 1024, 512);
+
+      // Distant Stygian industrial refinery silhouettes
+      ctx.fillStyle = 'rgba(12, 10, 9, 0.88)';
+      for (let x = 0; x < 1024; x += 32 + Math.random() * 40) {
+        const bW = 20 + Math.random() * 35;
+        const bH = 60 + Math.random() * 110;
+        ctx.fillRect(x, 512 - bH, bW, bH);
+
+        if (Math.random() < 0.4) {
+          ctx.fillRect(x + bW / 2 - 1, 512 - bH - 35, 3, 35);
+          ctx.fillRect(x + bW / 2 - 12, 512 - bH - 25, 24, 2);
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(c);
       return tex;
     }
 
@@ -1609,6 +1765,10 @@
     const floorBumpTex = createProceduralFloorBumpMap();
     const wallDiffuseTex = createProceduralWallTexture();
     const lavaTex = createProceduralLavaTexture();
+    const concreteTex = createProceduralConcreteTexture();
+    const skyDomeTex = createSkyDomeTexture();
+    skyDomeMesh.material.map = skyDomeTex;
+    skyDomeMesh.material.needsUpdate = true;
 
     // --- WEAPONS CONFIGURATION ---
     const WEAPONS = [
@@ -1697,59 +1857,90 @@
       const ARENA_SIZE = 76;
       const ARENA_HALF = ARENA_SIZE / 2;
 
-      // Floor
+      // Heavy Industrial Diamond-Plate Steel Floor (Bulletstorm Weathered Steel)
       const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(ARENA_SIZE, ARENA_SIZE),
         new THREE.MeshStandardMaterial({
-          color: 0x223049,
+          color: 0x3d332a,
           map: floorDiffuseTex,
           bumpMap: floorBumpTex,
-          bumpScale: 0.05,
-          roughness: 0.35,
-          metalness: 0.65
+          bumpScale: 0.08,
+          roughness: 0.42,
+          metalness: 0.72
         })
       );
       floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true;
       arenaRoot.add(floor);
 
-      // Center Molten Pit Hazard
+      // Floor Expansion Joint Beams
+      const jointMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, metalness: 0.85, roughness: 0.3 });
+      const jointX = new THREE.Mesh(new THREE.BoxGeometry(ARENA_SIZE, 0.08, 0.8), jointMat);
+      jointX.position.set(0, 0.04, 0); arenaRoot.add(jointX);
+      const jointZ = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, ARENA_SIZE), jointMat);
+      jointZ.position.set(0, 0.04, 0); arenaRoot.add(jointZ);
+
+      // Center Molten Slag Smelter Vat Hazard
+      const smelterCurb = new THREE.Mesh(
+        new THREE.CylinderGeometry(9.6, 10.2, 0.8, 48),
+        new THREE.MeshStandardMaterial({ color: 0x27272a, map: wallDiffuseTex, roughness: 0.4, metalness: 0.8 })
+      );
+      smelterCurb.position.set(0, 0.4, 0); smelterCurb.castShadow = true; smelterCurb.receiveShadow = true;
+      arenaRoot.add(smelterCurb);
+
       lavaPit = new THREE.Mesh(
-        new THREE.CylinderGeometry(8.5, 8.5, 0.4, 48),
+        new THREE.CylinderGeometry(8.8, 8.8, 0.5, 48),
         new THREE.MeshStandardMaterial({
-          color: 0xff6600,
+          color: 0xff3b00,
           map: lavaTex,
           emissive: 0xf97316,
           emissiveMap: lavaTex,
-          emissiveIntensity: 1.25,
-          roughness: 0.25,
+          emissiveIntensity: 1.45,
+          roughness: 0.2,
           metalness: 0.1
         })
       );
-      lavaPit.position.set(0, 0.2, 0);
+      lavaPit.position.set(0, 0.45, 0);
       arenaRoot.add(lavaPit);
 
+      // Industrial Smelter Overhang Pipes
+      const pipeMat = new THREE.MeshStandardMaterial({ color: 0x44403c, metalness: 0.8, roughness: 0.35 });
+      const pipe1 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 8.0, 16), pipeMat);
+      pipe1.rotation.z = Math.PI / 2; pipe1.position.set(-5.5, 3.8, 0); pipe1.castShadow = true;
+      const pipe2 = pipe1.clone(); pipe2.position.set(5.5, 3.8, 0);
+      arenaRoot.add(pipe1, pipe2);
+
+      // Steel Grate Smelter Crossing Bridge with Handrails
+      const bridgeGroup = new THREE.Group();
       const bridge = new THREE.Mesh(
-        new THREE.BoxGeometry(3.6, 0.6, 24),
-        new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.4 })
+        new THREE.BoxGeometry(4.2, 0.5, 25),
+        new THREE.MeshStandardMaterial({ color: 0x3f3f46, map: floorDiffuseTex, metalness: 0.7, roughness: 0.35 })
       );
-      bridge.position.set(0, 0.3, 0); bridge.receiveShadow = true;
-      arenaRoot.add(bridge);
+      bridge.position.set(0, 0.65, 0); bridge.receiveShadow = true; bridge.castShadow = true;
+      bridgeGroup.add(bridge);
+
+      // Bridge Safety Handrails
+      const railMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.8, roughness: 0.3 });
+      const railL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.2, 24), railMat);
+      railL.position.set(-2.0, 1.3, 0); railL.castShadow = true;
+      const railR = railL.clone(); railR.position.x = 2.0;
+      bridgeGroup.add(railL, railR);
+      arenaRoot.add(bridgeGroup);
 
       hazards.push({
         type: "MOLTEN_PIT",
-        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, 0.5, 0), new THREE.Vector3(17, 2, 17)),
-        name: "MOLTEN PIT VAPORIZATION"
+        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, 0.5, 0), new THREE.Vector3(18, 2.5, 18)),
+        name: "MOLTEN SLAG SMELTER VAPORIZATION"
       });
 
-      // Perimeter Walls
+      // Perimeter Weathered Bulkhead Walls with Industrial Decals
       function createWall(x, z, width, length, height) {
         const wall = new THREE.Mesh(
           new THREE.BoxGeometry(width, height, length),
           new THREE.MeshStandardMaterial({
-            color: 0x334155,
+            color: 0x44403c,
             map: wallDiffuseTex,
-            roughness: 0.45,
-            metalness: 0.75
+            roughness: 0.4,
+            metalness: 0.78
           })
         );
         wall.position.set(x, height / 2, z);
@@ -1758,75 +1949,209 @@
         colliders.push({ box: new THREE.Box3().setFromObject(wall), mesh: wall });
       }
       const wallH = 16;
-      createWall(0, -ARENA_HALF, ARENA_SIZE, 2, wallH);
-      createWall(0, ARENA_HALF, ARENA_SIZE, 2, wallH);
-      createWall(-ARENA_HALF, 0, 2, ARENA_SIZE, wallH);
-      createWall(ARENA_HALF, 0, 2, ARENA_SIZE, wallH);
+      createWall(0, -ARENA_HALF, ARENA_SIZE, 2.5, wallH);
+      createWall(0, ARENA_HALF, ARENA_SIZE, 2.5, wallH);
+      createWall(-ARENA_HALF, 0, 2.5, ARENA_SIZE, wallH);
+      createWall(ARENA_HALF, 0, 2.5, ARENA_SIZE, wallH);
 
-      // Spikes (North & South)
+      // Heavy Structural Steel Corner Buttresses (Bulletstorm Industrial Architecture)
+      const buttressMat = new THREE.MeshStandardMaterial({ color: 0x292524, metalness: 0.85, roughness: 0.35 });
+      function createCornerButtress(x, z, rotY) {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(6, wallH, 6), buttressMat);
+        b.position.set(x, wallH / 2, z); b.rotation.y = rotY;
+        b.castShadow = true; b.receiveShadow = true;
+        arenaRoot.add(b);
+        colliders.push({ box: new THREE.Box3().setFromObject(b), mesh: b });
+      }
+      createCornerButtress(-ARENA_HALF + 2.5, -ARENA_HALF + 2.5, 0);
+      createCornerButtress(ARENA_HALF - 2.5, -ARENA_HALF + 2.5, 0);
+      createCornerButtress(-ARENA_HALF + 2.5, ARENA_HALF - 2.5, 0);
+      createCornerButtress(ARENA_HALF - 2.5, ARENA_HALF - 2.5, 0);
+
+      // Overhead Structural Steel Gantry Trusses (Casts industrial shadows)
+      const trussMat = new THREE.MeshStandardMaterial({ color: 0x292524, metalness: 0.9, roughness: 0.3 });
+      const truss1 = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.0, ARENA_SIZE), trussMat);
+      truss1.position.set(-16, wallH + 1, 0); truss1.castShadow = true;
+      const truss2 = truss1.clone(); truss2.position.x = 16;
+      const trussCross = new THREE.Mesh(new THREE.BoxGeometry(ARENA_SIZE, 2.0, 2.0), trussMat);
+      trussCross.position.set(0, wallH + 1, 0); trussCross.castShadow = true;
+      arenaRoot.add(truss1, truss2, trussCross);
+
+      // Hanging High-Voltage Conduit / Cable Bundles
+      const cableMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.6 });
+      const cable1 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 38, 8), cableMat);
+      cable1.rotation.z = Math.PI / 2; cable1.position.set(0, 11, -ARENA_HALF + 1.2);
+      arenaRoot.add(cable1);
+
+      // Brutal Bulletstorm Rebar Impalement Barricades (North & South)
       function createSpikeHazardWall(x, z, width, normalDir) {
-        const baseWall = new THREE.Mesh(new THREE.BoxGeometry(width, 10, 1.5), new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.5 }));
-        baseWall.position.set(x, 5, z); arenaRoot.add(baseWall);
-        const spikeGeo = new THREE.ConeGeometry(0.35, 1.8, 8);
-        const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2 });
-        for (let i = -width/2 + 1; i <= width/2 - 1; i += 1.8) {
-          for (let j = 2; j <= 8; j += 2) {
-            const spike = new THREE.Mesh(spikeGeo, spikeMat);
-            spike.position.set(x + i, j, z + (normalDir * 1.0));
-            spike.rotation.x = (normalDir > 0 ? 1 : -1) * (Math.PI / 2);
-            arenaRoot.add(spike);
+        const group = new THREE.Group();
+        // Heavy rusted steel I-beam backplate
+        const baseBeam = new THREE.Mesh(
+          new THREE.BoxGeometry(width, 1.4, 1.4),
+          new THREE.MeshStandardMaterial({ color: 0x451a03, metalness: 0.85, roughness: 0.3 })
+        );
+        baseBeam.position.set(x, 5.5, z); baseBeam.castShadow = true; group.add(baseBeam);
+
+        const rebarMat = new THREE.MeshStandardMaterial({
+          color: 0x78350f,
+          metalness: 0.88,
+          roughness: 0.28
+        });
+
+        // 48+ jagged, angled high-tensile steel rebar rods with barbed hooks
+        for (let i = -width/2 + 1.5; i <= width/2 - 1.5; i += 1.4) {
+          for (let row = 0; row < 3; row++) {
+            const h = 3.5 + row * 2.2;
+            const rebarLen = 2.4 + (Math.sin(i * 3) * 0.4);
+            const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, rebarLen, 6), rebarMat);
+            rod.position.set(x + i + (row % 2 ? 0.3 : -0.3), h, z + (normalDir * (rebarLen * 0.45)));
+            // Aggressive angled orientation
+            rod.rotation.x = (normalDir > 0 ? 1 : -1) * (Math.PI / 2 + (Math.random() - 0.5) * 0.25);
+            rod.rotation.y = (Math.random() - 0.5) * 0.25;
+            rod.castShadow = true;
+            group.add(rod);
+
+            // Barbed tip
+            const barb = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 6), rebarMat);
+            barb.position.copy(rod.position).add(new THREE.Vector3(0, 0, normalDir * (rebarLen * 0.5)));
+            barb.rotation.x = (normalDir > 0 ? 1 : -1) * (Math.PI / 2);
+            group.add(barb);
           }
         }
+
+        // Flashing Red Hazard Strobe Beacons on top
+        const strobe = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.2, 0.2, 0.5, 8),
+          new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 1.2 })
+        );
+        strobe.position.set(x - width/3, 7.5, z);
+        const strobe2 = strobe.clone(); strobe2.position.x = x + width/3;
+        group.add(strobe, strobe2);
+
+        arenaRoot.add(group);
         hazards.push({
           type: "SPIKES",
-          box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, 5, z), new THREE.Vector3(width, 10, 3)),
-          name: "SPIKE WALL IMPALE"
+          box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, 5.5, z), new THREE.Vector3(width, 10, 3.5)),
+          name: "JAGGED REBAR WALL IMPALEMENT"
         });
       }
       createSpikeHazardWall(0, -ARENA_HALF + 1.2, 34, 1);
       createSpikeHazardWall(0, ARENA_HALF - 1.2, 34, -1);
 
-      // Turbine (West Wall)
+      // The Dual-Rotary Industrial Meatgrinder / Turbine Shredder (West Wall)
       const turbineGroup = new THREE.Group();
-      turbineGroup.position.set(-ARENA_HALF + 1.5, 6, 0);
-      const turbineRing = new THREE.Mesh(new THREE.TorusGeometry(5.5, 0.7, 16, 32), new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xb45309, emissiveIntensity: 0.6 }));
-      turbineRing.rotation.y = Math.PI / 2; turbineGroup.add(turbineRing);
+      turbineGroup.position.set(-ARENA_HALF + 1.8, 6.2, 0);
+
+      // Heavy 11.5m circular cast-iron casing
+      const turbineCasing = new THREE.Mesh(
+        new THREE.CylinderGeometry(5.8, 5.8, 2.2, 32, 1, true),
+        new THREE.MeshStandardMaterial({ color: 0x1c1917, metalness: 0.9, roughness: 0.25 })
+      );
+      turbineCasing.rotation.z = Math.PI / 2; turbineCasing.castShadow = true;
+      turbineGroup.add(turbineCasing);
+
+      // Protective Industrial Cage Bars across intake
+      const barMat = new THREE.MeshStandardMaterial({ color: 0x78716c, metalness: 0.85, roughness: 0.3 });
+      for (let barY = -4; barY <= 4; barY += 1.8) {
+        const cBar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 11, 8), barMat);
+        cBar.rotation.x = Math.PI / 2; cBar.position.set(1.2, barY, 0);
+        turbineGroup.add(cBar);
+      }
+
+      // Yellow Warning Strobe Beacons
+      const tBeaconMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 1.0 });
+      const tBeaconTop = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.6, 8), tBeaconMat);
+      tBeaconTop.position.set(0.8, 6.4, 0);
+      const tBeaconBot = tBeaconTop.clone(); tBeaconBot.position.y = -6.4;
+      turbineGroup.add(tBeaconTop, tBeaconBot);
+
+      // Toothed Industrial Crusher Blades
       bladesGroup = new THREE.Group();
+      const bladeMat = new THREE.MeshStandardMaterial({ color: 0xa1a1aa, metalness: 0.92, roughness: 0.2 });
       for (let b = 0; b < 6; b++) {
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.12, 5, 0.9), new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85 }));
-        blade.rotation.x = (b * Math.PI) / 3; blade.position.set(0.1, 0, 0); bladesGroup.add(blade);
+        const bGroup = new THREE.Group();
+        const mainArm = new THREE.Mesh(new THREE.BoxGeometry(0.18, 5.2, 1.0), bladeMat);
+        mainArm.castShadow = true;
+        // Jagged triangular crusher teeth
+        const tooth1 = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.9, 4), bladeMat);
+        tooth1.rotation.z = -Math.PI / 2; tooth1.position.set(0.18, 2.0, 0.5);
+        const tooth2 = tooth1.clone(); tooth2.position.set(0.18, -2.0, -0.5);
+        bGroup.add(mainArm, tooth1, tooth2);
+        bGroup.rotation.x = (b * Math.PI) / 3;
+        bladesGroup.add(bGroup);
       }
       turbineGroup.add(bladesGroup); arenaRoot.add(turbineGroup);
+
       hazards.push({
         type: "TURBINE",
-        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(-ARENA_HALF + 2, 6, 0), new THREE.Vector3(4, 11, 11)),
-        name: "TURBINE SHRED",
+        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(-ARENA_HALF + 2.5, 6.2, 0), new THREE.Vector3(5, 11.5, 11.5)),
+        name: "ROTARY INDUSTRIAL CRUSHER SHRED",
         blades: bladesGroup
       });
 
-      // Jump Pads
+      // Heavy Industrial Pneumatic Jump-Pads (Hazard Chevron Stomp Plates)
       function createJumpPad(x, z) {
         const padGroup = new THREE.Group();
+        // Heavy square cast-iron base
         padGroup.add(
-          new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.7, 0.4, 24), new THREE.MeshStandardMaterial({ color: 0x0f172a })),
-          new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 0.45, 24), new THREE.MeshStandardMaterial({ color: 0x06b6d4, emissive: 0x06b6d4, emissiveIntensity: 0.9 }))
+          new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.4, 5.2), new THREE.MeshStandardMaterial({ color: 0x18181b, metalness: 0.85, roughness: 0.35 })),
+          // Hazard-striped stomp plate
+          new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.3, 4.4), new THREE.MeshStandardMaterial({ color: 0xeab308, map: wallDiffuseTex, roughness: 0.35, metalness: 0.8 })),
+          // Glowing cyan pneumatic valve core
+          new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.42, 16), new THREE.MeshStandardMaterial({ color: 0x06b6d4, emissive: 0x06b6d4, emissiveIntensity: 1.0 }))
         );
+        // Corner heavy coil springs
+        const springMat = new THREE.MeshStandardMaterial({ color: 0x71717a, metalness: 0.95 });
+        [ [-2,-2], [2,-2], [-2,2], [2,2] ].forEach(([sx, sz]) => {
+          const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.5, 8), springMat);
+          sp.position.set(sx, 0.2, sz); padGroup.add(sp);
+        });
         padGroup.position.set(x, 0.2, z); arenaRoot.add(padGroup);
-        jumpPads.push({ pos: new THREE.Vector3(x, 0.4, z), radius: 2.5, power: 36.0 });
+        jumpPads.push({ pos: new THREE.Vector3(x, 0.5, z), radius: 2.8, power: 36.0 });
       }
       createJumpPad(-24, -24); createJumpPad(24, -24); createJumpPad(-24, 24); createJumpPad(24, 24);
 
-      // Destructible Pillars
+      // Bulletstorm Destructible Concrete Cover Pillars (With Steel Rebar & Structural Braces)
       function createPillar(x, z, idx) {
-        const p = new THREE.Mesh(
-          new THREE.CylinderGeometry(2, 2, 14, 20),
-          new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.45, metalness: 0.65 })
+        const pGroup = new THREE.Group();
+        pGroup.position.set(x, 7, z);
+
+        // Heavy square concrete pillar
+        const pBody = new THREE.Mesh(
+          new THREE.BoxGeometry(3.6, 14, 3.6),
+          new THREE.MeshStandardMaterial({
+            color: 0x52525b,
+            map: concreteTex,
+            roughness: 0.7,
+            metalness: 0.2
+          })
         );
-        p.position.set(x, 7, z); p.castShadow = true; p.receiveShadow = true;
-        arenaRoot.add(p);
-        const col = { box: new THREE.Box3().setFromObject(p), mesh: p };
+        pBody.castShadow = true; pBody.receiveShadow = true;
+        pGroup.add(pBody);
+
+        // Steel structural reinforcement collar bands
+        const collarMat = new THREE.MeshStandardMaterial({ color: 0x27272a, map: wallDiffuseTex, metalness: 0.85, roughness: 0.3 });
+        const collar1 = new THREE.Mesh(new THREE.BoxGeometry(3.9, 1.2, 3.9), collarMat);
+        collar1.position.y = -4.5;
+        const collar2 = collar1.clone(); collar2.position.y = 2.0;
+        pGroup.add(collar1, collar2);
+
+        // Exposed jagged steel rebar protruding from top/corners
+        const rMat = new THREE.MeshStandardMaterial({ color: 0x78350f, metalness: 0.85 });
+        for (let r = 0; r < 4; r++) {
+          const rx = (r % 2 === 0 ? 1.6 : -1.6);
+          const rz = (r < 2 ? 1.6 : -1.6);
+          const reb = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 6), rMat);
+          reb.position.set(rx, 7.5, rz);
+          reb.rotation.z = (Math.random() - 0.5) * 0.3;
+          pGroup.add(reb);
+        }
+
+        arenaRoot.add(pGroup);
+        const col = { box: new THREE.Box3().setFromObject(pGroup), mesh: pGroup };
         colliders.push(col);
-        arenaPillars.push({ mesh: p, collider: col, health: 3, maxHealth: 3, idx, x, z, destroyed: false });
+        arenaPillars.push({ mesh: pGroup, collider: col, health: 3, maxHealth: 3, idx, x, z, destroyed: false });
       }
       createPillar(-16, -16, 0); createPillar(16, -16, 1); createPillar(-16, 16, 2); createPillar(16, 16, 3);
     }
@@ -1837,42 +2162,50 @@
       const SILO_RADIUS = 28;
       const SILO_HEIGHT = 44;
 
-      // Cylindrical Outer Silo Bulkhead
+      // Heavy Industrial Ribbed Silo Wall (Bulletstorm Stygia Reactor Silo)
       const siloWall = new THREE.Mesh(
         new THREE.CylinderGeometry(SILO_RADIUS, SILO_RADIUS, SILO_HEIGHT, 32, 1, true),
         new THREE.MeshStandardMaterial({
-          color: 0x1e293b,
+          color: 0x334155,
           map: wallDiffuseTex,
           side: THREE.BackSide,
-          roughness: 0.5,
-          metalness: 0.7
+          roughness: 0.45,
+          metalness: 0.8
         })
       );
       siloWall.position.set(0, SILO_HEIGHT / 2, 0);
       arenaRoot.add(siloWall);
 
-      // Ceiling Spike Grid Hazard (Impales players rocket-jumping too high!)
-      const spikeGeo = new THREE.ConeGeometry(0.4, 2.0, 8);
-      const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2 });
-      for (let x = -20; x <= 20; x += 3.5) {
-        for (let z = -20; z <= 20; z += 3.5) {
-          if (new THREE.Vector2(x, z).length() < SILO_RADIUS - 2) {
+      // Heavy Structural Rib Rings
+      const ribMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.88, roughness: 0.3 });
+      for (let ry = 8; ry < SILO_HEIGHT; ry += 12) {
+        const rib = new THREE.Mesh(new THREE.TorusGeometry(SILO_RADIUS - 0.2, 0.6, 12, 32), ribMat);
+        rib.rotation.x = Math.PI / 2; rib.position.set(0, ry, 0);
+        arenaRoot.add(rib);
+      }
+
+      // Ceiling Industrial Rebar Impaler Grid (Bulletstorm Ceilings)
+      const spikeGeo = new THREE.CylinderGeometry(0.08, 0.16, 2.8, 6);
+      const spikeMat = new THREE.MeshStandardMaterial({ color: 0x78350f, metalness: 0.88, roughness: 0.3 });
+      for (let x = -20; x <= 20; x += 3.2) {
+        for (let z = -20; z <= 20; z += 3.2) {
+          if (new THREE.Vector2(x, z).length() < SILO_RADIUS - 3) {
             const spk = new THREE.Mesh(spikeGeo, spikeMat);
-            spk.position.set(x, SILO_HEIGHT - 0.5, z);
-            spk.rotation.x = Math.PI;
+            spk.position.set(x, SILO_HEIGHT - 1.4, z);
+            spk.castShadow = true;
             arenaRoot.add(spk);
           }
         }
       }
       hazards.push({
         type: "CEILING_SPIKES",
-        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, SILO_HEIGHT - 1.5, 0), new THREE.Vector3(SILO_RADIUS * 2, 3, SILO_RADIUS * 2)),
-        name: "CEILING SPIKE GRID IMPALEMENT"
+        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, SILO_HEIGHT - 1.5, 0), new THREE.Vector3(SILO_RADIUS * 2, 3.5, SILO_RADIUS * 2)),
+        name: "CEILING REBAR GRID IMPALEMENT"
       });
 
       // Bottom Molten Plasma Abyss Hazard
       lavaPit = new THREE.Mesh(
-        new THREE.CylinderGeometry(SILO_RADIUS, SILO_RADIUS, 1.0, 32),
+        new THREE.CylinderGeometry(SILO_RADIUS, SILO_RADIUS, 1.2, 32),
         new THREE.MeshStandardMaterial({
           color: 0xff3b00,
           map: lavaTex,
@@ -1880,24 +2213,32 @@
           emissiveIntensity: 1.5
         })
       );
-      lavaPit.position.set(0, 0.4, 0);
+      lavaPit.position.set(0, 0.5, 0);
       arenaRoot.add(lavaPit);
       hazards.push({
         type: "MOLTEN_PIT",
-        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, 0.8, 0), new THREE.Vector3(SILO_RADIUS * 2, 2.5, SILO_RADIUS * 2)),
+        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, 0.8, 0), new THREE.Vector3(SILO_RADIUS * 2, 2.8, SILO_RADIUS * 2)),
         name: "REACTOR CORE PLASMA VAPORIZATION"
       });
 
-      // Catwalk Tier 1 & Tier 2
+      // Catwalk Tier 1 & Tier 2 with Handrails
       function createRingCatwalk(innerR, outerR, y) {
         const ringMesh = new THREE.Mesh(
           new THREE.RingGeometry(innerR, outerR, 32),
-          new THREE.MeshStandardMaterial({ color: 0x334155, map: floorDiffuseTex, side: THREE.DoubleSide, metalness: 0.6 })
+          new THREE.MeshStandardMaterial({ color: 0x3d332a, map: floorDiffuseTex, side: THREE.DoubleSide, metalness: 0.75, roughness: 0.38 })
         );
         ringMesh.rotation.x = -Math.PI / 2;
         ringMesh.position.set(0, y, 0);
         ringMesh.receiveShadow = true;
         arenaRoot.add(ringMesh);
+
+        // Safety Handrails
+        const railMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.8, roughness: 0.3 });
+        const innerRail = new THREE.Mesh(new THREE.TorusGeometry(innerR + 0.3, 0.08, 8, 32), railMat);
+        innerRail.rotation.x = Math.PI / 2; innerRail.position.set(0, y + 1.1, 0);
+        const outerRail = new THREE.Mesh(new THREE.TorusGeometry(outerR - 0.3, 0.08, 8, 32), railMat);
+        outerRail.rotation.x = Math.PI / 2; outerRail.position.set(0, y + 1.1, 0);
+        arenaRoot.add(innerRail, outerRail);
 
         for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
           const midR = (innerR + outerR) / 2;
@@ -1913,34 +2254,192 @@
       // Central Anti-Gravity Vertical Beam (Shoots players skyward +42 m/s!)
       const liftBeam = new THREE.Mesh(
         new THREE.CylinderGeometry(4.5, 4.5, SILO_HEIGHT, 24, 1, true),
-        new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.25, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })
+        new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.28, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })
       );
       liftBeam.position.set(0, SILO_HEIGHT / 2, 0);
       arenaRoot.add(liftBeam);
       jumpPads.push({ pos: new THREE.Vector3(0, 1.0, 0), radius: 4.5, power: 42.0 });
 
-      // Catwalk Jump Pads
-      jumpPads.push({ pos: new THREE.Vector3(-19, 11.2, 0), radius: 2.2, power: 34.0 });
-      jumpPads.push({ pos: new THREE.Vector3(19, 11.2, 0), radius: 2.2, power: 34.0 });
+      // Catwalk Hydraulic Jump Pads
+      jumpPads.push({ pos: new THREE.Vector3(-19, 11.2, 0), radius: 2.5, power: 34.0 });
+      jumpPads.push({ pos: new THREE.Vector3(19, 11.2, 0), radius: 2.5, power: 34.0 });
+    }
+
+    function buildStygianDam() {
+      clearArena();
+      currentMapId = 3;
+      const DAM_WIDTH = 74;
+      const DAM_DEPTH = 68;
+
+      // Lower Canyon Spillway (Molten Toxic Runoff)
+      const lowerBasin = new THREE.Mesh(
+        new THREE.PlaneGeometry(DAM_WIDTH, DAM_DEPTH),
+        new THREE.MeshStandardMaterial({
+          color: 0x2e1a12,
+          map: floorDiffuseTex,
+          bumpMap: floorBumpTex,
+          bumpScale: 0.08,
+          roughness: 0.5,
+          metalness: 0.65
+        })
+      );
+      lowerBasin.rotation.x = -Math.PI / 2;
+      lowerBasin.receiveShadow = true;
+      arenaRoot.add(lowerBasin);
+
+      // Massive Concrete Dam Wall Bulkhead
+      const damWallMat = new THREE.MeshStandardMaterial({
+        color: 0x52525b,
+        map: concreteTex,
+        roughness: 0.75,
+        metalness: 0.25
+      });
+      const damWall = new THREE.Mesh(new THREE.BoxGeometry(DAM_WIDTH, 28, 6), damWallMat);
+      damWall.position.set(0, 14, -DAM_DEPTH / 2 + 3);
+      damWall.castShadow = true; damWall.receiveShadow = true;
+      arenaRoot.add(damWall);
+      colliders.push({ box: new THREE.Box3().setFromObject(damWall), mesh: damWall });
+
+      // Upper Dam Crest Walkway (Tier at Y = 16m)
+      const crestWalkway = new THREE.Mesh(
+        new THREE.BoxGeometry(DAM_WIDTH - 8, 1.4, 12),
+        new THREE.MeshStandardMaterial({ color: 0x3d332a, map: floorDiffuseTex, metalness: 0.7, roughness: 0.35 })
+      );
+      crestWalkway.position.set(0, 16.0, -DAM_DEPTH / 2 + 7);
+      crestWalkway.receiveShadow = true; crestWalkway.castShadow = true;
+      arenaRoot.add(crestWalkway);
+      colliders.push({ box: new THREE.Box3().setFromObject(crestWalkway), mesh: crestWalkway });
+
+      // Crest Safety Railing
+      const damRailMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.85, roughness: 0.3 });
+      const crestRail = new THREE.Mesh(new THREE.BoxGeometry(DAM_WIDTH - 8, 1.2, 0.15), damRailMat);
+      crestRail.position.set(0, 17.2, -DAM_DEPTH / 2 + 13);
+      arenaRoot.add(crestRail);
+
+      // Central Hydro Spillway Vat / Slag Hazard
+      const spillwayVat = new THREE.Mesh(
+        new THREE.BoxGeometry(22, 1.0, 32),
+        new THREE.MeshStandardMaterial({
+          color: 0xff4500,
+          map: lavaTex,
+          emissive: 0xf97316,
+          emissiveIntensity: 1.35
+        })
+      );
+      spillwayVat.position.set(0, 0.2, 4);
+      arenaRoot.add(spillwayVat);
+      hazards.push({
+        type: "MOLTEN_PIT",
+        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, 0.5, 4), new THREE.Vector3(22, 2.5, 32)),
+        name: "SPILLWAY HYDRO-SLAG VAPORIZATION"
+      });
+
+      // Giant Hydro-Turbine Grinder on Dam Face
+      const damTurbineGroup = new THREE.Group();
+      damTurbineGroup.position.set(0, 9.5, -DAM_DEPTH / 2 + 6.2);
+      const turbineRing = new THREE.Mesh(new THREE.TorusGeometry(6.2, 0.8, 16, 32), new THREE.MeshStandardMaterial({ color: 0x1c1917, metalness: 0.9 }));
+      damTurbineGroup.add(turbineRing);
+
+      const damBlades = new THREE.Group();
+      const bMat = new THREE.MeshStandardMaterial({ color: 0xa1a1aa, metalness: 0.92 });
+      for (let b = 0; b < 6; b++) {
+        const bl = new THREE.Mesh(new THREE.BoxGeometry(0.18, 5.5, 1.2), bMat);
+        bl.rotation.z = (b * Math.PI) / 3;
+        damBlades.add(bl);
+      }
+      damTurbineGroup.add(damBlades);
+      arenaRoot.add(damTurbineGroup);
+      hazards.push({
+        type: "TURBINE",
+        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, 9.5, -DAM_DEPTH / 2 + 7), new THREE.Vector3(12, 12, 4)),
+        name: "HYDRO-DAM ROTARY CRUSHER SHRED",
+        blades: damBlades
+      });
+
+      // Rebar Impalement Barricades on South Perimeter
+      const southRebarWall = new THREE.Mesh(new THREE.BoxGeometry(34, 10, 2), new THREE.MeshStandardMaterial({ color: 0x451a03, metalness: 0.8 }));
+      southRebarWall.position.set(0, 5, DAM_DEPTH / 2 - 1.2);
+      arenaRoot.add(southRebarWall);
+      const rebarMat = new THREE.MeshStandardMaterial({ color: 0x78350f, metalness: 0.88 });
+      for (let i = -16; i <= 16; i += 1.4) {
+        for (let row = 0; row < 3; row++) {
+          const r = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, 2.6, 6), rebarMat);
+          r.position.set(i, 3.5 + row * 2.2, DAM_DEPTH / 2 - 2.5);
+          r.rotation.x = -Math.PI / 2 + (Math.random() - 0.5) * 0.2;
+          r.castShadow = true;
+          arenaRoot.add(r);
+        }
+      }
+      hazards.push({
+        type: "SPIKES",
+        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, 5, DAM_DEPTH / 2 - 1.5), new THREE.Vector3(34, 10, 3.5)),
+        name: "DAM REBAR BARRICADE IMPALE"
+      });
+
+      // Perimeter Canyon Bulkheads
+      function createCliff(x, z, w, l, h) {
+        const c = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), damWallMat);
+        c.position.set(x, h / 2, z); c.castShadow = true; c.receiveShadow = true;
+        arenaRoot.add(c);
+        colliders.push({ box: new THREE.Box3().setFromObject(c), mesh: c });
+      }
+      createCliff(-DAM_WIDTH / 2, 0, 3, DAM_DEPTH, 24);
+      createCliff(DAM_WIDTH / 2, 0, 3, DAM_DEPTH, 24);
+      createCliff(0, DAM_DEPTH / 2, DAM_WIDTH, 3, 16);
+
+      // Pneumatic Jump Pads Launching onto Crest
+      function createDamPad(x, z, pow) {
+        const padGroup = new THREE.Group();
+        padGroup.add(
+          new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.4, 4.8), new THREE.MeshStandardMaterial({ color: 0x18181b, metalness: 0.85 })),
+          new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.3, 4.0), new THREE.MeshStandardMaterial({ color: 0xeab308, map: wallDiffuseTex })),
+          new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.42, 16), new THREE.MeshStandardMaterial({ color: 0x06b6d4, emissive: 0x06b6d4, emissiveIntensity: 1.0 }))
+        );
+        padGroup.position.set(x, 0.2, z); arenaRoot.add(padGroup);
+        jumpPads.push({ pos: new THREE.Vector3(x, 0.4, z), radius: 2.6, power: pow });
+      }
+      createDamPad(-22, 14, 40.0);
+      createDamPad(22, 14, 40.0);
+      createDamPad(-20, -DAM_DEPTH / 2 + 7, 32.0);
+      createDamPad(20, -DAM_DEPTH / 2 + 7, 32.0);
+
+      // Destructible Cover Pillars
+      function createPillar(x, z, idx) {
+        const pGroup = new THREE.Group();
+        pGroup.position.set(x, 7, z);
+        const pBody = new THREE.Mesh(new THREE.BoxGeometry(3.6, 14, 3.6), damWallMat);
+        pBody.castShadow = true; pBody.receiveShadow = true;
+        pGroup.add(pBody);
+        arenaRoot.add(pGroup);
+        const col = { box: new THREE.Box3().setFromObject(pGroup), mesh: pGroup };
+        colliders.push(col);
+        arenaPillars.push({ mesh: pGroup, collider: col, health: 3, maxHealth: 3, idx, x, z, destroyed: false });
+      }
+      createPillar(-15, 6, 0); createPillar(15, 6, 1);
     }
 
     window.selectArenaMap = function(mapId, broadcast = true) {
+      const b1 = document.getElementById('map-btn-1');
+      const b2 = document.getElementById('map-btn-2');
+      const b3 = document.getElementById('map-btn-3');
+      const activeStyle = (b) => { if (b) { b.style.background = '#38bdf8'; b.style.color = '#0f172a'; } };
+      const inactiveStyle = (b) => { if (b) { b.style.background = 'rgba(15, 23, 42, 0.6)'; b.style.color = '#94a3b8'; } };
+
       if (mapId === 1) {
         buildHazardFoundry();
-        document.getElementById('map-btn-1').style.background = '#38bdf8';
-        document.getElementById('map-btn-1').style.color = '#0f172a';
-        document.getElementById('map-btn-2').style.background = 'rgba(15, 23, 42, 0.6)';
-        document.getElementById('map-btn-2').style.color = '#94a3b8';
-        showPopup("MAP LOADED: HAZARD FOUNDRY", "#38bdf8");
+        activeStyle(b1); inactiveStyle(b2); inactiveStyle(b3);
+        showPopup("MAP LOADED: STYGIA FOUNDRY", "#38bdf8");
         if (window.player) window.player.pos.set(0, 1.8, window.isHost ? 22 : -22);
-      } else {
+      } else if (mapId === 2) {
         buildTheCore();
-        document.getElementById('map-btn-2').style.background = '#38bdf8';
-        document.getElementById('map-btn-2').style.color = '#0f172a';
-        document.getElementById('map-btn-1').style.background = 'rgba(15, 23, 42, 0.6)';
-        document.getElementById('map-btn-1').style.color = '#94a3b8';
-        showPopup("MAP LOADED: THE CORE (VERTICAL SILO)", "#06b6d4");
+        activeStyle(b2); inactiveStyle(b1); inactiveStyle(b3);
+        showPopup("MAP LOADED: THE CORE (REACTOR SILO)", "#06b6d4");
         if (window.player) window.player.pos.set(0, 12.0, window.isHost ? 21 : -21);
+      } else if (mapId === 3) {
+        buildStygianDam();
+        activeStyle(b3); inactiveStyle(b1); inactiveStyle(b2);
+        showPopup("MAP LOADED: STYGIA DAM (CANYON RUIN)", "#f59e0b");
+        if (window.player) window.player.pos.set(0, 1.8, window.isHost ? 22 : -22);
       }
       if (broadcast && window.sendNet) {
         window.sendNet({ type: 'map_select', mapId });

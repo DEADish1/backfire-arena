@@ -15,12 +15,19 @@ This master checklist tracks everything built so far and all remaining features 
 ---
 
 ## 🟢 2. Graphics, Audio & Combat Juice (Completed & Live)
-- [x] **ACES Filmic Tone Mapping**: Film-grade color contrast (`exposure: 1.18`) with `sRGBEncoding`
+- [x] **Bulletstorm Map Overhaul & Hyper-Realistic Industrial Atmosphere**:
+  - **Sun-Drenched Stygian Lighting**: Harsh 2.3-intensity directional sunlight with warm baked rust/soil ambient bounce (`0x4a3628`) and high-contrast ACESFilmic tone mapping (`exposure: 1.30`)
+  - **360° Atmospheric Stygia Sky Dome**: Procedural panoramic sky with glowing amber-orange horizon smog and distant ruined industrial refinery silhouettes
+  - **Weathered Diamond-Plate Steel Floor**: High-detail embossed diamond treads, panel seams, hex bolts, rust bleeding, soot grime, and stenciled industrial warnings (`STYGIA SECTOR-04`, `DANGER: LIVE RAIL 50KV`)
+  - **Battered Corrugated Bulkhead Walls**: Heavy concrete foundations, vertical rust water drippings, corrugated steel cladding, and bold yellow/black hazard chevron girders
+  - **Multi-Layered Volcanic Molten Slag**: Boiling magma with incandescent white-hot fissure veins, turbulent orange currents, and floating cooling black iron slag crust islands
+  - **Brutal Rebar Impalement Barricades (North & South)**: 48+ jagged, angled high-tensile steel construction rebar rods with barbed hooks and flashing red hazard strobe beacons
+  - **Industrial Rotary Meatgrinder (West Wall)**: 11.5m circular cast-iron casing with protective steel intake bars, dual warning strobe beacons, toothed crusher cutter blades, and continuous friction sparks
+  - **Bulletstorm Destructible Concrete Pillars**: Heavy square concrete pillars with aggregate pores, stress cracks, steel reinforcement collar bands, and exposed rebar studs
+  - **Overhead Structural Gantry Trusses**: Massive rusty steel I-beam trusses spanning overhead at Y=16m casting high-res industrial cage shadows across the sun-drenched floor
+  - **Industrial Hydraulic Jump-Pads**: Heavy-duty hazard-chevron pneumatic stomp plates with 4 corner steel coil springs and glowing cyan pressure vents
+- [x] **ACES Filmic Tone Mapping**: Film-grade color contrast (`exposure: 1.30`) with `sRGBEncoding`
 - [x] **2048px High-Definition Soft Shadows**: Crisp directional sun shadows with PCF soft filtering
-- [x] **Procedural Sci-Fi Textures & Bump Maps**: Brushed slate-metallic floor tiles with corner rivets, glowing data conduits, and yellow/black hazard bulkhead chevron walls
-- [x] **Animated Molten Lava & Heat Radiance**: Procedural churning magma veins with organic oscillating point light flicker
-- [x] **Dynamic Real-Time Muzzle Flash**: Camera point light that flashes and illuminates arena walls on every shot
-- [x] **Atmospheric Floating Embers**: 140 glowing amber motes with upward convection drift
 - [x] **Studio Audio Engine with Dynamics Compressor**: Web Audio limiter preventing harsh distortion and digital clipping
 - [x] **Browser Audio Auto-Resume**: Global capture listeners ensuring audio never gets stuck in a browser "suspended" state
 - [x] **Multi-Layered Procedural Sound Design**: Sub-bass kinetic sweeps, shaped noise bursts, mechanical pump clacks, and weapon switch clicks
@@ -69,19 +76,25 @@ This master checklist tracks everything built so far and all remaining features 
 
 ---
 
-## 🟡 5. Map & Arena Diversity
-- [x] **Modular Arena Map Selector (In Lobby & P2P Synced)**:
-  - Added real-time arena switcher between **Map 1: Hazard Foundry** and **Map 2: The Core**
+## 🟢 5. Map & Arena Diversity (Foundry, The Core & Stygia Dam)
+- [x] **Modular 3-Map Selector (In Lobby & P2P Synced)**:
+  - Real-time arena switcher between **Map 1: Foundry**, **Map 2: The Core**, and **Map 3: Stygia Dam**
+- [x] **Map 1: "Foundry" (Stygia Industrial Smelter)**:
+  - Sun-drenched scorched arena with diamond-plate floor, molten slag smelter, rotary meatgrinder, and rebar impalement barricades
 - [x] **Map 2: "The Core" (Vertical Reactor Silo)**:
-  - 44m-tall cylindrical reactor silo with dual floating ring catwalks (y = 11m & y = 24m)
-  - Ceiling spike grid hazard (impales pilots launched too high)
+  - 44m-tall cylindrical reactor silo with dual floating ring catwalks with safety handrails (y = 11m & y = 24m)
+  - Ceiling rebar impaler grid (impales pilots launched too high)
   - Central 42 m/s anti-gravity lift beam shooting pilots skyward into aerial combat
   - Bottom molten plasma abyss
+- [x] **Map 3: "Stygia Dam" (Canyon Spillway Ruins)**:
+  - High-altitude sun-drenched industrial dam overlooking a vast canyon ruin
+  - Concrete dam wall with upper crest catwalk at Y=16m
+  - Central hydro spillway molten runoff vat
+  - Giant hydro-turbine grinder embedded in the dam face
+  - South rebar impalement barricades and high-altitude pneumatic jump-pads
 - [x] **Dynamic Arena Hazard Events (Synchronized)**:
   - **Lava Tide Surge**: Periodic emergency alarm elevates molten magma by +2m, flooding the central arena floor and forcing pilots airborne
   - **Turbine Suction Vortex**: High-powered turbine vortex pulls all airborne pilots toward the West shredder blades
-- [ ] **Map 3: "Zero-G Orbit" (Spherical Cage Arena)**:
-  - Spherical arena with full 360° orbital movement and perimeter hazard rings
 
 ---
 
