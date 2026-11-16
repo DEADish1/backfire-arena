@@ -26,6 +26,30 @@ This master checklist tracks everything built so far and all remaining features 
   - **Bulletstorm Destructible Concrete Pillars**: Heavy square concrete pillars with aggregate pores, stress cracks, steel reinforcement collar bands, and exposed rebar studs
   - **Overhead Structural Gantry Trusses**: Massive rusty steel I-beam trusses spanning overhead at Y=16m casting high-res industrial cage shadows across the sun-drenched floor
   - **Industrial Hydraulic Jump-Pads**: Heavy-duty hazard-chevron pneumatic stomp plates with 4 corner steel coil springs and glowing cyan pressure vents
+- [x] **Comprehensive High-Fidelity Graphics Overhaul (Tangent Normal Maps, God Rays & Mech Model)**:
+  - **Procedural Tangent-Space Normal Maps & Roughness Maps**:
+    - `createProceduralFloorNormalMap()`: Canvas-generated tangent-space normal maps calculating true height gradients for 3D diamond-plate steel treads, plate seams, hex bolt heads, and surface pits.
+    - `createProceduralFloorRoughnessMap()`: Glossy specular hotspots on worn tread ridges with matte oxidized recess crevices.
+    - `createProceduralWallNormalMap()`: Corrugated vertical sinusoidal relief and concrete seams for arena bulkheads.
+    - `createProceduralConcreteNormalMap()`: Aggregate pores, stress fractures, and rebar seams for cover pillars.
+  - **Soft Contact Shadows & Volumetric God Rays**:
+    - PCF soft shadows with `radius = 2.2` and `normalBias = 0.04` eliminating shadow acne while preserving crisp contact depth.
+    - `createGodRays()`: 6 angled volumetric light shafts filtering down through roof trusses with oscillating transparency.
+    - `createAtmosphericDustMotes()`: 300 floating golden dust motes drifting with Brownian motion catching sunlight beams.
+  - **First-Person Viewmodel Detailing & Procedural Animation**:
+    - *Breaker 12G*: Perforated barrel heat shroud, holographic reflex sight frame with glowing green reticle, side shell saddle with 4 red 12-gauge shells with brass bases, and animated pump handle.
+    - *Jackhammer*: Under-slung drum magazine with knurled grip, dual chrome reciprocating piston rods.
+    - *Rail Slugger*: 4 magnetic stator acceleration rings with copper coils, digital charge readout, and dynamic crackling electric arc between rails.
+    - *Procedural Weapon Sway & Bob*: Spring-damper mouse lag inertia and natural breathing/movement bobbing.
+    - *Physical Ejected Shell Casings*: 3D brass casings with velocity, tumble physics, and arena floor bounce.
+  - **3D Articulated Mech Pilot Actor**:
+    - Angular faceted helmet with panoramic glowing visor, ear comm-pods, modular ballistic chestplate, glowing sternum reactor core, shoulder pauldrons, articulated arms holding a 3D tactical carbine, magnetic combat boots, and dual-turbine jetpack with animated exhaust flame plumes.
+  - **Molten Bullet Impact Decals & Ricochets**:
+    - Bullet hits on pillars/walls spawn glowing orange crater decals that cool to dark soot over 4.5s.
+    - Volumetric 3D cylinder mesh bullet tracers with additive glow.
+  - **3D Boiling Lava Bubbles & Film Grain**:
+    - 14 rising magma bubbles in the smelter that expand and burst into spark embers.
+    - Gritty Bulletstorm cinematic SVG film grain noise overlay.
 - [x] **Studio Audio Engine with Dynamics Compressor**: Web Audio limiter preventing harsh distortion and digital clipping
 - [x] **Browser Audio Auto-Resume**: Global capture listeners ensuring audio never gets stuck in a browser "suspended" state
 - [x] **Multi-Layered Procedural Sound Design**: Sub-bass kinetic sweeps, shaped noise bursts, mechanical pump clacks, and weapon switch clicks
