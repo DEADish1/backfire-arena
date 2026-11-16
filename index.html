@@ -495,6 +495,31 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 24px rgba(56, 189, 248, 0.65);
     }
+
+    .hazard-threat-badge {
+      display: none;
+      position: absolute;
+      top: 42%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ef4444;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: rgba(239, 68, 68, 0.18);
+      border: 1px solid rgba(239, 68, 68, 0.6);
+      padding: 6px 16px;
+      border-radius: 8px;
+      text-shadow: 0 0 10px #ef4444;
+      pointer-events: none;
+      z-index: 15;
+      animation: pulseThreat 0.45s infinite alternate ease-in-out;
+    }
+    @keyframes pulseThreat {
+      0% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.8; }
+      100% { transform: translate(-50%, -50%) scale(1.06); opacity: 1; box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -546,6 +571,7 @@
         <div id="tether-indicator" class="cross-tether-icon">TETHERED</div>
       </div>
     </div>
+    <div id="hazard-warning-badge" class="hazard-threat-badge">⚠️ HAZARD IMPACT IMMINENT</div>
     <div id="feed-container"></div>
 
     <!-- Bottom Panels -->
@@ -769,15 +795,38 @@
         }
       }
       dest() { return this.masterGain || this.ctx.destination; }
-      playShotgun() {
+            createSpatialPanner(worldPos) {
+        if (!this.ctx || !window.camera) return this.dest();
+        try {
+          const panner = this.ctx.createStereoPanner();
+          const rel = new THREE.Vector3().subVectors(worldPos, window.camera.position);
+          const yaw = window.player ? window.player.cameraYaw : 0;
+          const localX = rel.x * Math.cos(yaw) - rel.z * Math.sin(yaw);
+          const panVal = Math.max(-1, Math.min(1, localX / 16.0));
+          panner.pan.setValueAtTime(panVal, this.ctx.currentTime);
+
+          const dist = rel.length();
+          const distGain = this.ctx.createGain();
+          const atten = Math.max(0.12, Math.min(1.0, 1.0 - (dist / 70.0)));
+          distGain.gain.setValueAtTime(atten, this.ctx.currentTime);
+
+          panner.connect(distGain);
+          distGain.connect(this.dest());
+          return panner;
+        } catch(e) {
+          return this.dest();
+        }
+      }
+      playShotgun(out = null) {
         if (!this.ctx) return;
+        const target = out || this.dest();
         const now = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'triangle'; osc.frequency.setValueAtTime(160, now);
         osc.frequency.exponentialRampToValueAtTime(32, now + 0.35);
         gain.gain.setValueAtTime(1.0, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-        osc.connect(gain); gain.connect(this.dest());
+        osc.connect(gain); gain.connect(target);
         osc.start(now); osc.stop(now + 0.42);
 
         const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.16, this.ctx.sampleRate);
@@ -787,29 +836,31 @@
         const f = this.ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1100;
         const ng = this.ctx.createGain(); ng.gain.setValueAtTime(0.85, now);
         ng.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
-        n.connect(f); f.connect(ng); ng.connect(this.dest());
+        n.connect(f); f.connect(ng); ng.connect(target);
         n.start(now);
       }
-      playJackhammer() {
+      playJackhammer(out = null) {
         if (!this.ctx) return;
+        const target = out || this.dest();
         const now = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'sawtooth'; osc.frequency.setValueAtTime(240, now);
         osc.frequency.exponentialRampToValueAtTime(60, now + 0.08);
         gain.gain.setValueAtTime(0.55, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-        osc.connect(gain); gain.connect(this.dest());
+        osc.connect(gain); gain.connect(target);
         osc.start(now); osc.stop(now + 0.09);
       }
-      playRailgun() {
+      playRailgun(out = null) {
         if (!this.ctx) return;
+        const target = out || this.dest();
         const now = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'sine'; osc.frequency.setValueAtTime(900, now);
         osc.frequency.exponentialRampToValueAtTime(75, now + 0.5);
         gain.gain.setValueAtTime(0.95, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-        osc.connect(gain); gain.connect(this.dest());
+        osc.connect(gain); gain.connect(target);
         osc.start(now); osc.stop(now + 0.55);
       }
       playHarpoonLaunch() {
@@ -1074,7 +1125,7 @@
     createPillar(-16, -16); createPillar(16, -16); createPillar(-16, 16); createPillar(16, 16);
 
     // --- LOCAL HARPOON TETHER ---
-    const tether = { active: false, anchorPoint: new THREE.Vector3(), line: null, maxDistance: 60, stiffness: 14.0 };
+    const tether = { active: false, anchorPoint: new THREE.Vector3(), targetIsOpponent: false, line: null, maxDistance: 60, stiffness: 18.0 };
     tether.line = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
       new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 })
@@ -1293,9 +1344,10 @@
           const dir = new THREE.Vector3(msg.dir[0], msg.dir[1], msg.dir[2]);
           createBulletTracer(start, dir, 70, isHost ? 0xf43f5e : 0x38bdf8);
 
-          if (msg.wep === 0) audio.playShotgun();
-          else if (msg.wep === 1) audio.playJackhammer();
-          else if (msg.wep === 2) audio.playRailgun();
+          const spatialPanner = audio.createSpatialPanner(start);
+          if (msg.wep === 0) audio.playShotgun(spatialPanner);
+          else if (msg.wep === 1) audio.playJackhammer(spatialPanner);
+          else if (msg.wep === 2) audio.playRailgun(spatialPanner);
         }
         else if (msg.type === 'hit') {
           const hitVec = new THREE.Vector3(msg.impulse[0], msg.impulse[1], msg.impulse[2]);
@@ -1324,6 +1376,23 @@
           const rtt = Math.max(1, Math.round(performance.now() - msg.t));
           const pingEl = document.getElementById('ping-display');
           if (pingEl) pingEl.innerText = `LIVE P2P • ${rtt}ms`;
+        }
+        else if (msg.type === 'shockwave') {
+          createShockwaveRing(new THREE.Vector3(msg.origin[0], msg.origin[1], msg.origin[2]));
+          const pPos = player.pos.clone();
+          const sOrigin = new THREE.Vector3(msg.origin[0], msg.origin[1], msg.origin[2]);
+          const dist = pPos.distanceTo(sOrigin);
+          if (dist < 14.0) {
+            const pushDir = pPos.sub(sOrigin).normalize();
+            pushDir.y = 0.45;
+            pushDir.normalize();
+            player.vel.add(pushDir.multiplyScalar(30.0 * (1.0 - dist / 15.0)));
+            audio.playCrunch(0.8);
+            screenShake = 0.4;
+          }
+        }
+        else if (msg.type === 'tether_pull') {
+          player.vel.add(new THREE.Vector3(msg.impulse[0], msg.impulse[1], msg.impulse[2]));
         }
         else if (msg.type === 'hazard_overload') {
           if (msg.hazard === 'turbine') triggerTurbineOverload(false);
@@ -1428,8 +1497,10 @@
       height: 1.8,
       isGrounded: false,
       cameraPitch: 0,
-      cameraYaw: 0
+      cameraYaw: 0,
+      isStomping: false
     };
+    window.player = player;
 
     const keys = { KeyW: false, KeyS: false, KeyA: false, KeyD: false, Space: false };
     let isPointerLocked = false;
@@ -1530,6 +1601,10 @@
 
       if (hitPoint) {
         tether.active = true;
+        tether.targetIsOpponent = (hitPoint === oppCenter);
+        if (tether.targetIsOpponent) {
+          showPopup("OPPONENT HARPOONED! [SLINGSHOT ARMED]", "#38bdf8");
+        }
         tether.anchorPoint.copy(hitPoint);
         tether.line.visible = true;
         audio.playHarpoonAttach();
@@ -1677,6 +1752,40 @@
       if (broadcast) sendNet({ type: 'hazard_overload', hazard: 'lava' });
     }
 
+
+    // --- SHOCKWAVE VISUAL FX ---
+    const activeShockwaves = [];
+    function createShockwaveRing(origin) {
+      const ringGeo = new THREE.RingGeometry(0.5, 1.4, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.95,
+        blending: THREE.AdditiveBlending
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(origin.x, 0.35, origin.z);
+      scene.add(ring);
+      activeShockwaves.push({ mesh: ring, scale: 1.0, maxScale: 15.0 });
+    }
+
+    function updateShockwaves(dt) {
+      for (let i = activeShockwaves.length - 1; i >= 0; i--) {
+        const sw = activeShockwaves[i];
+        sw.scale += dt * 26.0;
+        sw.mesh.scale.set(sw.scale, sw.scale, 1);
+        sw.mesh.material.opacity = Math.max(0, 1.0 - (sw.scale / sw.maxScale));
+        if (sw.scale >= sw.maxScale) {
+          scene.remove(sw.mesh);
+          sw.mesh.geometry.dispose();
+          sw.mesh.material.dispose();
+          activeShockwaves.splice(i, 1);
+        }
+      }
+    }
+
     // Particles
     const particles = [];
     function createSparks(pos, count = 20, colorHex = 0xfacc15, speed = 12) {
@@ -1731,6 +1840,7 @@
       updateOpponent(dt);
       updateJumpPads();
       updateParticles(dt);
+      updateShockwaves(dt);
       updateHUD(dt);
 
       if (window.dynamicFovEnabled) {
@@ -1774,8 +1884,18 @@
       }
 
       if (keys.Space) {
-        player.vel.x *= Math.pow(0.2, dt);
-        player.vel.z *= Math.pow(0.2, dt);
+        // Air-Brake Shockwave Stomp (Space while airborne + looking steeply down)
+        if (!player.isGrounded && player.cameraPitch < -0.75 && !player.isStomping) {
+          player.isStomping = true;
+          player.vel.x = 0;
+          player.vel.z = 0;
+          player.vel.y = -42.0; // Slam down violently
+          createSparks(player.pos, 15, 0x06b6d4, 14);
+          audio.playCrunch(0.8);
+        } else {
+          player.vel.x *= Math.pow(0.2, dt);
+          player.vel.z *= Math.pow(0.2, dt);
+        }
       }
 
       player.vel.y -= 26.0 * dt;
@@ -1789,6 +1909,28 @@
 
       if (player.pos.y <= 1.0) {
         player.pos.y = 1.0;
+        if (player.isStomping) {
+          player.isStomping = false;
+          createShockwaveRing(player.pos);
+          createSparks(player.pos, 45, 0x38bdf8, 20);
+          audio.playCrunch(1.0);
+          screenShake = 0.55;
+          showPopup("💥 RETRO-STOMP SHOCKWAVE!", "#38bdf8");
+
+          // Radial blast onto opponent
+          const toOpp = remoteOpponent.pos.clone().sub(player.pos);
+          const oppDist = toOpp.length();
+          if (oppDist < 14.0) {
+            toOpp.y = 0.5;
+            toOpp.normalize();
+            const blastImpulse = toOpp.multiplyScalar(32.0 * (1.0 - oppDist / 15.0));
+            remoteOpponent.vel.add(blastImpulse);
+          }
+          sendNet({
+            type: 'shockwave',
+            origin: [player.pos.x, 1.0, player.pos.z]
+          });
+        }
         if (player.vel.y < 0) player.vel.y = 0;
         player.isGrounded = true;
       } else {
@@ -1820,14 +1962,49 @@
       camera.rotation.x = player.cameraPitch;
     }
 
-    function updateTether(dt) {
+        function updateTether(dt) {
       if (!tether.active) return;
+
+      if (tether.targetIsOpponent) {
+        tether.anchorPoint.copy(remoteOpponent.pos).add(new THREE.Vector3(0, 1.0, 0));
+      }
+
       const toAnchor = tether.anchorPoint.clone().sub(player.pos);
       const dist = toAnchor.length();
+
+      // Dynamic line color based on tension
+      if (dist > 35) {
+        tether.line.material.color.setHex(0xf59e0b); // Warning amber
+      } else if (dist > 44) {
+        tether.line.material.color.setHex(0xef4444); // Critical red
+      } else {
+        tether.line.material.color.setHex(0x38bdf8); // Standard cyan
+      }
+
+      // Slingshot snap on extreme tension
+      if (dist > 52) {
+        releaseTether();
+        audio.playCrunch(0.5);
+        showPopup("⚡ TETHER OVERLOAD SNAPPED!", "#f43f5e");
+        createSparks(player.pos, 22, 0xef4444, 15);
+        return;
+      }
+
       if (dist > 1.5) {
         toAnchor.normalize();
-        const pullStrength = Math.min(dist * tether.stiffness, 80.0);
+        const pullStrength = Math.min(dist * tether.stiffness, 95.0);
         player.vel.add(toAnchor.clone().multiplyScalar(pullStrength * dt));
+
+        if (tether.targetIsOpponent) {
+          // Reciprocal slingshot tension onto opponent
+          const pullToPlayer = player.pos.clone().sub(remoteOpponent.pos).normalize();
+          const oppImpulse = pullToPlayer.multiplyScalar(pullStrength * 0.85 * dt);
+          remoteOpponent.vel.add(oppImpulse);
+          sendNet({
+            type: 'tether_pull',
+            impulse: [oppImpulse.x, oppImpulse.y, oppImpulse.z]
+          });
+        }
       }
 
       const positions = tether.line.geometry.attributes.position.array;
@@ -1924,6 +2101,28 @@
       barEl.style.width = `${Math.min((speed / 40) * 100, 100)}%`;
       thrustEl.innerText = weaponCooldownTimer <= 0 ? "READY" : "CHARGING";
       thrustEl.style.color = weaponCooldownTimer <= 0 ? "#10b981" : "#f59e0b";
+
+      
+      // Directional Hazard Trajectory Warning (1.3s forward lookahead)
+      const warningEl = document.getElementById('hazard-warning-badge');
+      if (warningEl) {
+        let threat = null;
+        if (speed > 11.0) {
+          const futurePos = player.pos.clone().add(player.vel.clone().multiplyScalar(1.2));
+          for (let hz of hazards) {
+            if (hz.box.containsPoint(futurePos)) {
+              threat = hz.name;
+              break;
+            }
+          }
+        }
+        if (threat) {
+          warningEl.innerText = `⚠️ WARNING: ${threat} TRAJECTORY`;
+          warningEl.style.display = 'block';
+        } else {
+          warningEl.style.display = 'none';
+        }
+      }
 
       if (speed > 16) {
         const intensity = Math.min((speed - 16) / 24, 0.65);
