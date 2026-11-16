@@ -45,9 +45,10 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) scale(var(--crosshair-scale, 1.0));
       pointer-events: none;
       transition: transform 0.05s ease-out;
+      color: var(--crosshair-color, #38bdf8);
     }
     .cross-ring {
       width: 32px;
@@ -62,9 +63,9 @@
     .cross-dot {
       width: 4px;
       height: 4px;
-      background: #38bdf8;
+      background: var(--crosshair-color, #38bdf8);
       border-radius: 50%;
-      box-shadow: 0 0 10px #38bdf8;
+      box-shadow: 0 0 10px var(--crosshair-color, #38bdf8);
     }
     .cross-tether-icon {
       position: absolute;
@@ -75,6 +76,7 @@
       color: #06b6d4;
       opacity: 0;
       transition: opacity 0.15s ease;
+      white-space: nowrap;
     }
     .cross-pip {
       position: absolute;
@@ -84,6 +86,35 @@
     .cross-pip.bottom { bottom: -6px; left: 14px; width: 2px; height: 5px; }
     .cross-pip.left { left: -6px; top: 14px; width: 5px; height: 2px; }
     .cross-pip.right { right: -6px; top: 14px; width: 5px; height: 2px; }
+
+    /* Crosshair Style Variants */
+    #crosshair.style-dot .cross-ring { border-color: transparent; }
+    #crosshair.style-dot .cross-pip { display: none; }
+    #crosshair.style-dot .cross-dot { width: 6px; height: 6px; }
+
+    #crosshair.style-cross .cross-ring { border-color: transparent; }
+    #crosshair.style-cross .cross-pip.top { height: 8px; top: -10px; background: var(--crosshair-color, #38bdf8); }
+    #crosshair.style-cross .cross-pip.bottom { height: 8px; bottom: -10px; background: var(--crosshair-color, #38bdf8); }
+    #crosshair.style-cross .cross-pip.left { width: 8px; left: -10px; background: var(--crosshair-color, #38bdf8); }
+    #crosshair.style-cross .cross-pip.right { width: 8px; right: -10px; background: var(--crosshair-color, #38bdf8); }
+
+    #crosshair.style-circle_dot .cross-ring { border: 2px solid var(--crosshair-color, #38bdf8); width: 24px; height: 24px; }
+    #crosshair.style-circle_dot .cross-pip { display: none; }
+
+    #crosshair.style-triad .cross-ring { border-color: transparent; }
+    #crosshair.style-triad .cross-pip { display: none; }
+    .cross-triad-pip {
+      display: none;
+      position: absolute;
+      width: 3px;
+      height: 7px;
+      background: var(--crosshair-color, #38bdf8);
+      border-radius: 1px;
+    }
+    #crosshair.style-triad .cross-triad-pip { display: block; }
+    .cross-triad-pip.t1 { top: -10px; left: 14.5px; }
+    .cross-triad-pip.t2 { bottom: -4px; left: 2px; transform: rotate(120deg); }
+    .cross-triad-pip.t3 { bottom: -4px; right: 2px; transform: rotate(-120deg); }
 
     /* Crosshair Hitmarker */
     #hitmarker {
@@ -393,11 +424,24 @@
       background: #0f172a;
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 16px;
-      padding: 34px 44px;
-      max-width: 660px;
-      width: 90%;
+      padding: 30px 40px;
+      max-width: 680px;
+      width: 92%;
+      max-height: 88vh;
+      overflow-y: auto;
       text-align: center;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+    }
+    .modal-box::-webkit-scrollbar {
+      width: 6px;
+    }
+    .modal-box::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 4px;
+    }
+    .modal-box::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.4);
+      border-radius: 4px;
     }
     .modal-title {
       font-size: 42px;
@@ -898,7 +942,7 @@
       border-color: #fff;
       box-shadow: 0 0 12px currentColor;
     }
-    .fullscreen-btn {
+    .fullscreen-btn, .settings-hud-btn {
       background: rgba(15, 23, 42, 0.7);
       border: 1px solid rgba(255, 255, 255, 0.15);
       color: #94a3b8;
@@ -912,10 +956,150 @@
       letter-spacing: 1px;
       pointer-events: auto;
     }
-    .fullscreen-btn:hover {
+    .fullscreen-btn:hover, .settings-hud-btn:hover {
       color: #38bdf8;
       border-color: #38bdf8;
       background: rgba(56, 189, 248, 0.12);
+    }
+    #fps-counter {
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: 800;
+      color: #38bdf8;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 5px 8px;
+      border-radius: 6px;
+      backdrop-filter: blur(4px);
+      letter-spacing: 1px;
+      pointer-events: none;
+    }
+
+    /* Modern Settings Menu Architecture */
+    .settings-subtab-bar {
+      display: flex;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 4px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      flex-wrap: wrap;
+    }
+    .settings-subtab-btn {
+      flex: 1;
+      min-width: 90px;
+      padding: 8px 10px;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .settings-subtab-btn.active {
+      background: rgba(56, 189, 248, 0.22);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    }
+    .settings-subtab-btn:hover:not(.active) {
+      color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .settings-group {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+    .settings-group-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: #94a3b8;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    .setting-row:last-child {
+      margin-bottom: 0;
+    }
+    .setting-label-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-align: left;
+    }
+    .setting-label-text {
+      color: #e2e8f0;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .setting-desc-text {
+      font-size: 10.5px;
+      color: #94a3b8;
+      line-height: 1.3;
+    }
+    .setting-val-badge {
+      color: #38bdf8;
+      font-family: monospace;
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .setting-slider {
+      width: 100%;
+      accent-color: #38bdf8;
+      margin-top: 6px;
+      cursor: pointer;
+    }
+    .setting-check {
+      accent-color: #38bdf8;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    .reticle-style-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .reticle-pill {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 7px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .reticle-pill:hover {
+      border-color: #38bdf8;
+      color: #ffffff;
+    }
+    .reticle-pill.active {
+      background: rgba(56, 189, 248, 0.25);
+      border-color: #38bdf8;
+      color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
     }
 
     #visor-splatter {
@@ -987,9 +1171,13 @@
         </div>
       </div>
 
-      <!-- Roster Card -->
+      <!-- Roster Card & Action Header -->
       <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-        <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶ FULLSCREEN</button>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div id="fps-counter" style="display: none;">144 FPS / 6.9ms</div>
+          <button class="settings-hud-btn" onclick="openSettingsMenu()">⚙️ SETTINGS</button>
+          <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶ FULLSCREEN</button>
+        </div>
         <div class="player-roster">
         <div class="roster-title">ACTIVE PILOTS</div>
         <div id="roster-list">
@@ -1001,13 +1189,16 @@
     </div>
 
     <!-- Center Crosshair & Combos -->
-    <div id="crosshair">
+    <div id="crosshair" class="style-default">
       <div class="cross-ring">
         <div class="cross-dot"></div>
         <div class="cross-pip top"></div>
         <div class="cross-pip bottom"></div>
         <div class="cross-pip left"></div>
         <div class="cross-pip right"></div>
+        <div class="cross-triad-pip t1"></div>
+        <div class="cross-triad-pip t2"></div>
+        <div class="cross-triad-pip t3"></div>
         <div id="tether-indicator" class="cross-tether-icon">TETHERED</div>
       </div>
     </div>
@@ -1124,8 +1315,8 @@
         </div>
       </div>
 
-      <div style="width: 250px; text-align: right; color: #64748b; font-size: 11px;">
-        PRESS <b style="color: #e2e8f0;">[ESC]</b> TO PAUSE / COPY INVITE
+      <div style="width: 280px; text-align: right; color: #64748b; font-size: 11px;">
+        PRESS <b style="color: #e2e8f0;">[ESC]</b> OR <b style="color: #e2e8f0;">[O]</b> FOR SETTINGS / PAUSE
       </div>
     </div>
   </div>
@@ -1223,72 +1414,341 @@
       </div>
 
       <!-- Settings Panel -->
-      <div id="settings-panel" class="room-card" style="display: none;">
-        <div class="room-header">GAMEPLAY & SENSITIVITY SETTINGS</div>
-        <div style="margin-bottom: 14px;">
-          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
-            <span>Mouse Sensitivity:</span>
-            <span id="sens-val-display" style="color: #38bdf8; font-family: monospace; font-weight: bold;">2.2</span>
-          </div>
-          <input type="range" id="sens-slider" min="0.8" max="5.0" step="0.1" value="2.2" style="width: 100%; accent-color: #38bdf8;" oninput="updateSensitivity(this.value)">
-        </div>
-        <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
-          <span>Invert Y-Axis (Flight Style):</span>
-          <input type="checkbox" id="invert-y-check" style="accent-color: #38bdf8; width: 18px; height: 18px; cursor: pointer;" onchange="updateInvertY(this.checked)">
-        </div>
-        <div style="margin-bottom: 14px;">
-          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
-            <span>Master Audio Volume:</span>
-            <span id="vol-val-display" style="color: #38bdf8; font-family: monospace; font-weight: bold;">80%</span>
-          </div>
-          <input type="range" id="vol-slider" min="0" max="100" step="5" value="80" style="width: 100%; accent-color: #38bdf8;" oninput="updateVolume(this.value)">
-        </div>
-        <div style="margin-top: 14px;">
-          <div style="font-size: 12px; margin-bottom: 8px;">Pilot Visor & Energy Color:</div>
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <div class="color-swatch active" style="background: #38bdf8; color: #38bdf8;" onclick="setPilotColor('#38bdf8', this)"></div>
-            <div class="color-swatch" style="background: #f43f5e; color: #f43f5e;" onclick="setPilotColor('#f43f5e', this)"></div>
-            <div class="color-swatch" style="background: #10b981; color: #10b981;" onclick="setPilotColor('#10b981', this)"></div>
-            <div class="color-swatch" style="background: #facc15; color: #facc15;" onclick="setPilotColor('#facc15', this)"></div>
-            <div class="color-swatch" style="background: #c084fc; color: #c084fc;" onclick="setPilotColor('#c084fc', this)"></div>
-          </div>
+      <div id="settings-panel" class="room-card" style="display: none; padding: 20px; background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(56, 189, 248, 0.35); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+          <div class="room-header" style="margin-bottom: 0; font-size: 14px;">⚙️ PILOT & SYSTEM SETTINGS</div>
+          <button onclick="closeSettingsMenu()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 4px; cursor: pointer; transition: all 0.15s ease;">✕ CLOSE</button>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 14px;">
-          <span>Dynamic FOV Speed Warping:</span>
-          <input type="checkbox" id="dynamic-fov-check" checked style="accent-color: #38bdf8; width: 18px; height: 18px; cursor: pointer;" onchange="updateDynamicFov(this.checked)">
+        <!-- Sub-Tabs -->
+        <div class="settings-subtab-bar">
+          <button id="subtab-gameplay" class="settings-subtab-btn active" onclick="switchSettingsSubTab('gameplay')">🎮 GAMEPLAY</button>
+          <button id="subtab-graphics" class="settings-subtab-btn" onclick="switchSettingsSubTab('graphics')">🖥️ GRAPHICS</button>
+          <button id="subtab-crosshair" class="settings-subtab-btn" onclick="switchSettingsSubTab('crosshair')">🎨 RETICLE</button>
+          <button id="subtab-audio" class="settings-subtab-btn" onclick="switchSettingsSubTab('audio')">🔊 AUDIO</button>
+          <button id="subtab-controls" class="settings-subtab-btn" onclick="switchSettingsSubTab('controls')">⌨️ KEYBINDS</button>
         </div>
 
-        <!-- Gamepad / Controller Settings -->
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; margin-bottom: 14px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <div style="font-size: 11px; font-weight: 800; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
-              <span id="gp-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #64748b;"></span>
-              <span>GAMEPAD / CONTROLLER:</span>
+        <!-- PANE 1: GAMEPLAY -->
+        <div id="spane-gameplay" class="settings-pane">
+          <div class="settings-group">
+            <div class="settings-group-title">🎯 AIM & SENSITIVITY</div>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Mouse Sensitivity</span>
+                <span class="setting-desc-text">Base mouse look yaw & pitch speed</span>
+              </div>
+              <span id="sens-val-display" class="setting-val-badge">2.2</span>
             </div>
-            <span id="gp-status-text" style="font-size: 10px; font-family: monospace; color: #38bdf8;">DISCONNECTED</span>
+            <input type="range" id="sens-slider" min="0.5" max="5.0" step="0.1" value="2.2" class="setting-slider" oninput="updateSetting('mouseSensitivity', parseFloat(this.value))">
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Invert Y-Axis (Flight Pitch)</span>
+                <span class="setting-desc-text">Pull back to look up, push forward to look down</span>
+              </div>
+              <input type="checkbox" id="invert-y-check" class="setting-check" onchange="updateSetting('invertYAxis', this.checked)">
+            </div>
           </div>
-          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-            <span>Stick Sensitivity:</span>
-            <span id="gp-sens-val" style="color: #38bdf8; font-family: monospace;">2.4</span>
+
+          <div class="settings-group">
+            <div class="settings-group-title">💥 CAMERA & COMBAT FEEDBACK</div>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Screen Shake Intensity</span>
+                <span class="setting-desc-text">Camera trauma on explosions, kicks & hazard hits</span>
+              </div>
+              <span id="shake-val-display" class="setting-val-badge">100%</span>
+            </div>
+            <input type="range" id="shake-slider" min="0" max="150" step="10" value="100" class="setting-slider" oninput="updateSetting('screenShake', parseInt(this.value))">
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Damage Flash Vignette</span>
+                <span class="setting-desc-text">Red peripheral pulse when struck by concussive blasts</span>
+              </div>
+              <input type="checkbox" id="damage-flash-check" class="setting-check" checked onchange="updateSetting('damageFlashEnabled', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Hazard Trajectory Predictor</span>
+                <span class="setting-desc-text">1.3-second lookahead HUD badge warning of imminent trap collisions</span>
+              </div>
+              <input type="checkbox" id="hazard-warning-check" class="setting-check" checked onchange="updateSetting('hazardWarningEnabled', this.checked)">
+            </div>
           </div>
-          <input type="range" id="gp-sens-slider" min="1.0" max="5.0" step="0.2" value="2.4" style="width: 100%; accent-color: #38bdf8;" oninput="updateGamepadSens(this.value)">
         </div>
 
-        <!-- Custom Keybinding Remapper -->
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; margin-bottom: 6px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 11px; font-weight: 800; color: #94a3b8;">KEYBOARD REMAPPING:</span>
-            <button onclick="resetKeybinds()" style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #94a3b8; font-size: 9px; padding: 2px 6px; border-radius: 4px; cursor: pointer;">RESET DEFAULTS</button>
+        <!-- PANE 2: GRAPHICS & DISPLAY -->
+        <div id="spane-graphics" class="settings-pane" style="display: none;">
+          <div class="settings-group">
+            <div class="settings-group-title">👁️ FIELD OF VIEW & CAMERA</div>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Base Field of View (FOV)</span>
+                <span class="setting-desc-text">Horizontal perspective angle (70° - 110°)</span>
+              </div>
+              <span id="fov-val-display" class="setting-val-badge">75°</span>
+            </div>
+            <input type="range" id="fov-slider" min="70" max="110" step="1" value="75" class="setting-slider" oninput="updateSetting('baseFov', parseInt(this.value))">
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Dynamic Speed FOV Warping</span>
+                <span class="setting-desc-text">Smoothly stretches FOV when moving at supersonic velocity</span>
+              </div>
+              <input type="checkbox" id="dynamic-fov-check" class="setting-check" checked onchange="updateSetting('dynamicFovEnabled', this.checked)">
+            </div>
           </div>
-          <div id="keybinds-table-container" style="max-height: 180px; overflow-y: auto; padding-right: 4px;">
-            <!-- Rendered dynamically -->
+
+          <div class="settings-group">
+            <div class="settings-group-title">✨ BULLETSTORM ATMOSPHERE & PARTICLES</div>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Volumetric God Rays</span>
+                <span class="setting-desc-text">Angled sunlight shafts filtering through overhead roof trusses</span>
+              </div>
+              <input type="checkbox" id="godrays-check" class="setting-check" checked onchange="updateSetting('godRaysEnabled', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Atmospheric Floating Dust Motes</span>
+                <span class="setting-desc-text">300 golden dust motes drifting with Brownian motion in sunlight</span>
+              </div>
+              <input type="checkbox" id="dustmotes-check" class="setting-check" checked onchange="updateSetting('dustMotesEnabled', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Procedural Weapon Sway & Inertia</span>
+                <span class="setting-desc-text">Spring-damper mouse lag sway on first-person gun models</span>
+              </div>
+              <input type="checkbox" id="weapon-sway-check" class="setting-check" checked onchange="updateSetting('weaponSwayEnabled', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Weapon Walking Bobbing</span>
+                <span class="setting-desc-text">Natural rhythmic breathing and kinetic movement bob</span>
+              </div>
+              <input type="checkbox" id="weapon-bob-check" class="setting-check" checked onchange="updateSetting('weaponBobEnabled', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">3D Physical Brass Shell Casings</span>
+                <span class="setting-desc-text">Shotgun shells eject with tumble physics and bounce on floor</span>
+              </div>
+              <input type="checkbox" id="shell-casings-check" class="setting-check" checked onchange="updateSetting('shellCasingsEnabled', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Molten Bullet Impact Decals</span>
+                <span class="setting-desc-text">Glowing incandescent impact burns that cool to soot over 4.5s</span>
+              </div>
+              <input type="checkbox" id="impact-decals-check" class="setting-check" checked onchange="updateSetting('impactDecalsEnabled', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">3D Boiling Magma Bubbles</span>
+                <span class="setting-desc-text">Rising lava bubbles that expand and burst into ember sparks</span>
+              </div>
+              <input type="checkbox" id="lava-bubbles-check" class="setting-check" checked onchange="updateSetting('lavaBubblesEnabled', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Cinematic Film Grain</span>
+                <span class="setting-desc-text">Gritty Bulletstorm film noise overlay</span>
+              </div>
+              <input type="checkbox" id="film-grain-check" class="setting-check" checked onchange="updateSetting('filmGrainEnabled', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Show Real-Time FPS Counter</span>
+                <span class="setting-desc-text">Live framerate and frame-time readout in top HUD</span>
+              </div>
+              <input type="checkbox" id="fps-counter-check" class="setting-check" onchange="updateSetting('fpsCounterEnabled', this.checked)">
+            </div>
           </div>
+        </div>
+
+        <!-- PANE 3: RETICLE & VISOR -->
+        <div id="spane-crosshair" class="settings-pane" style="display: none;">
+          <div class="settings-group">
+            <div class="settings-group-title">⚡ PILOT VISOR & ENERGY GLOW</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Select pilot armor visor energy color (synced to opponents):</div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div class="color-swatch active" style="background: #38bdf8; color: #38bdf8;" onclick="setPilotColor('#38bdf8', this)"></div>
+              <div class="color-swatch" style="background: #f43f5e; color: #f43f5e;" onclick="setPilotColor('#f43f5e', this)"></div>
+              <div class="color-swatch" style="background: #10b981; color: #10b981;" onclick="setPilotColor('#10b981', this)"></div>
+              <div class="color-swatch" style="background: #facc15; color: #facc15;" onclick="setPilotColor('#facc15', this)"></div>
+              <div class="color-swatch" style="background: #c084fc; color: #c084fc;" onclick="setPilotColor('#c084fc', this)"></div>
+              <div class="color-swatch" style="background: #ffffff; color: #ffffff;" onclick="setPilotColor('#ffffff', this)"></div>
+              <div class="color-swatch" style="background: #f97316; color: #f97316;" onclick="setPilotColor('#f97316', this)"></div>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-title">🎯 CROSSHAIR RETICLE CUSTOMIZATION</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 6px;">Reticle Style:</div>
+            <div class="reticle-style-grid">
+              <button id="rpill-default" class="reticle-pill active" onclick="setReticleStyle('default')">DYNAMIC RING</button>
+              <button id="rpill-dot" class="reticle-pill" onclick="setReticleStyle('dot')">MINIMAL DOT</button>
+              <button id="rpill-cross" class="reticle-pill" onclick="setReticleStyle('cross')">TACTICAL CROSS</button>
+              <button id="rpill-circle_dot" class="reticle-pill" onclick="setReticleStyle('circle_dot')">CIRCLE & DOT</button>
+              <button id="rpill-triad" class="reticle-pill" onclick="setReticleStyle('triad')">SCI-FI TRIAD</button>
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Match Visor Color</span>
+                <span class="setting-desc-text">Reticle glow color automatically mirrors pilot visor</span>
+              </div>
+              <input type="checkbox" id="match-visor-color-check" class="setting-check" checked onchange="updateSetting('matchVisorColor', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Crosshair Size / Scale</span>
+                <span class="setting-desc-text">Reticle dimensions (75% to 150%)</span>
+              </div>
+              <span id="crosshair-scale-display" class="setting-val-badge">100%</span>
+            </div>
+            <input type="range" id="crosshair-scale-slider" min="75" max="150" step="5" value="100" class="setting-slider" oninput="updateSetting('crosshairScale', parseInt(this.value))">
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Hitmarker Audio Chime</span>
+                <span class="setting-desc-text">Crisp 1850Hz/2600Hz audio confirmation when connecting shots</span>
+              </div>
+              <input type="checkbox" id="hitmarker-audio-check" class="setting-check" checked onchange="updateSetting('hitmarkerAudio', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Visor Impact Splatter</span>
+                <span class="setting-desc-text">Radial glass scratch and energy splatter on heavy impacts</span>
+              </div>
+              <input type="checkbox" id="visor-splatter-check" class="setting-check" checked onchange="updateSetting('visorSplatterEnabled', this.checked)">
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 4: AUDIO -->
+        <div id="spane-audio" class="settings-pane" style="display: none;">
+          <div class="settings-group">
+            <div class="settings-group-title">🔊 AUDIO MIXER & LEVELS</div>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Master Audio Volume</span>
+                <span class="setting-desc-text">Overall game volume level</span>
+              </div>
+              <span id="vol-val-display" class="setting-val-badge">80%</span>
+            </div>
+            <input type="range" id="vol-slider" min="0" max="100" step="5" value="80" class="setting-slider" oninput="updateSetting('masterVolume', parseInt(this.value))">
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Weapons & SFX Volume</span>
+                <span class="setting-desc-text">Gunshots, recoil thrust, boots, slides, and hazard impacts</span>
+              </div>
+              <span id="sfx-val-display" class="setting-val-badge">100%</span>
+            </div>
+            <input type="range" id="sfx-slider" min="0" max="100" step="5" value="100" class="setting-slider" oninput="updateSetting('sfxVolume', parseInt(this.value))">
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Announcer & Skillshot Fanfare</span>
+                <span class="setting-desc-text">Match countdown chimes and skillshot victory fanfare</span>
+              </div>
+              <span id="announcer-val-display" class="setting-val-badge">90%</span>
+            </div>
+            <input type="range" id="announcer-slider" min="0" max="100" step="5" value="90" class="setting-slider" oninput="updateSetting('announcerVolume', parseInt(this.value))">
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Mute When Tab Unfocused</span>
+                <span class="setting-desc-text">Automatically silences audio when switching browser tabs</span>
+              </div>
+              <input type="checkbox" id="mute-unfocused-check" class="setting-check" checked onchange="updateSetting('muteWhenUnfocused', this.checked)">
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 5: CONTROLS & GAMEPAD -->
+        <div id="spane-controls" class="settings-pane" style="display: none;">
+          <div class="settings-group">
+            <div class="settings-group-title">🎮 GAMEPAD / CONTROLLER TUNING</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 6px;">
+              <div style="font-size: 11px; font-weight: 800; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+                <span id="gp-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #64748b;"></span>
+                <span>STATUS:</span>
+              </div>
+              <span id="gp-status-text" style="font-size: 11px; font-family: monospace; color: #38bdf8; font-weight: 800;">DISCONNECTED</span>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Stick Sensitivity</span>
+                <span class="setting-desc-text">Analog stick aiming & look speed</span>
+              </div>
+              <span id="gp-sens-val" class="setting-val-badge">2.4</span>
+            </div>
+            <input type="range" id="gp-sens-slider" min="1.0" max="5.0" step="0.2" value="2.4" class="setting-slider" oninput="updateSetting('gamepadSensitivity', parseFloat(this.value))">
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Stick Inner Deadzone</span>
+                <span class="setting-desc-text">Eliminates controller stick drift on worn sticks</span>
+              </div>
+              <span id="gp-deadzone-val" class="setting-val-badge">0.15</span>
+            </div>
+            <input type="range" id="gp-deadzone-slider" min="0.05" max="0.30" step="0.01" value="0.15" class="setting-slider" oninput="updateSetting('gamepadDeadzone', parseFloat(this.value))">
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Gamepad Invert Y-Axis</span>
+                <span class="setting-desc-text">Inverts vertical pitch on right analog stick</span>
+              </div>
+              <input type="checkbox" id="gp-invert-y-check" class="setting-check" onchange="updateSetting('gamepadInvertY', this.checked)">
+            </div>
+
+            <div class="setting-row" style="margin-top: 14px;">
+              <div class="setting-label-col">
+                <span class="setting-label-text">Dual-Rumble Haptic Vibration</span>
+                <span class="setting-desc-text">Controller actuator rumble on shots, kicks & impacts</span>
+              </div>
+              <input type="checkbox" id="gp-rumble-check" class="setting-check" checked onchange="updateSetting('gamepadRumble', this.checked)">
+            </div>
+          </div>
+
+          <!-- Keyboard Remapping -->
+          <div class="settings-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div class="settings-group-title" style="margin-bottom: 0;">⌨️ KEYBOARD REMAPPING</div>
+              <button onclick="resetKeybinds()" style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #94a3b8; font-size: 9px; padding: 3px 8px; border-radius: 4px; cursor: pointer; transition: all 0.15s ease;">RESET KEYS</button>
+            </div>
+            <div id="keybinds-table-container" style="max-height: 180px; overflow-y: auto; padding-right: 4px;">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Global Settings Footer -->
+        <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <button onclick="resetAllSettingsToDefault()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; font-size: 10px; font-weight: 800; padding: 6px 12px; border-radius: 5px; cursor: pointer; transition: all 0.15s ease;">🔄 RESET ALL TO DEFAULTS</button>
+          <div style="font-size: 10px; color: #64748b; font-family: monospace;">SETTINGS AUTO-SAVED TO BROWSER</div>
         </div>
       </div>
 
       <!-- Arena Map Selection -->
-      <div style="margin-bottom: 16px; text-align: left; background: rgba(0,0,0,0.35); padding: 12px 16px; border-radius: 10px;">
+      <div id="map-selection-box" style="margin-bottom: 16px; text-align: left; background: rgba(0,0,0,0.35); padding: 12px 16px; border-radius: 10px;">
         <div style="font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: #94a3b8; margin-bottom: 8px;">SELECT COMBAT ARENA:</div>
         <div style="display: flex; gap: 8px;">
           <button id="map-btn-1" class="action-sub-btn" style="flex: 1; padding: 10px 4px; font-size: 10.5px;" onclick="selectArenaMap(1)">FOUNDRY</button>
@@ -1297,7 +1757,7 @@
         </div>
       </div>
 
-      <div class="controls-grid">
+      <div class="controls-grid" id="lobby-controls-grid">
         <div class="ctrl-item"><b>L-CLICK / RT</b> Fire / Recoil Thrust</div>
         <div class="ctrl-item"><b>R-CLICK / RB</b> Kinetic Harpoon / Tether</div>
         <div class="ctrl-item"><b>Q / LT</b> Weapon Alt-Fire Mode</div>
@@ -1363,28 +1823,30 @@
     };
 
     window.myPilotColor = '#38bdf8';
-    window.setPilotColor = function(colorHex, el) {
+    window.setPilotColor = function(colorHex, el, broadcast = true) {
       window.myPilotColor = colorHex;
-      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      if (window.appSettings) window.appSettings.pilotColor = colorHex;
+      document.querySelectorAll('.color-swatch').forEach(s => {
+        const bg = s.style.background;
+        s.classList.toggle('active', bg === colorHex || s.getAttribute('onclick')?.includes(colorHex));
+      });
       if (el) el.classList.add('active');
-      const dot = document.querySelector('.cross-dot');
-      if (dot) {
-        dot.style.background = colorHex;
-        dot.style.boxShadow = `0 0 10px ${colorHex}`;
-      }
+      if (window.updateCrosshairColor) window.updateCrosshairColor();
       if (window.matGunBlue) {
         window.matGunBlue.color.set(colorHex);
         window.matGunBlue.emissive.set(colorHex);
       }
-      if (window.sendNet) {
+      if (broadcast && window.sendNet) {
         window.sendNet({ type: 'customize', color: colorHex });
       }
+      if (window.saveSettingsToStorage) window.saveSettingsToStorage();
     };
 
     window.matchStarted = false;
     window.currentTab = 'online';
 
     window.triggerVisorSplatter = function() {
+      if (window.visorSplatterEnabled === false) return;
       const vs = document.getElementById('visor-splatter');
       if (!vs) return;
       vs.classList.add('active');
@@ -1560,7 +2022,386 @@
       window.startMatchCountdown();
     };
 
+    // --- COMPREHENSIVE BROWSER SETTINGS ARCHITECTURE (v2) ---
+    const DEFAULT_SETTINGS = {
+      // Gameplay
+      mouseSensitivity: 2.2,
+      invertYAxis: false,
+      screenShake: 100,
+      damageFlashEnabled: true,
+      hazardWarningEnabled: true,
+
+      // Graphics & Display
+      baseFov: 75,
+      dynamicFovEnabled: true,
+      godRaysEnabled: true,
+      dustMotesEnabled: true,
+      weaponSwayEnabled: true,
+      weaponBobEnabled: true,
+      shellCasingsEnabled: true,
+      impactDecalsEnabled: true,
+      lavaBubblesEnabled: true,
+      filmGrainEnabled: true,
+      fpsCounterEnabled: false,
+
+      // Reticle & Visor
+      pilotColor: '#38bdf8',
+      crosshairStyle: 'default',
+      matchVisorColor: true,
+      crosshairColor: '#38bdf8',
+      crosshairScale: 100,
+      hitmarkerAudio: true,
+      visorSplatterEnabled: true,
+
+      // Audio
+      masterVolume: 80,
+      sfxVolume: 100,
+      announcerVolume: 90,
+      muteWhenUnfocused: true,
+
+      // Gamepad
+      gamepadSensitivity: 2.4,
+      gamepadDeadzone: 0.15,
+      gamepadInvertY: false,
+      gamepadRumble: true
+    };
+
+    window.DEFAULT_SETTINGS = DEFAULT_SETTINGS;
+    window.appSettings = Object.assign({}, DEFAULT_SETTINGS);
+
+    window.loadSettings = function() {
+      let saved = {};
+      try {
+        const raw = localStorage.getItem('backfire_settings_v2');
+        if (raw) saved = JSON.parse(raw);
+      } catch(e) {}
+      window.appSettings = Object.assign({}, DEFAULT_SETTINGS, saved);
+      window.applyAllSettings();
+    };
+
+    window.saveSettingsToStorage = function() {
+      try {
+        localStorage.setItem('backfire_settings_v2', JSON.stringify(window.appSettings));
+      } catch(e) {}
+    };
+
+    window.applySingleSetting = function(key, val) {
+      if (!window.appSettings) window.appSettings = Object.assign({}, DEFAULT_SETTINGS);
+      window.appSettings[key] = val;
+
+      switch(key) {
+        case 'mouseSensitivity':
+          window.mouseSensitivity = parseFloat(val) * 0.001;
+          const sDisp = document.getElementById('sens-val-display');
+          if (sDisp) sDisp.innerText = parseFloat(val).toFixed(1);
+          const sSlide = document.getElementById('sens-slider');
+          if (sSlide) sSlide.value = val;
+          break;
+
+        case 'invertYAxis':
+          window.invertYAxis = !!val;
+          const invChk = document.getElementById('invert-y-check');
+          if (invChk) invChk.checked = !!val;
+          break;
+
+        case 'screenShake':
+          window.shakeMultiplier = parseInt(val) / 100.0;
+          const shkDisp = document.getElementById('shake-val-display');
+          if (shkDisp) shkDisp.innerText = val + '%';
+          const shkSlide = document.getElementById('shake-slider');
+          if (shkSlide) shkSlide.value = val;
+          break;
+
+        case 'damageFlashEnabled':
+          window.damageFlashEnabled = !!val;
+          const dfChk = document.getElementById('damage-flash-check');
+          if (dfChk) dfChk.checked = !!val;
+          break;
+
+        case 'hazardWarningEnabled':
+          window.hazardWarningEnabled = !!val;
+          const hwChk = document.getElementById('hazard-warning-check');
+          if (hwChk) hwChk.checked = !!val;
+          if (!val) {
+            const hwb = document.getElementById('hazard-warning-badge');
+            if (hwb) hwb.style.display = 'none';
+          }
+          break;
+
+        case 'baseFov':
+          window.baseFov = parseInt(val);
+          const fovDisp = document.getElementById('fov-val-display');
+          if (fovDisp) fovDisp.innerText = val + '°';
+          const fovSlide = document.getElementById('fov-slider');
+          if (fovSlide) fovSlide.value = val;
+          if (window.camera && !window.dynamicFovEnabled) {
+            window.camera.fov = val;
+            window.camera.updateProjectionMatrix();
+          }
+          break;
+
+        case 'dynamicFovEnabled':
+          window.dynamicFovEnabled = !!val;
+          const dynChk = document.getElementById('dynamic-fov-check');
+          if (dynChk) dynChk.checked = !!val;
+          if (!val && window.camera) {
+            window.camera.fov = window.baseFov || 75;
+            window.camera.updateProjectionMatrix();
+          }
+          break;
+
+        case 'godRaysEnabled':
+          window.godRaysEnabled = !!val;
+          const grChk = document.getElementById('godrays-check');
+          if (grChk) grChk.checked = !!val;
+          if (window.godRays) window.godRays.visible = !!val;
+          break;
+
+        case 'dustMotesEnabled':
+          window.dustMotesEnabled = !!val;
+          const dmChk = document.getElementById('dustmotes-check');
+          if (dmChk) dmChk.checked = !!val;
+          if (window.dustMotes) window.dustMotes.visible = !!val;
+          break;
+
+        case 'weaponSwayEnabled':
+          window.weaponSwayEnabled = !!val;
+          const wsChk = document.getElementById('weapon-sway-check');
+          if (wsChk) wsChk.checked = !!val;
+          break;
+
+        case 'weaponBobEnabled':
+          window.weaponBobEnabled = !!val;
+          const wbChk = document.getElementById('weapon-bob-check');
+          if (wbChk) wbChk.checked = !!val;
+          break;
+
+        case 'shellCasingsEnabled':
+          window.shellCasingsEnabled = !!val;
+          const scChk = document.getElementById('shell-casings-check');
+          if (scChk) scChk.checked = !!val;
+          break;
+
+        case 'impactDecalsEnabled':
+          window.impactDecalsEnabled = !!val;
+          const idChk = document.getElementById('impact-decals-check');
+          if (idChk) idChk.checked = !!val;
+          break;
+
+        case 'lavaBubblesEnabled':
+          window.lavaBubblesEnabled = !!val;
+          const lbChk = document.getElementById('lava-bubbles-check');
+          if (lbChk) lbChk.checked = !!val;
+          break;
+
+        case 'filmGrainEnabled':
+          window.filmGrainEnabled = !!val;
+          const fgChk = document.getElementById('film-grain-check');
+          if (fgChk) fgChk.checked = !!val;
+          const fgEl = document.getElementById('film-grain');
+          if (fgEl) fgEl.style.display = val ? 'block' : 'none';
+          break;
+
+        case 'fpsCounterEnabled':
+          window.fpsCounterEnabled = !!val;
+          const fpsChk = document.getElementById('fps-counter-check');
+          if (fpsChk) fpsChk.checked = !!val;
+          const fpsEl = document.getElementById('fps-counter');
+          if (fpsEl) fpsEl.style.display = val ? 'block' : 'none';
+          break;
+
+        case 'pilotColor':
+          window.myPilotColor = val;
+          document.querySelectorAll('.color-swatch').forEach(s => {
+            const bg = s.style.background;
+            s.classList.toggle('active', bg === val || s.getAttribute('onclick')?.includes(val));
+          });
+          if (window.matGunBlue) {
+            window.matGunBlue.color.set(val);
+            window.matGunBlue.emissive.set(val);
+          }
+          window.updateCrosshairColor();
+          break;
+
+        case 'crosshairStyle':
+          const ch = document.getElementById('crosshair');
+          if (ch) {
+            ch.classList.remove('style-default', 'style-dot', 'style-cross', 'style-circle_dot', 'style-triad');
+            ch.classList.add(`style-${val}`);
+          }
+          ['default', 'dot', 'cross', 'circle_dot', 'triad'].forEach(s => {
+            const p = document.getElementById(`rpill-${s}`);
+            if (p) p.classList.toggle('active', s === val);
+          });
+          break;
+
+        case 'matchVisorColor':
+          const mvcChk = document.getElementById('match-visor-color-check');
+          if (mvcChk) mvcChk.checked = !!val;
+          window.updateCrosshairColor();
+          break;
+
+        case 'crosshairScale':
+          const chScaleDisp = document.getElementById('crosshair-scale-display');
+          if (chScaleDisp) chScaleDisp.innerText = val + '%';
+          const chScaleSlide = document.getElementById('crosshair-scale-slider');
+          if (chScaleSlide) chScaleSlide.value = val;
+          const chElem = document.getElementById('crosshair');
+          if (chElem) chElem.style.setProperty('--crosshair-scale', (parseInt(val) / 100.0).toString());
+          break;
+
+        case 'hitmarkerAudio':
+          window.hitmarkerAudio = !!val;
+          const hmaChk = document.getElementById('hitmarker-audio-check');
+          if (hmaChk) hmaChk.checked = !!val;
+          break;
+
+        case 'visorSplatterEnabled':
+          window.visorSplatterEnabled = !!val;
+          const vsChk = document.getElementById('visor-splatter-check');
+          if (vsChk) vsChk.checked = !!val;
+          break;
+
+        case 'masterVolume':
+          const volDisp = document.getElementById('vol-val-display');
+          if (volDisp) volDisp.innerText = val + '%';
+          const volSlide = document.getElementById('vol-slider');
+          if (volSlide) volSlide.value = val;
+          if (window.audio && window.audio.setVolume) window.audio.setVolume(parseInt(val) / 100.0);
+          break;
+
+        case 'sfxVolume':
+          const sfxDisp = document.getElementById('sfx-val-display');
+          if (sfxDisp) sfxDisp.innerText = val + '%';
+          const sfxSlide = document.getElementById('sfx-slider');
+          if (sfxSlide) sfxSlide.value = val;
+          if (window.audio && window.audio.setSfxVolume) window.audio.setSfxVolume(parseInt(val) / 100.0);
+          break;
+
+        case 'announcerVolume':
+          const annDisp = document.getElementById('announcer-val-display');
+          if (annDisp) annDisp.innerText = val + '%';
+          const annSlide = document.getElementById('announcer-slider');
+          if (annSlide) annSlide.value = val;
+          if (window.audio && window.audio.setAnnouncerVolume) window.audio.setAnnouncerVolume(parseInt(val) / 100.0);
+          break;
+
+        case 'muteWhenUnfocused':
+          window.muteWhenUnfocused = !!val;
+          const mwuChk = document.getElementById('mute-unfocused-check');
+          if (mwuChk) mwuChk.checked = !!val;
+          break;
+
+        case 'gamepadSensitivity':
+          window.gamepadSensitivity = parseFloat(val);
+          const gpSensDisp = document.getElementById('gp-sens-val');
+          if (gpSensDisp) gpSensDisp.innerText = parseFloat(val).toFixed(1);
+          const gpSensSlide = document.getElementById('gp-sens-slider');
+          if (gpSensSlide) gpSensSlide.value = val;
+          break;
+
+        case 'gamepadDeadzone':
+          window.gamepadDeadzone = parseFloat(val);
+          const gpDzDisp = document.getElementById('gp-deadzone-val');
+          if (gpDzDisp) gpDzDisp.innerText = parseFloat(val).toFixed(2);
+          const gpDzSlide = document.getElementById('gp-deadzone-slider');
+          if (gpDzSlide) gpDzSlide.value = val;
+          break;
+
+        case 'gamepadInvertY':
+          window.gamepadInvertY = !!val;
+          const gpInvChk = document.getElementById('gp-invert-y-check');
+          if (gpInvChk) gpInvChk.checked = !!val;
+          break;
+
+        case 'gamepadRumble':
+          window.gamepadRumbleEnabled = !!val;
+          const gpRumChk = document.getElementById('gp-rumble-check');
+          if (gpRumChk) gpRumChk.checked = !!val;
+          break;
+      }
+    };
+
+    window.applyAllSettings = function() {
+      for (const [k, v] of Object.entries(window.appSettings)) {
+        window.applySingleSetting(k, v);
+      }
+    };
+
+    window.updateSetting = function(key, val) {
+      window.applySingleSetting(key, val);
+      window.saveSettingsToStorage();
+    };
+
+    window.switchSettingsSubTab = function(subtab) {
+      const subtabs = ['gameplay', 'graphics', 'crosshair', 'audio', 'controls'];
+      subtabs.forEach(t => {
+        const btn = document.getElementById(`subtab-${t}`);
+        const pane = document.getElementById(`spane-${t}`);
+        if (btn) btn.classList.toggle('active', t === subtab);
+        if (pane) pane.style.display = (t === subtab) ? 'block' : 'none';
+      });
+      if (subtab === 'controls' && window.renderKeybindsUI) window.renderKeybindsUI();
+    };
+
+    window.setReticleStyle = function(styleName) {
+      window.updateSetting('crosshairStyle', styleName);
+    };
+
+    window.updateCrosshairColor = function() {
+      const ch = document.getElementById('crosshair');
+      if (!ch) return;
+      const col = (window.appSettings && window.appSettings.matchVisorColor) ? (window.myPilotColor || '#38bdf8') : ((window.appSettings && window.appSettings.crosshairColor) || '#38bdf8');
+      ch.style.setProperty('--crosshair-color', col);
+      const dot = ch.querySelector('.cross-dot');
+      if (dot) {
+        dot.style.background = col;
+        dot.style.boxShadow = `0 0 10px ${col}`;
+      }
+    };
+
+    window.openSettingsMenu = function() {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+      const modal = document.getElementById('start-modal');
+      if (modal) {
+        modal.style.display = 'flex';
+        window.switchTab('settings');
+      }
+    };
+
+    window.closeSettingsMenu = function() {
+      window.saveSettingsToStorage();
+      const startModal = document.getElementById('start-modal');
+      if (window.matchStarted) {
+        if (startModal) startModal.style.display = 'none';
+        try {
+          const p = document.body.requestPointerLock();
+          if (p && p.catch) p.catch(() => {});
+        } catch(e) {}
+        window.isPointerLocked = true;
+      } else {
+        window.switchTab(window.previousTab || 'online');
+      }
+    };
+
+    window.resetAllSettingsToDefault = function() {
+      window.appSettings = Object.assign({}, DEFAULT_SETTINGS);
+      window.applyAllSettings();
+      window.saveSettingsToStorage();
+      showPopup("ALL SETTINGS RESET TO FACTORY DEFAULTS", "#10b981");
+    };
+
+    // Backward-compatible stubs for existing callers
+    window.updateSensitivity = function(val) { window.updateSetting('mouseSensitivity', parseFloat(val)); };
+    window.updateInvertY = function(checked) { window.updateSetting('invertYAxis', checked); };
+    window.updateVolume = function(val) { window.updateSetting('masterVolume', parseInt(val)); };
+    window.updateDynamicFov = function(checked) { window.updateSetting('dynamicFovEnabled', checked); };
+    window.updateGamepadSens = function(val) { window.updateSetting('gamepadSensitivity', parseFloat(val)); };
+
     window.switchTab = function(tab) {
+      if (tab !== 'settings') window.previousTab = tab;
       window.currentTab = tab;
       document.getElementById('tab-online').classList.toggle('active', tab === 'online');
       document.getElementById('tab-solo').classList.toggle('active', tab === 'solo');
@@ -1568,43 +2409,22 @@
       document.getElementById('online-panel').style.display = tab === 'online' ? 'block' : 'none';
       document.getElementById('solo-panel').style.display = tab === 'solo' ? 'block' : 'none';
       document.getElementById('settings-panel').style.display = tab === 'settings' ? 'block' : 'none';
+
+      const mapBox = document.getElementById('map-selection-box');
+      if (mapBox) mapBox.style.display = (tab === 'settings') ? 'none' : 'block';
+      const ctrlGrid = document.getElementById('lobby-controls-grid');
+      if (ctrlGrid) ctrlGrid.style.display = (tab === 'settings') ? 'none' : 'grid';
+
       if (tab === 'settings' && window.renderKeybindsUI) window.renderKeybindsUI();
       window.updateStartButtonState();
       window.updateRoleBadge();
     };
 
     setTimeout(() => {
+      window.loadSettings();
       window.updateRoleBadge();
       window.updateStartButtonState();
     }, 100);
-
-    window.mouseSensitivity = 0.0022;
-    window.invertYAxis = false;
-    window.dynamicFovEnabled = true;
-
-    window.updateSensitivity = function(val) {
-      window.mouseSensitivity = parseFloat(val) * 0.001;
-      document.getElementById('sens-val-display').innerText = parseFloat(val).toFixed(1);
-    };
-
-    window.updateInvertY = function(checked) {
-      window.invertYAxis = checked;
-    };
-
-    window.updateVolume = function(val) {
-      document.getElementById('vol-val-display').innerText = val + '%';
-      if (window.audio && window.audio.setVolume) {
-        window.audio.setVolume(parseInt(val) / 100);
-      }
-    };
-
-    window.updateDynamicFov = function(checked) {
-      window.dynamicFovEnabled = checked;
-      if (!checked && window.camera) {
-        window.camera.fov = 75;
-        window.camera.updateProjectionMatrix();
-      }
-    };
 
     window.copyInviteLink = function() {
       const input = document.getElementById('share-link-input');
@@ -1633,8 +2453,12 @@
       constructor() {
         this.ctx = null;
         this.masterGain = null;
+        this.sfxGain = null;
+        this.announcerGain = null;
         this.compressor = null;
-        this.volume = 0.85;
+        this.volume = 0.8;
+        this.sfxVolume = 1.0;
+        this.announcerVolume = 0.9;
       }
       init() {
         if (!this.ctx) {
@@ -1653,6 +2477,14 @@
           this.masterGain = this.ctx.createGain();
           this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
 
+          this.sfxGain = this.ctx.createGain();
+          this.sfxGain.gain.setValueAtTime(this.sfxVolume, this.ctx.currentTime);
+          this.sfxGain.connect(this.masterGain);
+
+          this.announcerGain = this.ctx.createGain();
+          this.announcerGain.gain.setValueAtTime(this.announcerVolume, this.ctx.currentTime);
+          this.announcerGain.connect(this.masterGain);
+
           this.masterGain.connect(this.compressor);
           this.compressor.connect(this.ctx.destination);
         }
@@ -1669,9 +2501,25 @@
           this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
         }
       }
+      setSfxVolume(val) {
+        this.sfxVolume = Math.max(0, Math.min(1, val));
+        if (this.sfxGain && this.ctx) {
+          this.sfxGain.gain.setValueAtTime(this.sfxVolume, this.ctx.currentTime);
+        }
+      }
+      setAnnouncerVolume(val) {
+        this.announcerVolume = Math.max(0, Math.min(1, val));
+        if (this.announcerGain && this.ctx) {
+          this.announcerGain.gain.setValueAtTime(this.announcerVolume, this.ctx.currentTime);
+        }
+      }
       dest() {
         this.ensureActive();
-        return this.masterGain || (this.ctx ? this.ctx.destination : null);
+        return this.sfxGain || this.masterGain || (this.ctx ? this.ctx.destination : null);
+      }
+      announcerDest() {
+        this.ensureActive();
+        return this.announcerGain || this.masterGain || (this.ctx ? this.ctx.destination : null);
       }
       createSpatialPanner(worldPos) {
         if (!this.ctx || !window.camera) return this.dest();
@@ -1953,6 +2801,7 @@
         osc.start(now); osc.stop(now + 0.07);
       }
       playHitMarker(isCrit = false) {
+        if (window.hitmarkerAudio === false) return;
         if (!this.ctx) return;
         this.ensureActive();
         const now = this.ctx.currentTime;
@@ -2055,7 +2904,7 @@
           osc.frequency.setValueAtTime(freq, t);
           gain.gain.setValueAtTime(0.45, t);
           gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-          osc.connect(gain); gain.connect(this.dest());
+          osc.connect(gain); gain.connect(this.announcerDest());
           osc.start(t); osc.stop(t + 0.2);
         });
       }
@@ -2096,12 +2945,24 @@
         osc.frequency.exponentialRampToValueAtTime(880, now + 0.18);
         gain.gain.setValueAtTime(0.5, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
-        osc.connect(gain); gain.connect(this.dest());
+        osc.connect(gain); gain.connect(this.announcerDest());
         osc.start(now); osc.stop(now + 0.24);
       }
     }
     const audio = new SoundEngine();
     window.audio = audio;
+
+    window.addEventListener('blur', () => {
+      if (window.muteWhenUnfocused && window.audio && window.audio.masterGain && window.audio.ctx) {
+        window.audio.masterGain.gain.setValueAtTime(0, window.audio.ctx.currentTime);
+      }
+    });
+    window.addEventListener('focus', () => {
+      if (window.audio && window.audio.masterGain && window.audio.ctx) {
+        const targetVol = (window.appSettings && window.appSettings.masterVolume !== undefined) ? (window.appSettings.masterVolume / 100.0) : (window.audio.volume || 0.8);
+        window.audio.masterGain.gain.setValueAtTime(targetVol, window.audio.ctx.currentTime);
+      }
+    });
 
     // Auto-resume AudioContext on first user interaction
     ['click', 'keydown', 'mousedown', 'touchstart', 'pointerdown'].forEach(ev => {
@@ -2767,6 +3628,7 @@
     // Physical Ejected Brass Shell Casings
     const activeShellCasings = [];
     function ejectShellCasing(wepIdx) {
+      if (window.shellCasingsEnabled === false) return;
       if (wepIdx === 2) return; // Rail Slugger is caseless electromagnetic
       const isShotgun = (wepIdx === 0);
       const shellGeo = new THREE.CylinderGeometry(isShotgun ? 0.022 : 0.014, isShotgun ? 0.022 : 0.014, isShotgun ? 0.075 : 0.055, 8);
@@ -2834,6 +3696,7 @@
     // High-Resolution Molten Bullet Impact Decals
     const activeImpactDecals = [];
     function createImpactDecal(point, normal) {
+      if (window.impactDecalsEnabled === false) return;
       if (activeImpactDecals.length > 30) {
         const old = activeImpactDecals.shift();
         scene.remove(old);
@@ -2879,6 +3742,7 @@
     const activeLavaBubbles = [];
     let lavaBubbleSpawnTimer = 0.3;
     function updateLavaBubbles(dt) {
+      if (window.lavaBubblesEnabled === false) return;
       if (currentMapId !== 1 && currentMapId !== 3) return;
       lavaBubbleSpawnTimer -= dt;
       if (lavaBubbleSpawnTimer <= 0) {
@@ -3860,6 +4724,7 @@
 
     let damageFlashTimer = null;
     function triggerDamageFlash() {
+      if (window.damageFlashEnabled === false) return;
       const df = document.getElementById('damage-flash');
       if (df) {
         df.classList.add('active');
@@ -4669,6 +5534,7 @@
     }
 
     function triggerRumble(weak = 0.4, strong = 0.7, durationMs = 150) {
+      if (window.gamepadRumbleEnabled === false) return;
       if (!navigator.getGamepads) return;
       const gamepads = navigator.getGamepads();
       for (const gp of gamepads) {
@@ -4689,6 +5555,17 @@
       let gp = null;
       for (let g of gamepads) {
         if (g && g.connected) { gp = g; break; }
+      }
+      const gpDot = document.getElementById('gp-status-dot');
+      const gpText = document.getElementById('gp-status-text');
+      if (gpText) {
+        if (gp) {
+          gpText.innerText = (gp.id || 'CONNECTED').slice(0, 22).toUpperCase();
+          if (gpDot) gpDot.style.background = '#10b981';
+        } else {
+          gpText.innerText = 'DISCONNECTED';
+          if (gpDot) gpDot.style.background = '#64748b';
+        }
       }
       if (!gp) return;
 
@@ -4715,7 +5592,8 @@
 
       if (rx !== 0 || ry !== 0) {
         player.cameraYaw -= rx * stickSens;
-        const pitchDelta = ry * stickSens * (window.invertYAxis ? -1 : 1);
+        const inv = (window.gamepadInvertY !== undefined) ? (window.gamepadInvertY ? -1 : 1) : (window.invertYAxis ? -1 : 1);
+        const pitchDelta = ry * stickSens * inv;
         player.cameraPitch -= pitchDelta;
         player.cameraPitch = Math.max(-Math.PI / 2.05, Math.min(Math.PI / 2.05, player.cameraPitch));
       }
@@ -4892,6 +5770,10 @@
 
     startBtn.addEventListener('click', () => {
       const tab = window.currentTab || 'online';
+      if (tab === 'settings') {
+        window.closeSettingsMenu();
+        return;
+      }
       if (tab === 'online' && !isHost && !matchStarted) {
         showPopup("⏳ WAITING FOR HOST TO START THE MATCH", "#f59e0b");
         if (window.audio && window.audio.playCrunch) audio.playCrunch(0.5);
@@ -4994,6 +5876,11 @@
       }
 
       activeKeys[e.code] = true;
+
+      if (e.code === 'KeyO' || e.code === 'KeyP') {
+        if (window.openSettingsMenu) window.openSettingsMenu();
+        return;
+      }
 
       if (e.code === 'KeyG') {
         togglePingWheel();
@@ -5753,8 +6640,9 @@
       gunKickRot = THREE.MathUtils.lerp(gunKickRot, 0, dt * 18);
 
       // Procedural Weapon Sway, Mouse Lag & Natural Movement Inertia
-      const mouseLagX = (window.mouseDeltaX || 0);
-      const mouseLagY = (window.mouseDeltaY || 0);
+      const swayAllowed = (window.weaponSwayEnabled !== false);
+      const mouseLagX = swayAllowed ? (window.mouseDeltaX || 0) : 0;
+      const mouseLagY = swayAllowed ? (window.mouseDeltaY || 0) : 0;
       weaponSwayX = THREE.MathUtils.lerp(weaponSwayX, -mouseLagX * 0.00028, dt * 12);
       weaponSwayY = THREE.MathUtils.lerp(weaponSwayY, mouseLagY * 0.00028, dt * 12);
       weaponSwayRotZ = THREE.MathUtils.lerp(weaponSwayRotZ, -mouseLagX * 0.00065, dt * 12);
@@ -5763,9 +6651,10 @@
       if (window.mouseDeltaY) window.mouseDeltaY *= Math.pow(0.08, dt);
 
       const pSpeed = player.vel.length();
+      const bobAllowed = (window.weaponBobEnabled !== false);
       weaponBobTime += dt * (player.isGrounded ? Math.max(2.5, pSpeed * 0.75) : 1.5);
-      const bobX = Math.cos(weaponBobTime) * (player.isGrounded ? Math.min(0.016, pSpeed * 0.0008) : 0.004);
-      const bobY = Math.abs(Math.sin(weaponBobTime)) * (player.isGrounded ? Math.min(0.02, pSpeed * 0.001) : 0.005);
+      const bobX = bobAllowed ? Math.cos(weaponBobTime) * (player.isGrounded ? Math.min(0.016, pSpeed * 0.0008) : 0.004) : 0;
+      const bobY = bobAllowed ? Math.abs(Math.sin(weaponBobTime)) * (player.isGrounded ? Math.min(0.02, pSpeed * 0.001) : 0.005) : 0;
 
       weaponRig.position.set(0.32 + weaponSwayX + bobX, -0.28 + weaponSwayY - bobY, -0.6 + gunKickOffset);
       weaponRig.rotation.set(gunKickRot + weaponSwayRotX, weaponSwayRotZ, -weaponSwayRotZ * 0.6);
@@ -5968,12 +6857,31 @@ updateHUD(dt);
         muzzleLight.intensity = THREE.MathUtils.lerp(muzzleLight.intensity, 0, dt * 22);
       }
 
+      // Dynamic & Base FOV updates
+      const baseFovVal = (window.baseFov || 75);
       if (window.dynamicFovEnabled) {
         const speed = player.vel.length();
-      if (speed > window.matchStats.maxSpeed) window.matchStats.maxSpeed = speed;
-        const targetFov = 75 + Math.min(speed / 28.0, 1.0) * 17.0; // 75 -> 92 degrees
+        if (speed > window.matchStats.maxSpeed) window.matchStats.maxSpeed = speed;
+        const targetFov = baseFovVal + Math.min(speed / 28.0, 1.0) * 17.0;
         camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, dt * 5.0);
         camera.updateProjectionMatrix();
+      } else if (Math.abs(camera.fov - baseFovVal) > 0.1) {
+        camera.fov = THREE.MathUtils.lerp(camera.fov, baseFovVal, dt * 10.0);
+        camera.updateProjectionMatrix();
+      }
+
+      // FPS & Framerate Performance Gauge
+      if (window.fpsCounterEnabled) {
+        window.fpsFrameCount = (window.fpsFrameCount || 0) + 1;
+        window.fpsTimer = (window.fpsTimer || 0) + rawDt;
+        if (window.fpsTimer >= 0.25) {
+          const fps = Math.round(window.fpsFrameCount / window.fpsTimer);
+          const ms = (rawDt * 1000).toFixed(1);
+          const el = document.getElementById('fps-counter');
+          if (el) el.innerText = `${fps} FPS / ${ms}ms`;
+          window.fpsFrameCount = 0;
+          window.fpsTimer = 0;
+        }
       }
 
       netSyncTimer += dt;
@@ -5988,9 +6896,10 @@ updateHUD(dt);
       }
 
       if (screenShake > 0) {
+        const shakeMult = (window.shakeMultiplier !== undefined) ? window.shakeMultiplier : 1.0;
         screenShake = Math.min(screenShake, 0.35);
-        camera.position.x += (Math.random() - 0.5) * screenShake;
-        camera.position.y += (Math.random() - 0.5) * screenShake;
+        camera.position.x += (Math.random() - 0.5) * screenShake * shakeMult;
+        camera.position.y += (Math.random() - 0.5) * screenShake * shakeMult;
         screenShake = THREE.MathUtils.lerp(screenShake, 0, rawDt * 14);
       }
 
@@ -6498,21 +7407,25 @@ updateHUD(dt);
       // Directional Hazard Trajectory Warning (1.3s forward lookahead)
       const warningEl = document.getElementById('hazard-warning-badge');
       if (warningEl) {
-        let threat = null;
-        if (speed > 11.0) {
-          const futurePos = player.pos.clone().add(player.vel.clone().multiplyScalar(1.2));
-          for (let hz of hazards) {
-            if (hz.box.containsPoint(futurePos)) {
-              threat = hz.name;
-              break;
+        if (window.hazardWarningEnabled === false) {
+          warningEl.style.display = 'none';
+        } else {
+          let threat = null;
+          if (speed > 11.0) {
+            const futurePos = player.pos.clone().add(player.vel.clone().multiplyScalar(1.2));
+            for (let hz of hazards) {
+              if (hz.box.containsPoint(futurePos)) {
+                threat = hz.name;
+                break;
+              }
             }
           }
-        }
-        if (threat) {
-          warningEl.innerText = `⚠️ WARNING: ${threat} TRAJECTORY`;
-          warningEl.style.display = 'block';
-        } else {
-          warningEl.style.display = 'none';
+          if (threat) {
+            warningEl.innerText = `⚠️ WARNING: ${threat} TRAJECTORY`;
+            warningEl.style.display = 'block';
+          } else {
+            warningEl.style.display = 'none';
+          }
         }
       }
 

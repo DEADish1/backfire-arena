@@ -132,6 +132,15 @@ This master checklist tracks everything built so far and all remaining features 
 ---
 
 ## 🟢 5. Visual, Customization & Quality of Life
+- [x] **Comprehensive Settings Menu & In-Game Pause Architecture**:
+  - **5-Sub-Tab Organization**: Clean tabbed navigation dividing configuration into `🎮 GAMEPLAY`, `🖥️ GRAPHICS`, `🎨 RETICLE`, `🔊 AUDIO`, and `⌨️ KEYBINDS`.
+  - **Gameplay & Sensitivity**: Mouse sensitivity slider (`0.5` - `5.0`) with exact numeric badge, Invert Y-Axis (flight pitch) toggle, Screen Shake Intensity slider (`0%` - `150%`), Damage Flash Vignette toggle, and Hazard Trajectory Threat Predictor toggle.
+  - **Graphics & Display**: Base FOV slider (`70°` - `110°`) with real-time camera updates, Dynamic Speed FOV Warping toggle, Volumetric God Rays toggle, Atmospheric Floating Dust Motes toggle, Procedural Weapon Sway & Inertia toggle, Weapon Walking Bob toggle, 3D Physical Shell Casings toggle, Molten Bullet Impact Decals toggle, 3D Boiling Magma Bubbles toggle, Cinematic Film Grain toggle, and Real-Time FPS & Frame-time performance counter toggle.
+  - **Reticle & Pilot Visor**: 7 glowing armor visor swatches (Cyan, Red, Green, Yellow, Purple, White, Orange) synced to opponent model, 5 Reticle Style variants (`DYNAMIC RING`, `MINIMAL DOT`, `TACTICAL CROSS`, `CIRCLE & DOT`, `SCI-FI TRIAD`), Match Visor Color toggle, Crosshair Size/Scale slider (`75%` - `150%`), Hitmarker Audio Chime toggle, and Visor Impact Splatter toggle.
+  - **Audio Mixer**: Independent volume sliders for Master Volume, Weapons & Kinetic SFX, Announcer & Skillshot Fanfare, and Mute When Unfocused toggle with automatic blur/focus listeners.
+  - **Controls & Gamepad Tuning**: Live Gamepad connection detection & device name display, Gamepad Stick Sensitivity slider, Gamepad Stick Inner Deadzone slider (`0.05` - `0.30`, eliminates controller stick drift), Gamepad Invert Y-Axis toggle, Dual-Rumble Haptic Vibration toggle, and interactive Keyboard Remapping table with "RESET KEYS" button.
+  - **Instant In-Game & Lobby Accessibility**: Dedicated `⚙️ SETTINGS` button on top HUD next to `⛶ FULLSCREEN`, instant single-key pause via `[ESC]` or `[O]` / `[P]`, and "SAVE & CLOSE SETTINGS" returning pilots directly to active combat with pointer lock re-acquired.
+  - **Universal LocalStorage Persistence**: All 20+ user settings automatically save and reload seamlessly via `localStorage.getItem('backfire_settings_v2')`, with a one-click "RESET ALL TO DEFAULTS" button.
 - [x] **3D Thruster Jet Plumes & Exhaust VFX**:
   - Animated glowing cyan cone exhaust meshes on remote opponent's backpack scaling in real-time with velocity (up to 1.6× length)
   - Directional thruster particle exhaust plumes on retro-jump, recoil thrust, and hover maneuvers
