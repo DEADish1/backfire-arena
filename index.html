@@ -85,6 +85,51 @@
     .cross-pip.left { left: -6px; top: 14px; width: 5px; height: 2px; }
     .cross-pip.right { right: -6px; top: 14px; width: 5px; height: 2px; }
 
+    /* Crosshair Hitmarker */
+    #hitmarker {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 36px;
+      height: 36px;
+      transform: translate(-50%, -50%) rotate(45deg);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.05s ease-out, transform 0.05s ease-out;
+      z-index: 12;
+    }
+    #hitmarker.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) rotate(45deg) scale(1.15);
+    }
+    .hm-tick {
+      position: absolute;
+      background: #ffffff;
+      box-shadow: 0 0 6px #ffffff;
+      border-radius: 1px;
+    }
+    .hm-tick.t { top: 0; left: 16px; width: 4px; height: 10px; }
+    .hm-tick.b { bottom: 0; left: 16px; width: 4px; height: 10px; }
+    .hm-tick.l { left: 0; top: 16px; width: 10px; height: 4px; }
+    .hm-tick.r { right: 0; top: 16px; width: 10px; height: 4px; }
+    #hitmarker.crit .hm-tick {
+      background: #f43f5e;
+      box-shadow: 0 0 8px #f43f5e;
+    }
+
+    /* Directional Damage Flash */
+    #damage-flash {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      box-shadow: inset 0 0 0 0 rgba(239, 68, 68, 0);
+      transition: box-shadow 0.05s ease-out;
+      z-index: 8;
+    }
+    #damage-flash.active {
+      box-shadow: inset 0 0 95px 35px rgba(239, 68, 68, 0.72);
+    }
+
     /* Top Bar */
     .top-bar {
       display: flex;
@@ -656,6 +701,7 @@
 
   <div id="canvas-container"></div>
   <div id="speed-vignette"></div>
+  <div id="damage-flash"></div>
 
   <!-- HUD -->
   <div id="hud">
@@ -701,6 +747,12 @@
         <div class="cross-pip right"></div>
         <div id="tether-indicator" class="cross-tether-icon">TETHERED</div>
       </div>
+    </div>
+    <div id="hitmarker">
+      <div class="hm-tick t"></div>
+      <div class="hm-tick b"></div>
+      <div class="hm-tick l"></div>
+      <div class="hm-tick r"></div>
     </div>
     <div id="hazard-warning-badge" class="hazard-threat-badge">⚠️ HAZARD IMPACT IMMINENT</div>
     <div id="knockout-banner" class="knockout-banner"></div>
@@ -1353,6 +1405,22 @@
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
         osc.connect(gain); gain.connect(this.dest());
         osc.start(now); osc.stop(now + 0.07);
+      }
+      playHitMarker(isCrit = false) {
+        if (!this.ctx) return;
+        this.ensureActive();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = isCrit ? 'sawtooth' : 'triangle';
+        const startFreq = isCrit ? 2600 : 1850;
+        const endFreq = isCrit ? 3600 : 2400;
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.04);
+        gain.gain.setValueAtTime(isCrit ? 0.35 : 0.24, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain); gain.connect(this.dest());
+        osc.start(now); osc.stop(now + 0.06);
       }
     }
     const audio = new SoundEngine();
@@ -2018,6 +2086,78 @@
       alive: true
     };
 
+    // --- COMBAT FEEDBACK & DESTRUCTIBLE ENVIRONMENT HELPERS ---
+    function damagePillar(idx, amount = 1, broadcast = true) {
+      const p = arenaPillars.find(item => item.idx === idx);
+      if (!p || p.destroyed) return;
+      p.health -= amount;
+      createSparks(p.mesh.position.clone().add(new THREE.Vector3(0, 4, 0)), 20, 0x94a3b8, 12);
+      audio.playCrunch(0.8);
+      if (p.health <= 0) {
+        p.destroyed = true;
+        scene.remove(p.mesh);
+        const cIdx = colliders.indexOf(p.collider);
+        if (cIdx !== -1) colliders.splice(cIdx, 1);
+        createSparks(p.mesh.position.clone().add(new THREE.Vector3(0, 4, 0)), 50, 0xf59e0b, 18);
+        showPopup("💥 COVER PILLAR SHATTERED!", "#f59e0b");
+      } else {
+        p.mesh.material.color.setHex(0xffffff);
+        setTimeout(() => {
+          if (p && p.mesh && !p.destroyed) p.mesh.material.color.setHex(0x334155);
+        }, 90);
+      }
+      if (broadcast) sendNet({ type: 'damage_pillar', idx, amount });
+    }
+
+    function flashOpponentHit() {
+      if (!remoteOpponent || !remoteOpponent.mesh) return;
+      const body = remoteOpponent.mesh.children[0];
+      if (body && body.material) {
+        body.material.emissive.setHex(0xffffff);
+        body.material.emissiveIntensity = 1.2;
+        setTimeout(() => {
+          if (body && body.material) {
+            body.material.emissive.setHex(0x000000);
+            body.material.emissiveIntensity = 0;
+          }
+        }, 80);
+      }
+    }
+
+    let hitmarkerTimer = null;
+    function triggerHitmarker(isCrit = false) {
+      const hm = document.getElementById('hitmarker');
+      if (!hm) return;
+      if (isCrit) hm.classList.add('crit');
+      else hm.classList.remove('crit');
+      hm.classList.add('show');
+      audio.playHitMarker(isCrit);
+
+      clearTimeout(hitmarkerTimer);
+      hitmarkerTimer = setTimeout(() => {
+        hm.classList.remove('show');
+      }, 100);
+    }
+
+    let damageFlashTimer = null;
+    function triggerDamageFlash() {
+      const df = document.getElementById('damage-flash');
+      if (!df) return;
+      df.classList.add('active');
+      clearTimeout(damageFlashTimer);
+      damageFlashTimer = setTimeout(() => {
+        df.classList.remove('active');
+      }, 140);
+    }
+
+    // --- SOLO MODE TACTICAL BOT AI STATE ---
+    const botAI = {
+      fireTimer: 1.2,
+      strafeTimer: 0,
+      strafeDir: 1,
+      jumpTimer: 2.2
+    };
+
     // =============================================
     //  PEERJS P2P NETWORKING (replaces WebSocket)
     // =============================================
@@ -2199,6 +2339,8 @@
           player.vel.add(hitVec);
           audio.playCrunch(0.7);
           createSparks(player.pos, 15, isHost ? 0x38bdf8 : 0xf43f5e, 10);
+          triggerDamageFlash();
+          screenShake = Math.max(screenShake, 0.42);
         }
         else if (msg.type === 'tether') {
           if (msg.active) {
@@ -2594,11 +2736,25 @@
           if (projDist > 0 && projDist < 75) {
             const closest = origin.clone().add(spreadDir.clone().multiplyScalar(projDist));
             if (closest.distanceTo(oppCenter) < remoteOpponent.radius + 0.6) {
-              const hitImpulse = spreadDir.clone().multiplyScalar(16.0);
-              hitImpulse.y += 4.0;
-              remoteOpponent.vel.add(hitImpulse);
-              sendNet({ type: 'hit', impulse: [hitImpulse.x, hitImpulse.y, hitImpulse.z] });
-              createSparks(closest, 12, 0x38bdf8, 10);
+              // Obstacle LOS check
+              let blocked = false;
+              const hitRay = new THREE.Ray(origin, spreadDir);
+              for (let c of colliders) {
+                const intersection = hitRay.intersectBox(c.box, new THREE.Vector3());
+                if (intersection && origin.distanceTo(intersection) < projDist - 0.4) {
+                  blocked = true;
+                  break;
+                }
+              }
+              if (!blocked) {
+                const hitImpulse = spreadDir.clone().multiplyScalar(16.0);
+                hitImpulse.y += 4.0;
+                remoteOpponent.vel.add(hitImpulse);
+                sendNet({ type: 'hit', impulse: [hitImpulse.x, hitImpulse.y, hitImpulse.z] });
+                createSparks(closest, 12, 0x38bdf8, 10);
+                triggerHitmarker(true);
+                flashOpponentHit();
+              }
             }
           }
         }
@@ -2646,6 +2802,8 @@
               sendNet({ type: 'hit', impulse: [hitImpulse.x, hitImpulse.y, hitImpulse.z] });
               createSparks(closest, 35, 0xf59e0b, 16);
               audio.playCrunch(1.0);
+              triggerHitmarker(true);
+              flashOpponentHit();
             }
           }
 
@@ -2711,26 +2869,45 @@
         if (projDist > 0 && projDist < 70) {
           const closest = origin.clone().add(dir.clone().multiplyScalar(projDist));
           if (closest.distanceTo(oppCenter) < remoteOpponent.radius + 0.4) {
-            let hitImpulse = dir.clone().multiplyScalar(wep.enemyImpulse / Math.sqrt(wep.pellets));
-            hitImpulse.y += 3.5;
-
-            // MOMENTUM MULTIPLIER: Player speed adds kinetic punch!
-            const mySpeed = player.vel.length();
-            const speedBonus = 1.0 + Math.min(mySpeed / 18.0, 1.5); // up to 2.5x kinetic punch!
-            hitImpulse.multiplyScalar(speedBonus);
-
-            if (speedBonus > 1.35) {
-              showPopup(`⚡ KINETIC CRUSH! (+${Math.round((speedBonus - 1) * 100)}% SLAM)`, "#38bdf8");
+            // Obstacle Line of Sight check: ensure shots don't pierce solid cover
+            let blockedByObstacle = false;
+            const hitRay = new THREE.Ray(origin, dir);
+            for (let c of colliders) {
+              const intersection = hitRay.intersectBox(c.box, new THREE.Vector3());
+              if (intersection) {
+                const distToObstacle = origin.distanceTo(intersection);
+                if (distToObstacle < projDist - 0.4) {
+                  blockedByObstacle = true;
+                  break;
+                }
+              }
             }
 
-            remoteOpponent.vel.add(hitImpulse);
-            sendNet({
-              type: 'hit',
-              impulse: [hitImpulse.x, hitImpulse.y, hitImpulse.z]
-            });
+            if (!blockedByObstacle) {
+              let hitImpulse = dir.clone().multiplyScalar(wep.enemyImpulse / Math.sqrt(wep.pellets));
+              hitImpulse.y += 3.5;
 
-            createSparks(closest, Math.round(14 * speedBonus), 0xf43f5e, 8 * speedBonus);
-            audio.playCrunch(Math.min(0.6 * speedBonus, 1.0));
+              // MOMENTUM MULTIPLIER: Player speed adds kinetic punch!
+              const mySpeed = player.vel.length();
+              const speedBonus = 1.0 + Math.min(mySpeed / 18.0, 1.5); // up to 2.5x kinetic punch!
+              hitImpulse.multiplyScalar(speedBonus);
+
+              if (speedBonus > 1.35) {
+                showPopup(`⚡ KINETIC CRUSH! (+${Math.round((speedBonus - 1) * 100)}% SLAM)`, "#38bdf8");
+              }
+
+              remoteOpponent.vel.add(hitImpulse);
+              sendNet({
+                type: 'hit',
+                impulse: [hitImpulse.x, hitImpulse.y, hitImpulse.z]
+              });
+
+              triggerHitmarker(speedBonus > 1.35);
+              flashOpponentHit();
+
+              createSparks(closest, Math.round(14 * speedBonus), 0xf43f5e, 8 * speedBonus);
+              audio.playCrunch(Math.min(0.6 * speedBonus, 1.0));
+            }
           }
         }
       }
@@ -3153,28 +3330,165 @@ updateHUD(dt);
         remoteOpponent.mesh.position.copy(remoteOpponent.pos);
         remoteOpponent.mesh.rotation.y = THREE.MathUtils.lerp(remoteOpponent.mesh.rotation.y, remoteOpponent.targetYaw, Math.min(dt * 18.0, 1.0));
       } else {
-        remoteOpponent.vel.y -= 26.0 * dt;
-        remoteOpponent.vel.x *= Math.pow(0.92, dt);
-        remoteOpponent.vel.z *= Math.pow(0.92, dt);
-        remoteOpponent.pos.add(remoteOpponent.vel.clone().multiplyScalar(dt));
+        // --- SOLO MODE TACTICAL COMBAT AI BOT ---
+        const botPos = remoteOpponent.pos;
+        const botVel = remoteOpponent.vel;
 
-        if (remoteOpponent.pos.y <= 1.0) {
-          remoteOpponent.pos.y = 1.0;
-          if (remoteOpponent.vel.y < 0) remoteOpponent.vel.y = 0;
+        // Apply arena gravity & ground / air drag
+        botVel.y -= 26.0 * dt;
+        botVel.x *= Math.pow(0.88, dt);
+        botVel.z *= Math.pow(0.88, dt);
+        botPos.add(botVel.clone().multiplyScalar(dt));
+
+        // Floor clamping
+        if (currentMapId === 1 && botPos.y <= 1.0) {
+          botPos.y = 1.0;
+          if (botVel.y < 0) botVel.y = 0;
         }
 
-        const toPlayer = player.pos.clone().sub(remoteOpponent.pos);
+        // Aim directly at player
+        const toPlayer = player.pos.clone().sub(botPos);
+        const distToPlayer = new THREE.Vector2(toPlayer.x, toPlayer.z).length();
+        const toPlayerDir = new THREE.Vector3(toPlayer.x, 0, toPlayer.z).normalize();
         remoteOpponent.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
 
-        if (remoteOpponent.pos.y <= 1.05 && Math.random() < 0.02) {
-          remoteOpponent.vel.y = 22.0;
+        // Tactical Strafing Loop
+        botAI.strafeTimer -= dt;
+        if (botAI.strafeTimer <= 0) {
+          botAI.strafeTimer = 1.4 + Math.random() * 2.0;
+          botAI.strafeDir = Math.random() < 0.5 ? -1 : 1;
         }
 
+        // Tangent vector for circular strafing
+        const strafeVec = new THREE.Vector3(-toPlayerDir.z, 0, toPlayerDir.x).multiplyScalar(botAI.strafeDir);
+        let moveForce = new THREE.Vector3();
+
+        // Distance control: maintain 12m - 22m combat engagement range
+        if (distToPlayer > 22.0) {
+          moveForce.add(toPlayerDir.clone().multiplyScalar(16.0));
+        } else if (distToPlayer < 10.0) {
+          moveForce.add(toPlayerDir.clone().multiplyScalar(-14.0));
+        }
+        moveForce.add(strafeVec.clone().multiplyScalar(13.0));
+
+        // Hazard Avoidance: Spikes & Lava Pit
+        if (currentMapId === 1) {
+          const ARENA_HALF_BOUND = 38.0;
+          // Wall Spikes proximity check (within 7m of perimeter)
+          if (Math.abs(botPos.x) > ARENA_HALF_BOUND - 7.0) {
+            moveForce.x = -Math.sign(botPos.x) * 35.0;
+            if (botPos.y <= 1.2) botVel.y = 20.0; // Rocket jump away!
+          }
+          if (Math.abs(botPos.z) > ARENA_HALF_BOUND - 7.0) {
+            moveForce.z = -Math.sign(botPos.z) * 35.0;
+            if (botPos.y <= 1.2) botVel.y = 20.0; // Rocket jump away!
+          }
+          // Center Lava Pit avoidance
+          const distToCenter = new THREE.Vector2(botPos.x, botPos.z).length();
+          if (distToCenter < 12.0 && botPos.y < 3.0) {
+            const awayFromCenter = new THREE.Vector3(botPos.x, 0, botPos.z).normalize();
+            moveForce.add(awayFromCenter.multiplyScalar(28.0));
+            if (botPos.y <= 1.2) botVel.y = 22.0;
+          }
+        } else if (currentMapId === 2) {
+          // The Core: Avoid falling into plasma abyss below catwalks
+          if (botPos.y < 9.0) {
+            botVel.y = 24.0;
+            const toCenter = new THREE.Vector3(-botPos.x, 0, -botPos.z).normalize();
+            moveForce.add(toCenter.multiplyScalar(24.0));
+          }
+        }
+
+        botVel.x += moveForce.x * dt;
+        botVel.z += moveForce.z * dt;
+
+        // Periodic Tactical Rocket Jumps
+        botAI.jumpTimer -= dt;
+        if (botAI.jumpTimer <= 0 && botPos.y <= 1.2) {
+          botAI.jumpTimer = 3.0 + Math.random() * 2.5;
+          botVel.y = 22.0 + Math.random() * 6.0;
+          emitThrusterParticles(botPos, new THREE.Vector3(0, -1, 0), 10, 0xf43f5e);
+        }
+
+        // --- BOT COMBAT FIRING LOOP ---
+        botAI.fireTimer -= dt;
+        if (botAI.fireTimer <= 0) {
+          botAI.fireTimer = 1.1 + Math.random() * 1.2;
+
+          // Check Line of Sight against colliders before shooting
+          const botEye = botPos.clone().add(new THREE.Vector3(0, 1.4, 0));
+          const playerChest = player.pos.clone().add(new THREE.Vector3(0, 1.0, 0));
+          const aimDir = playerChest.clone().sub(botEye).normalize();
+
+          let losBlocked = false;
+          const losRay = new THREE.Ray(botEye, aimDir);
+          const maxDist = botEye.distanceTo(playerChest);
+
+          for (let c of colliders) {
+            const hitPoint = losRay.intersectBox(c.box, new THREE.Vector3());
+            if (hitPoint && botEye.distanceTo(hitPoint) < maxDist - 0.5) {
+              losBlocked = true;
+              break;
+            }
+          }
+
+          if (!losBlocked && maxDist < 65.0) {
+            // Weapon selection: Breaker Shotgun at close range, Railgun at mid-to-long range
+            const botWep = (maxDist > 16.0) ? 2 : 0;
+
+            // Inaccuracy / spread
+            const spread = (botWep === 2) ? 0.035 : 0.08;
+            aimDir.x += (Math.random() - 0.5) * spread;
+            aimDir.y += (Math.random() - 0.5) * spread;
+            aimDir.z += (Math.random() - 0.5) * spread;
+            aimDir.normalize();
+
+            // Fire effects
+            if (botWep === 2) {
+              audio.playRailgun();
+              createBulletTracer(botEye, aimDir, 75, 0xf43f5e);
+              botVel.add(aimDir.clone().multiplyScalar(-10.0));
+            } else {
+              audio.playShotgun();
+              for (let sp = 0; sp < 6; sp++) {
+                const pDir = aimDir.clone();
+                pDir.x += (Math.random() - 0.5) * 0.12;
+                pDir.y += (Math.random() - 0.5) * 0.12;
+                pDir.z += (Math.random() - 0.5) * 0.12;
+                pDir.normalize();
+                createBulletTracer(botEye, pDir, 55, 0xfb923c);
+              }
+              botVel.add(aimDir.clone().multiplyScalar(-12.0));
+            }
+
+            // Check if bullet intersects player sphere
+            const toP = playerChest.clone().sub(botEye);
+            const pProj = toP.dot(aimDir);
+            if (pProj > 0 && pProj < maxDist + 2.0) {
+              const closestP = botEye.clone().add(aimDir.clone().multiplyScalar(pProj));
+              if (closestP.distanceTo(playerChest) < player.radius + 0.45) {
+                // PLAYER HIT CONFIRMED!
+                const impulseMag = (botWep === 2) ? 26.0 : 18.0;
+                const playerImpulse = aimDir.clone().multiplyScalar(impulseMag);
+                playerImpulse.y += 4.0;
+                player.vel.add(playerImpulse);
+
+                triggerDamageFlash();
+                screenShake = Math.max(screenShake, (botWep === 2) ? 0.55 : 0.38);
+                audio.playCrunch(0.75);
+                createSparks(player.pos, 18, 0xf43f5e, 12);
+                showPopup(`⚠️ HIT BY BOT! (+${Math.round(impulseMag)} M/S IMPACT)`, "#f43f5e");
+              }
+            }
+          }
+        }
+
+        // Hazard Collision Check for Bot
         for (let hazard of hazards) {
           if (hazard.box.containsPoint(remoteOpponent.pos)) {
-            createSparks(remoteOpponent.pos, 35, 0xf43f5e, 14);
+            createSparks(remoteOpponent.pos, 40, 0xf43f5e, 16);
             handleKnockoutScore('red', hazard.name);
-            remoteOpponent.pos.set(0, 1.8, -22);
+            remoteOpponent.pos.set(0, (currentMapId === 2 ? 14 : 2.0), -22);
             remoteOpponent.vel.set(0, 0, 0);
             break;
           }

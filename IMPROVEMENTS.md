@@ -48,7 +48,13 @@ This master checklist tracks everything built so far and all remaining features 
 
 ---
 
-## 🟡 4. Combat Variety & Mechanics
+## 🟢 4. Combat Variety & Mechanics (Completed & Overhauled)
+- [x] **Full Combat Overhaul & Kinetic Feedback**:
+  - **Dynamic Crosshair Hitmarkers & Audio Ticks**: 4-tick rotated hitmarker with crisp audio synthesis (1850Hz standard / 2600Hz critical) confirming connected shots
+  - **Opponent Hit Flash VFX**: High-contrast white/red emissive flash on opponent chassis upon kinetic impact
+  - **Obstacle Line-of-Sight Raycasting**: Bullet raycaster checks against solid arena cover pillars and bulkheads before registering hits (except for the wall-penetrating Railgun Overcharge)
+  - **Directional Incoming Damage Vignette Flash**: Red edge-screen vignette pulse alerting pilots to incoming opponent concussive impulses
+  - **Active Tactical Combat AI Bot in Solo Mode**: Fully autonomous bot that circular-strafes, maintains 12–22m combat spacing, detects spike walls & lava pits to counter-thrust and rocket-jump away, selects weapons dynamically (Breaker Shotgun vs Rail Slugger), fires red tracers with line-of-sight checks, and applies physical concussive knockback with damage flash and screen shake when hitting the player
 - [x] **Alternate Fire Modes (`Q` or `Middle-Click`)**:
   - *Breaker 12G (Alt-Fire)*: Concussive Blast Wall (16-pellet horizontal arc, +44 m/s super-jump thrust)
   - *Jackhammer (Alt-Fire)*: Retro-Jet Hover Mode (anti-gravity downward thrusters holding pilot hovering in mid-air)
