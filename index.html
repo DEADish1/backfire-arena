@@ -1134,6 +1134,12 @@
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="js/GLTFLoader.js"></script>
+  <script>
+    if (typeof THREE.GLTFLoader === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><\/script>');
+    }
+  </script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
@@ -1893,6 +1899,10 @@
           window.matchStarted = true;
           if (typeof matchStarted !== 'undefined') matchStarted = true;
           if (typeof isPointerLocked !== 'undefined') isPointerLocked = true;
+          if (typeof player !== 'undefined') {
+            player.cameraPitch = 0;
+            player.cameraYaw = 0;
+          }
           try {
             const p = document.body.requestPointerLock();
             if (p && p.catch) p.catch(() => {});
@@ -3726,61 +3736,70 @@
 
       const matArmCarbon = new THREE.MeshStandardMaterial({
         color: 0x182030,
-        roughness: 0.35,
-        metalness: 0.8,
+        roughness: 0.32,
+        metalness: 0.85,
         normalMap: carbonFiberNormalTex,
-        normalScale: new THREE.Vector2(0.5, 0.5)
+        normalScale: new THREE.Vector2(0.6, 0.6)
       });
-      const matArmSuit = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85, metalness: 0.15 });
-      const matArmSteel = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.22, metalness: 0.95 });
+      const matArmSuit = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.82, metalness: 0.2 });
+      const matArmSteel = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.2, metalness: 0.95 });
       const matArmNeon = new THREE.MeshStandardMaterial({
-        color: 0x38bdf8,
-        emissive: 0x38bdf8,
-        emissiveIntensity: 1.8
+        color: window.myPilotColor || 0x38bdf8,
+        emissive: window.myPilotColor || 0x38bdf8,
+        emissiveIntensity: 2.2
       });
       window.fpArmsNeonMat = matArmNeon;
-      const matGloveLeather = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.65, metalness: 0.25 });
-      const matGloveKnuckles = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2, metalness: 0.92 });
+      const matGloveLeather = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6, metalness: 0.3 });
+      const matGloveKnuckles = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2, metalness: 0.95 });
 
-      // --- RIGHT ARM (Holding Pistol Grip & Trigger) ---
+      // --- RIGHT ARM (Firmly gripping weapon receiver & trigger) ---
       const rArmGroup = new THREE.Group();
 
-      const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.45, 10), matArmSuit);
-      rUpperArm.rotation.set(0.72, -0.25, -0.35);
-      rUpperArm.position.set(0.16, -0.38, 0.4);
+      // Right Sleeve / Upper Arm entering from bottom-right corner of viewport
+      const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 0.42, 12), matArmSuit);
+      rUpperArm.rotation.set(0.70, -0.22, -0.32);
+      rUpperArm.position.set(0.32, -0.32, 0.42);
 
-      const rForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.08, 0.38, 10), matArmCarbon);
-      rForearm.rotation.set(0.65, -0.15, -0.22);
-      rForearm.position.set(0.08, -0.3, 0.28);
+      // Armored Forearm Gauntlet
+      const rForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.085, 0.36, 12), matArmCarbon);
+      rForearm.rotation.set(0.62, -0.16, -0.20);
+      rForearm.position.set(0.20, -0.20, 0.22);
 
-      const rGauntletPlate = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.26, 0.035), matArmSteel);
-      rGauntletPlate.position.set(0.07, -0.28, 0.27);
-      rGauntletPlate.rotation.set(0.65, -0.15, -0.22);
+      // Gauntlet Top Strike Plate
+      const rGauntletPlate = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.28, 0.035), matArmSteel);
+      rGauntletPlate.position.set(0.19, -0.18, 0.21);
+      rGauntletPlate.rotation.set(0.62, -0.16, -0.20);
 
-      const rConduit = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.24, 0.015), matArmNeon);
-      rConduit.position.set(0.08, -0.27, 0.29);
-      rConduit.rotation.set(0.65, -0.15, -0.22);
+      // Glowing Neon Energy Conduit Line
+      const rConduit = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.26, 0.015), matArmNeon);
+      rConduit.position.set(0.20, -0.17, 0.23);
+      rConduit.rotation.set(0.62, -0.16, -0.20);
 
+      // Right Tactical Combat Glove Group
       const rGlove = new THREE.Group();
-      rGlove.position.set(0, -0.2, 0.15); // Aligns precisely with bGrip0
-      rGlove.rotation.x = 0.25;
+      rGlove.position.set(0.06, -0.08, 0.02);
 
-      const rPalm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.11), matGloveLeather);
+      // Glove Palm wrapping around right side of weapon
+      const rPalm = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.12, 0.13), matGloveLeather);
       rPalm.position.set(0, 0, 0);
 
-      const rKnuckles = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.035, 0.045), matGloveKnuckles);
-      rKnuckles.position.set(0, 0.038, -0.05);
+      // Knuckle Armor Plate
+      const rKnuckles = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.11), matArmCarbon);
+      rKnuckles.position.set(0.045, 0.035, 0);
 
-      const rFingers = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.07, 0.07), matGloveLeather);
-      rFingers.position.set(0, -0.045, -0.045);
+      // 4 Wrapped Fingers curling under the receiver
+      const rFingers = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.11), matGloveLeather);
+      rFingers.position.set(-0.01, -0.055, -0.01);
 
-      const rTrigFinger = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.015, 0.09, 6), matGloveLeather);
+      // Trigger Finger along trigger guard
+      const rTrigFinger = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.016, 0.11, 8), matGloveLeather);
       rTrigFinger.rotation.x = Math.PI / 2;
-      rTrigFinger.position.set(0.045, 0.015, -0.07);
+      rTrigFinger.position.set(0.02, -0.01, -0.11);
 
-      const rThumb = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.075, 6), matGloveLeather);
-      rThumb.rotation.z = -0.65;
-      rThumb.position.set(-0.055, 0.01, 0.03);
+      // Thumb wrapped over top
+      const rThumb = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.09, 8), matGloveLeather);
+      rThumb.rotation.z = -0.7;
+      rThumb.position.set(-0.04, 0.04, 0.02);
 
       rGlove.add(rPalm, rKnuckles, rFingers, rTrigFinger, rThumb);
       rArmGroup.add(rUpperArm, rForearm, rGauntletPlate, rConduit, rGlove);
@@ -3789,32 +3808,38 @@
       // --- LEFT ARM (Holding Foregrip / Shotgun Pump) ---
       const lArmGroup = new THREE.Group();
 
-      const lUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.45, 10), matArmSuit);
-      lUpperArm.rotation.set(0.65, 0.35, 0.4);
-      lUpperArm.position.set(-0.35, -0.38, 0.35);
+      // Left Sleeve / Upper Arm entering from bottom-left
+      const lUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 0.42, 12), matArmSuit);
+      lUpperArm.rotation.set(0.55, 0.32, 0.38);
+      lUpperArm.position.set(-0.32, -0.34, 0.28);
 
-      const lForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.08, 0.38, 10), matArmCarbon);
-      lForearm.rotation.set(0.55, 0.28, 0.3);
-      lForearm.position.set(-0.24, -0.28, 0.18);
+      // Armored Left Forearm Gauntlet
+      const lForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.085, 0.38, 12), matArmCarbon);
+      lForearm.rotation.set(0.48, 0.25, 0.28);
+      lForearm.position.set(-0.16, -0.18, 0.02);
 
-      const lGauntletPlate = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.24, 0.035), matArmSteel);
-      lGauntletPlate.position.set(-0.23, -0.26, 0.17);
-      lGauntletPlate.rotation.set(0.55, 0.28, 0.3);
+      // Gauntlet Top Strike Plate
+      const lGauntletPlate = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.26, 0.035), matArmSteel);
+      lGauntletPlate.position.set(-0.15, -0.16, 0.01);
+      lGauntletPlate.rotation.set(0.48, 0.25, 0.28);
 
-      const lWristHud = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.035, 0.065), matArmNeon);
-      lWristHud.position.set(-0.21, -0.23, 0.18);
+      // Holographic Wrist HUD Mini-Terminal
+      const lWristHud = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.035, 0.07), matArmNeon);
+      lWristHud.position.set(-0.13, -0.13, 0.02);
 
+      // Left Tactical Glove Group (Holding Pump Handle / Underbarrel)
       const lGlove = new THREE.Group();
       lGlove.position.set(0, -0.05, -0.32);
 
-      const lPalm = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.09, 0.1), matGloveLeather);
-      const lKnuckles = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 0.04), matGloveKnuckles);
-      lKnuckles.position.set(0, 0.035, -0.04);
-      const lFingers = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.07), matGloveLeather);
-      lFingers.position.set(0, -0.035, -0.04);
-      const lThumb = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.017, 0.07, 6), matGloveLeather);
-      lThumb.rotation.z = 0.6;
-      lThumb.position.set(0.05, 0.01, 0.02);
+      // Glove Palm cupping under the pump
+      const lPalm = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.09, 0.16), matGloveLeather);
+      const lKnuckles = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.13), matArmCarbon);
+      lKnuckles.position.set(-0.06, 0.02, 0);
+      const lFingers = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.14), matGloveLeather);
+      lFingers.position.set(0.03, -0.035, 0);
+      const lThumb = new THREE.Mesh(new THREE.CylinderGeometry(0.017, 0.018, 0.09, 8), matGloveLeather);
+      lThumb.rotation.z = 0.65;
+      lThumb.position.set(-0.05, 0.035, 0.02);
 
       lGlove.add(lPalm, lKnuckles, lFingers, lThumb);
       lArmGroup.add(lUpperArm, lForearm, lGauntletPlate, lWristHud, lGlove);
@@ -3830,18 +3855,26 @@
         rGlove: rGlove,
         update: function(dt, wepIdx, pumpZ) {
           if (wepIdx === 0) {
+            // Shotgun: Left hand tracks pump handle smoothly!
             lGlove.position.set(0, -0.05, pumpZ || -0.32);
-            lGlove.rotation.set(0.15, 0.1, -0.1);
+            lGlove.rotation.set(0.12, 0.08, -0.05);
+            rGlove.position.set(0.06, -0.08, 0.02);
           } else if (wepIdx === 1) {
-            lGlove.position.set(0, -0.16, -0.18);
-            lGlove.rotation.set(0.28, 0.15, -0.22);
+            // Jackhammer: Hand holds under-slung drum
+            lGlove.position.set(0, -0.14, -0.18);
+            lGlove.rotation.set(0.24, 0.12, -0.15);
+            rGlove.position.set(0.06, -0.08, 0.02);
           } else if (wepIdx === 2) {
-            lGlove.position.set(0, -0.04, -0.35);
-            lGlove.rotation.set(0.18, -0.1, 0.2);
+            // Rail Slugger: Hand cradles stator rail
+            lGlove.position.set(0, -0.04, -0.32);
+            lGlove.rotation.set(0.15, -0.08, 0.15);
+            rGlove.position.set(0.06, -0.08, 0.02);
           }
-          lForearm.position.x = lGlove.position.x * 0.4 - 0.22;
-          lForearm.position.y = lGlove.position.y * 0.5 - 0.24;
-          lForearm.position.z = lGlove.position.z * 0.5 + 0.15;
+
+          // Smoothly connect forearm to the hand position
+          lForearm.position.x = lGlove.position.x * 0.4 - 0.16;
+          lForearm.position.y = lGlove.position.y * 0.5 - 0.14;
+          lForearm.position.z = lGlove.position.z * 0.5 + 0.12;
           lGauntletPlate.position.copy(lForearm.position).add(new THREE.Vector3(0.01, 0.02, -0.01));
           lWristHud.position.copy(lForearm.position).add(new THREE.Vector3(0.03, 0.05, 0));
         }
@@ -4842,6 +4875,10 @@
       const matUnderSuit = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85, metalness: 0.15 });
 
       // --- 1. PELVIS & ARTICULATED LEGS ---
+      const proceduralBody = new THREE.Group();
+      g.add(proceduralBody);
+      g.userData.proceduralBody = proceduralBody;
+
       const pelvisGroup = new THREE.Group();
       pelvisGroup.position.set(0, 0.86, 0);
 
@@ -4925,7 +4962,7 @@
       kneePivotR.add(kneeCopR, shockCylR, shockPistonR, shinR, shinRidgeR, calfThrusterR, anklePivotR);
       hipPivotR.add(hipJointR, thighCoreR, thighPlateR, thighConduitR, kneePivotR);
       pelvisGroup.add(hipPivotR);
-      g.add(pelvisGroup);
+      proceduralBody.add(pelvisGroup);
 
       // --- 2. TORSO, COMPOSITE CHEST & SPINAL COLUMN ---
       const torsoGroup = new THREE.Group();
@@ -5104,7 +5141,7 @@
       shoulderPivotR.add(bicepR, elbowPivotR);
       torsoGroup.add(shoulderPivotR);
 
-      g.add(torsoGroup);
+      proceduralBody.add(torsoGroup);
 
       // Default Combat Poses for Arms
       shoulderPivotL.rotation.set(0.45, 0.3, -0.15);
@@ -5146,6 +5183,82 @@
         flameR: flameR,
         coreReactor: coreReactor
       };
+
+      // --- REALISTIC 3D VANGUARD CYBERNETIC SOLDIER (GLTF LOADER) ---
+      if (typeof THREE.GLTFLoader !== 'undefined') {
+        const loader = new THREE.GLTFLoader();
+        loader.load('models/Soldier.glb', function(gltf) {
+          const soldier = gltf.scene;
+          soldier.scale.set(1.0, 1.0, 1.0);
+          soldier.position.set(0, 0, 0);
+
+          soldier.traverse(function(child) {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+              if (child.material) {
+                if (child.material.name === 'Vanguard_VisorMat') {
+                  child.material.color.set(colorHex);
+                  child.material.emissive.set(colorHex);
+                  child.material.emissiveIntensity = 2.4;
+                }
+              }
+            }
+          });
+
+          // Setup AnimationMixer
+          const mixer = new THREE.AnimationMixer(soldier);
+          const idleClip = gltf.animations.find(a => a.name === 'Idle') || gltf.animations[0];
+          const runClip = gltf.animations.find(a => a.name === 'Run') || gltf.animations[1];
+          const idleAction = mixer.clipAction(idleClip);
+          const runAction = mixer.clipAction(runClip);
+          idleAction.play();
+
+          g.userData.mixer = mixer;
+          g.userData.idleAction = idleAction;
+          g.userData.runAction = runAction;
+
+          // Attach cybernetic jetpack with animated thruster flames to soldier's back
+          const spineBone = soldier.getObjectByName('mixamorig:Spine1') || soldier.getObjectByName('mixamorigSpine1');
+          if (spineBone) {
+            jetpackGroup.position.set(0, 0.15, -0.22);
+            jetpackGroup.rotation.set(0, 0, 0);
+            spineBone.add(jetpackGroup);
+          } else {
+            jetpackGroup.position.set(0, 1.15, -0.22);
+            soldier.add(jetpackGroup);
+          }
+
+          // Attach glowing fusion reactor to chest
+          if (spineBone) {
+            coreReactor.position.set(0, 0.22, 0.16);
+            spineBone.add(coreReactor);
+          } else {
+            coreReactor.position.set(0, 1.25, 0.16);
+            soldier.add(coreReactor);
+          }
+
+          // Attach 3D tactical carbine to right hand bone
+          const rHand = soldier.getObjectByName('mixamorig:RightHand') || soldier.getObjectByName('mixamorigRightHand');
+          if (rHand) {
+            carbineGroup.position.set(0.04, 0.12, 0.02);
+            carbineGroup.rotation.set(0, -Math.PI / 2, Math.PI / 2);
+            rHand.add(carbineGroup);
+          } else {
+            carbineGroup.position.set(0.25, 0.95, 0.25);
+            soldier.add(carbineGroup);
+          }
+
+          // Real 3D Vanguard Soldier takes over smoothly!
+          if (g.userData.proceduralBody) {
+            g.userData.proceduralBody.visible = false;
+          }
+          g.add(soldier);
+          g.userData.soldierScene = soldier;
+        }, undefined, function(err) {
+          console.warn('Soldier.glb load notice:', err);
+        });
+      }
 
       g.position.set(0, 1.0, -22);
       scene.add(g);
@@ -7866,6 +7979,27 @@ updateHUD(dt);
       }
 
       remoteOpponent.mesh.position.copy(remoteOpponent.pos);
+
+      // Real 3D Vanguard Soldier Animation Mixer Update
+      if (remoteOpponent.mesh.userData && remoteOpponent.mesh.userData.mixer) {
+        remoteOpponent.mesh.userData.mixer.update(dt);
+        const velH = Math.sqrt(remoteOpponent.vel.x * remoteOpponent.vel.x + remoteOpponent.vel.z * remoteOpponent.vel.z);
+        const isAirborne = (remoteOpponent.pos.y > (currentMapId === 2 ? 10.5 : 1.25));
+        const idleAct = remoteOpponent.mesh.userData.idleAction;
+        const runAct = remoteOpponent.mesh.userData.runAction;
+
+        if (idleAct && runAct) {
+          if (velH > 0.6 && !isAirborne) {
+            if (!runAct.isRunning()) runAct.play();
+            runAct.setEffectiveWeight(1.0);
+            idleAct.setEffectiveWeight(0.0);
+            runAct.timeScale = Math.min(Math.max(velH / 6.0, 0.8), 2.2);
+          } else {
+            idleAct.setEffectiveWeight(1.0);
+            runAct.setEffectiveWeight(0.0);
+          }
+        }
+      }
 
       // --- REALISTIC CYBERNETIC SKELETAL LOCOMOTION ANIMATION ---
       if (remoteOpponent.mesh.visible && remoteOpponent.mesh.userData && remoteOpponent.mesh.userData.animState) {
