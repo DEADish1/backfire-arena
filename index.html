@@ -884,6 +884,15 @@
         </div>
       </div>
 
+      <!-- Arena Map Selection -->
+      <div style="margin-bottom: 16px; text-align: left; background: rgba(0,0,0,0.35); padding: 12px 16px; border-radius: 10px;">
+        <div style="font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: #94a3b8; margin-bottom: 8px;">SELECT COMBAT ARENA:</div>
+        <div style="display: flex; gap: 10px;">
+          <button id="map-btn-1" class="action-sub-btn" style="flex: 1; padding: 10px; font-size: 11px;" onclick="selectArenaMap(1)">FOUNDRY (ARENA)</button>
+          <button id="map-btn-2" class="action-sub-btn" style="flex: 1; padding: 10px; font-size: 11px; background: rgba(15, 23, 42, 0.6); color: #94a3b8; border-color: rgba(255,255,255,0.2);" onclick="selectArenaMap(2)">THE CORE (VERTICAL SILO)</button>
+        </div>
+      </div>
+
       <div class="controls-grid">
         <div class="ctrl-item"><b>L-CLICK</b> Fire / Recoil Thrust</div>
         <div class="ctrl-item"><b>R-CLICK</b> Kinetic Harpoon / Tether</div>
@@ -1588,173 +1597,289 @@
     let gunKickOffset = 0;
     let gunKickRot = 0;
 
-    // --- ARENA CONSTRUCTION ---
-    const ARENA_SIZE = 76;
-    const ARENA_HALF = ARENA_SIZE / 2;
+    // --- MODULAR ARENA MAP BUILDER ---
+    let currentMapId = 1;
+    const arenaRoot = new THREE.Group();
+    scene.add(arenaRoot);
+
     const colliders = [];
     const hazards = [];
     const jumpPads = [];
-
-    // Floor
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(ARENA_SIZE, ARENA_SIZE),
-      new THREE.MeshStandardMaterial({
-        color: 0x223049,
-        map: floorDiffuseTex,
-        bumpMap: floorBumpTex,
-        bumpScale: 0.05,
-        roughness: 0.35,
-        metalness: 0.65
-      })
-    );
-    floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
-
-    // Center Molten Pit Hazard
-    const lavaPit = new THREE.Mesh(
-      new THREE.CylinderGeometry(8.5, 8.5, 0.4, 48),
-      new THREE.MeshStandardMaterial({
-        color: 0xff6600,
-        map: lavaTex,
-        emissive: 0xf97316,
-        emissiveMap: lavaTex,
-        emissiveIntensity: 1.25,
-        roughness: 0.25,
-        metalness: 0.1
-      })
-    );
-    lavaPit.position.set(0, 0.2, 0); scene.add(lavaPit);
-
-    const bridge = new THREE.Mesh(
-      new THREE.BoxGeometry(3.6, 0.6, 24),
-      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.4 })
-    );
-    bridge.position.set(0, 0.3, 0); bridge.receiveShadow = true; scene.add(bridge);
-
-    hazards.push({
-      type: "MOLTEN_PIT",
-      box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, 0.5, 0), new THREE.Vector3(17, 2, 17)),
-      name: "MOLTEN PIT VAPORIZATION"
-    });
-
-    // Perimeter Walls
-    function createWall(x, z, width, length, height) {
-      const wall = new THREE.Mesh(
-        new THREE.BoxGeometry(width, height, length),
-        new THREE.MeshStandardMaterial({
-          color: 0x334155,
-          map: wallDiffuseTex,
-          roughness: 0.45,
-          metalness: 0.75
-        })
-      );
-      wall.position.set(x, height / 2, z);
-      wall.receiveShadow = true; wall.castShadow = true; scene.add(wall);
-      colliders.push({ box: new THREE.Box3().setFromObject(wall), mesh: wall });
-    }
-    const wallH = 16;
-    createWall(0, -ARENA_HALF, ARENA_SIZE, 2, wallH);
-    createWall(0, ARENA_HALF, ARENA_SIZE, 2, wallH);
-    createWall(-ARENA_HALF, 0, 2, ARENA_SIZE, wallH);
-    createWall(ARENA_HALF, 0, 2, ARENA_SIZE, wallH);
-
-    // Spikes (North & South)
-    function createSpikeHazardWall(x, z, width, normalDir) {
-      const baseWall = new THREE.Mesh(new THREE.BoxGeometry(width, 10, 1.5), new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.5 }));
-      baseWall.position.set(x, 5, z); scene.add(baseWall);
-      const spikeGeo = new THREE.ConeGeometry(0.35, 1.8, 8);
-      const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2 });
-      for (let i = -width/2 + 1; i <= width/2 - 1; i += 1.8) {
-        for (let j = 2; j <= 8; j += 2) {
-          const spike = new THREE.Mesh(spikeGeo, spikeMat);
-          spike.position.set(x + i, j, z + (normalDir * 1.0));
-          spike.rotation.x = (normalDir > 0 ? 1 : -1) * (Math.PI / 2);
-          scene.add(spike);
-        }
-      }
-      hazards.push({
-        type: "SPIKES",
-        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, 5, z), new THREE.Vector3(width, 10, 3)),
-        name: "SPIKE WALL IMPALE"
-      });
-    }
-    createSpikeHazardWall(0, -ARENA_HALF + 1.2, 34, 1);
-    createSpikeHazardWall(0, ARENA_HALF - 1.2, 34, -1);
-
-    // Turbine (West Wall)
-    const turbineGroup = new THREE.Group();
-    turbineGroup.position.set(-ARENA_HALF + 1.5, 6, 0);
-    const turbineRing = new THREE.Mesh(new THREE.TorusGeometry(5.5, 0.7, 16, 32), new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xb45309, emissiveIntensity: 0.6 }));
-    turbineRing.rotation.y = Math.PI / 2; turbineGroup.add(turbineRing);
-    const bladesGroup = new THREE.Group();
-    for (let b = 0; b < 6; b++) {
-      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.12, 5, 0.9), new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85 }));
-      blade.rotation.x = (b * Math.PI) / 3; blade.position.set(0.1, 0, 0); bladesGroup.add(blade);
-    }
-    turbineGroup.add(bladesGroup); scene.add(turbineGroup);
-    hazards.push({
-      type: "TURBINE",
-      box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(-ARENA_HALF + 2, 6, 0), new THREE.Vector3(4, 11, 11)),
-      name: "TURBINE SHRED",
-      blades: bladesGroup
-    });
-
-    // Jump Pads
-    function createJumpPad(x, z) {
-      const padGroup = new THREE.Group();
-      padGroup.add(
-        new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.7, 0.4, 24), new THREE.MeshStandardMaterial({ color: 0x0f172a })),
-        new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 0.45, 24), new THREE.MeshStandardMaterial({ color: 0x06b6d4, emissive: 0x06b6d4, emissiveIntensity: 0.9 }))
-      );
-      padGroup.position.set(x, 0.2, z); scene.add(padGroup);
-      jumpPads.push({ pos: new THREE.Vector3(x, 0.4, z), radius: 2.5, power: 36.0 });
-    }
-    createJumpPad(-24, -24); createJumpPad(24, -24); createJumpPad(-24, 24); createJumpPad(24, 24);
-
-        // --- DESTRUCTIBLE ARENA PILLARS ---
     const arenaPillars = [];
-    function createPillar(x, z, idx) {
-      const p = new THREE.Mesh(
-        new THREE.CylinderGeometry(2, 2, 14, 20),
+    let lavaPit = null;
+    let bladesGroup = null;
+
+    function clearArena() {
+      while (arenaRoot.children.length > 0) {
+        const obj = arenaRoot.children[0];
+        arenaRoot.remove(obj);
+        if (obj.geometry) obj.geometry.dispose();
+      }
+      colliders.length = 0;
+      hazards.length = 0;
+      jumpPads.length = 0;
+      arenaPillars.length = 0;
+      lavaPit = null;
+      bladesGroup = null;
+    }
+
+    function buildHazardFoundry() {
+      clearArena();
+      currentMapId = 1;
+      const ARENA_SIZE = 76;
+      const ARENA_HALF = ARENA_SIZE / 2;
+
+      // Floor
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(ARENA_SIZE, ARENA_SIZE),
         new THREE.MeshStandardMaterial({
-          color: 0x334155,
-          roughness: 0.45,
+          color: 0x223049,
+          map: floorDiffuseTex,
+          bumpMap: floorBumpTex,
+          bumpScale: 0.05,
+          roughness: 0.35,
           metalness: 0.65
         })
       );
-      p.position.set(x, 7, z);
-      p.castShadow = true; p.receiveShadow = true;
-      scene.add(p);
-      const col = { box: new THREE.Box3().setFromObject(p), mesh: p };
-      colliders.push(col);
-      arenaPillars.push({ mesh: p, collider: col, health: 3, maxHealth: 3, idx, x, z, destroyed: false });
+      floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true;
+      arenaRoot.add(floor);
+
+      // Center Molten Pit Hazard
+      lavaPit = new THREE.Mesh(
+        new THREE.CylinderGeometry(8.5, 8.5, 0.4, 48),
+        new THREE.MeshStandardMaterial({
+          color: 0xff6600,
+          map: lavaTex,
+          emissive: 0xf97316,
+          emissiveMap: lavaTex,
+          emissiveIntensity: 1.25,
+          roughness: 0.25,
+          metalness: 0.1
+        })
+      );
+      lavaPit.position.set(0, 0.2, 0);
+      arenaRoot.add(lavaPit);
+
+      const bridge = new THREE.Mesh(
+        new THREE.BoxGeometry(3.6, 0.6, 24),
+        new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.4 })
+      );
+      bridge.position.set(0, 0.3, 0); bridge.receiveShadow = true;
+      arenaRoot.add(bridge);
+
+      hazards.push({
+        type: "MOLTEN_PIT",
+        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, 0.5, 0), new THREE.Vector3(17, 2, 17)),
+        name: "MOLTEN PIT VAPORIZATION"
+      });
+
+      // Perimeter Walls
+      function createWall(x, z, width, length, height) {
+        const wall = new THREE.Mesh(
+          new THREE.BoxGeometry(width, height, length),
+          new THREE.MeshStandardMaterial({
+            color: 0x334155,
+            map: wallDiffuseTex,
+            roughness: 0.45,
+            metalness: 0.75
+          })
+        );
+        wall.position.set(x, height / 2, z);
+        wall.receiveShadow = true; wall.castShadow = true;
+        arenaRoot.add(wall);
+        colliders.push({ box: new THREE.Box3().setFromObject(wall), mesh: wall });
+      }
+      const wallH = 16;
+      createWall(0, -ARENA_HALF, ARENA_SIZE, 2, wallH);
+      createWall(0, ARENA_HALF, ARENA_SIZE, 2, wallH);
+      createWall(-ARENA_HALF, 0, 2, ARENA_SIZE, wallH);
+      createWall(ARENA_HALF, 0, 2, ARENA_SIZE, wallH);
+
+      // Spikes (North & South)
+      function createSpikeHazardWall(x, z, width, normalDir) {
+        const baseWall = new THREE.Mesh(new THREE.BoxGeometry(width, 10, 1.5), new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.5 }));
+        baseWall.position.set(x, 5, z); arenaRoot.add(baseWall);
+        const spikeGeo = new THREE.ConeGeometry(0.35, 1.8, 8);
+        const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2 });
+        for (let i = -width/2 + 1; i <= width/2 - 1; i += 1.8) {
+          for (let j = 2; j <= 8; j += 2) {
+            const spike = new THREE.Mesh(spikeGeo, spikeMat);
+            spike.position.set(x + i, j, z + (normalDir * 1.0));
+            spike.rotation.x = (normalDir > 0 ? 1 : -1) * (Math.PI / 2);
+            arenaRoot.add(spike);
+          }
+        }
+        hazards.push({
+          type: "SPIKES",
+          box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, 5, z), new THREE.Vector3(width, 10, 3)),
+          name: "SPIKE WALL IMPALE"
+        });
+      }
+      createSpikeHazardWall(0, -ARENA_HALF + 1.2, 34, 1);
+      createSpikeHazardWall(0, ARENA_HALF - 1.2, 34, -1);
+
+      // Turbine (West Wall)
+      const turbineGroup = new THREE.Group();
+      turbineGroup.position.set(-ARENA_HALF + 1.5, 6, 0);
+      const turbineRing = new THREE.Mesh(new THREE.TorusGeometry(5.5, 0.7, 16, 32), new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xb45309, emissiveIntensity: 0.6 }));
+      turbineRing.rotation.y = Math.PI / 2; turbineGroup.add(turbineRing);
+      bladesGroup = new THREE.Group();
+      for (let b = 0; b < 6; b++) {
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.12, 5, 0.9), new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85 }));
+        blade.rotation.x = (b * Math.PI) / 3; blade.position.set(0.1, 0, 0); bladesGroup.add(blade);
+      }
+      turbineGroup.add(bladesGroup); arenaRoot.add(turbineGroup);
+      hazards.push({
+        type: "TURBINE",
+        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(-ARENA_HALF + 2, 6, 0), new THREE.Vector3(4, 11, 11)),
+        name: "TURBINE SHRED",
+        blades: bladesGroup
+      });
+
+      // Jump Pads
+      function createJumpPad(x, z) {
+        const padGroup = new THREE.Group();
+        padGroup.add(
+          new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.7, 0.4, 24), new THREE.MeshStandardMaterial({ color: 0x0f172a })),
+          new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 0.45, 24), new THREE.MeshStandardMaterial({ color: 0x06b6d4, emissive: 0x06b6d4, emissiveIntensity: 0.9 }))
+        );
+        padGroup.position.set(x, 0.2, z); arenaRoot.add(padGroup);
+        jumpPads.push({ pos: new THREE.Vector3(x, 0.4, z), radius: 2.5, power: 36.0 });
+      }
+      createJumpPad(-24, -24); createJumpPad(24, -24); createJumpPad(-24, 24); createJumpPad(24, 24);
+
+      // Destructible Pillars
+      function createPillar(x, z, idx) {
+        const p = new THREE.Mesh(
+          new THREE.CylinderGeometry(2, 2, 14, 20),
+          new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.45, metalness: 0.65 })
+        );
+        p.position.set(x, 7, z); p.castShadow = true; p.receiveShadow = true;
+        arenaRoot.add(p);
+        const col = { box: new THREE.Box3().setFromObject(p), mesh: p };
+        colliders.push(col);
+        arenaPillars.push({ mesh: p, collider: col, health: 3, maxHealth: 3, idx, x, z, destroyed: false });
+      }
+      createPillar(-16, -16, 0); createPillar(16, -16, 1); createPillar(-16, 16, 2); createPillar(16, 16, 3);
     }
 
-    function damagePillar(idx, amount = 1, broadcast = true) {
-      const pObj = arenaPillars[idx];
-      if (!pObj || pObj.destroyed) return;
-      pObj.health -= amount;
-      createSparks(new THREE.Vector3(pObj.x, 6, pObj.z), 25, 0x94a3b8, 14);
-      audio.playCrunch(0.8);
+    function buildTheCore() {
+      clearArena();
+      currentMapId = 2;
+      const SILO_RADIUS = 28;
+      const SILO_HEIGHT = 44;
 
-      if (pObj.health <= 0) {
-        pObj.destroyed = true;
-        pObj.mesh.scale.set(1.15, 0.22, 1.15);
-        pObj.mesh.position.y = 1.5;
-        pObj.collider.box.setFromObject(pObj.mesh);
-        createSparks(new THREE.Vector3(pObj.x, 3, pObj.z), 60, 0x64748b, 20);
-        audio.playHazardPulverize();
-        screenShake = 0.4;
-        showPopup("💥 COVER PILLAR PULVERIZED!", "#f59e0b");
+      // Cylindrical Outer Silo Bulkhead
+      const siloWall = new THREE.Mesh(
+        new THREE.CylinderGeometry(SILO_RADIUS, SILO_RADIUS, SILO_HEIGHT, 32, 1, true),
+        new THREE.MeshStandardMaterial({
+          color: 0x1e293b,
+          map: wallDiffuseTex,
+          side: THREE.BackSide,
+          roughness: 0.5,
+          metalness: 0.7
+        })
+      );
+      siloWall.position.set(0, SILO_HEIGHT / 2, 0);
+      arenaRoot.add(siloWall);
+
+      // Ceiling Spike Grid Hazard (Impales players rocket-jumping too high!)
+      const spikeGeo = new THREE.ConeGeometry(0.4, 2.0, 8);
+      const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2 });
+      for (let x = -20; x <= 20; x += 3.5) {
+        for (let z = -20; z <= 20; z += 3.5) {
+          if (new THREE.Vector2(x, z).length() < SILO_RADIUS - 2) {
+            const spk = new THREE.Mesh(spikeGeo, spikeMat);
+            spk.position.set(x, SILO_HEIGHT - 0.5, z);
+            spk.rotation.x = Math.PI;
+            arenaRoot.add(spk);
+          }
+        }
       }
-      if (broadcast) {
-        sendNet({ type: 'damage_pillar', idx, amount });
+      hazards.push({
+        type: "CEILING_SPIKES",
+        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, SILO_HEIGHT - 1.5, 0), new THREE.Vector3(SILO_RADIUS * 2, 3, SILO_RADIUS * 2)),
+        name: "CEILING SPIKE GRID IMPALEMENT"
+      });
+
+      // Bottom Molten Plasma Abyss Hazard
+      lavaPit = new THREE.Mesh(
+        new THREE.CylinderGeometry(SILO_RADIUS, SILO_RADIUS, 1.0, 32),
+        new THREE.MeshStandardMaterial({
+          color: 0xff3b00,
+          map: lavaTex,
+          emissive: 0xf97316,
+          emissiveIntensity: 1.5
+        })
+      );
+      lavaPit.position.set(0, 0.4, 0);
+      arenaRoot.add(lavaPit);
+      hazards.push({
+        type: "MOLTEN_PIT",
+        box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(0, 0.8, 0), new THREE.Vector3(SILO_RADIUS * 2, 2.5, SILO_RADIUS * 2)),
+        name: "REACTOR CORE PLASMA VAPORIZATION"
+      });
+
+      // Catwalk Tier 1 & Tier 2
+      function createRingCatwalk(innerR, outerR, y) {
+        const ringMesh = new THREE.Mesh(
+          new THREE.RingGeometry(innerR, outerR, 32),
+          new THREE.MeshStandardMaterial({ color: 0x334155, map: floorDiffuseTex, side: THREE.DoubleSide, metalness: 0.6 })
+        );
+        ringMesh.rotation.x = -Math.PI / 2;
+        ringMesh.position.set(0, y, 0);
+        ringMesh.receiveShadow = true;
+        arenaRoot.add(ringMesh);
+
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+          const midR = (innerR + outerR) / 2;
+          const cx = Math.cos(a) * midR;
+          const cz = Math.sin(a) * midR;
+          const cBox = new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(cx, y - 0.25, cz), new THREE.Vector3(7, 0.5, 7));
+          colliders.push({ box: cBox, mesh: ringMesh });
+        }
       }
+      createRingCatwalk(16, 26, 11);
+      createRingCatwalk(14, 24, 24);
+
+      // Central Anti-Gravity Vertical Beam (Shoots players skyward +42 m/s!)
+      const liftBeam = new THREE.Mesh(
+        new THREE.CylinderGeometry(4.5, 4.5, SILO_HEIGHT, 24, 1, true),
+        new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.25, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })
+      );
+      liftBeam.position.set(0, SILO_HEIGHT / 2, 0);
+      arenaRoot.add(liftBeam);
+      jumpPads.push({ pos: new THREE.Vector3(0, 1.0, 0), radius: 4.5, power: 42.0 });
+
+      // Catwalk Jump Pads
+      jumpPads.push({ pos: new THREE.Vector3(-19, 11.2, 0), radius: 2.2, power: 34.0 });
+      jumpPads.push({ pos: new THREE.Vector3(19, 11.2, 0), radius: 2.2, power: 34.0 });
     }
 
-    createPillar(-16, -16, 0);
-    createPillar(16, -16, 1);
-    createPillar(-16, 16, 2);
-    createPillar(16, 16, 3);
+    window.selectArenaMap = function(mapId, broadcast = true) {
+      if (mapId === 1) {
+        buildHazardFoundry();
+        document.getElementById('map-btn-1').style.background = '#38bdf8';
+        document.getElementById('map-btn-1').style.color = '#0f172a';
+        document.getElementById('map-btn-2').style.background = 'rgba(15, 23, 42, 0.6)';
+        document.getElementById('map-btn-2').style.color = '#94a3b8';
+        showPopup("MAP LOADED: HAZARD FOUNDRY", "#38bdf8");
+        if (window.player) window.player.pos.set(0, 1.8, window.isHost ? 22 : -22);
+      } else {
+        buildTheCore();
+        document.getElementById('map-btn-2').style.background = '#38bdf8';
+        document.getElementById('map-btn-2').style.color = '#0f172a';
+        document.getElementById('map-btn-1').style.background = 'rgba(15, 23, 42, 0.6)';
+        document.getElementById('map-btn-1').style.color = '#94a3b8';
+        showPopup("MAP LOADED: THE CORE (VERTICAL SILO)", "#06b6d4");
+        if (window.player) window.player.pos.set(0, 12.0, window.isHost ? 21 : -21);
+      }
+      if (broadcast && window.sendNet) {
+        window.sendNet({ type: 'map_select', mapId });
+      }
+    };
+    buildHazardFoundry();
+
 
 
 
@@ -2113,6 +2238,9 @@
         }
         else if (msg.type === 'tether_pull') {
           player.vel.add(new THREE.Vector3(msg.impulse[0], msg.impulse[1], msg.impulse[2]));
+        }
+        else if (msg.type === 'map_select') {
+          selectArenaMap(msg.mapId, false);
         }
         else if (msg.type === 'customize') {
           if (remoteOpponent && remoteOpponent.mesh) {
