@@ -6022,6 +6022,157 @@
     const ARENA_SIZE = 76;
     const ARENA_HALF = ARENA_SIZE / 2;
 
+    // =============================================
+    //  MAP BOUNDARIES, CEILINGS & SOLID COLLISION ENGINE
+    // =============================================
+    function getMapBounds() {
+      if (currentMapId === 2) {
+        return {
+          type: 'cylinder',
+          radius: 26.5,
+          minY: 0.6,
+          maxY: 42.0 // Ceil at 42m inside 44m silo
+        };
+      } else if (currentMapId === 3) {
+        return {
+          type: 'box',
+          minX: -34.5, maxX: 34.5,
+          minZ: -31.5, maxZ: 31.5,
+          minY: 0.6,
+          maxY: 21.0 // Ceil at 21m inside 22m dam canyon
+        };
+      } else {
+        // Map 1: Hazard Foundry
+        return {
+          type: 'box',
+          minX: -ARENA_HALF + 1.8, maxX: ARENA_HALF - 1.8,
+          minZ: -ARENA_HALF + 1.8, maxZ: ARENA_HALF - 1.8,
+          minY: 1.0,
+          maxY: 15.4 // Ceil at 15.4m inside 16m walls
+        };
+      }
+    }
+
+    function clampEntityToBounds(pos, vel, radius = 0.65) {
+      const bounds = getMapBounds();
+
+      // Floor clamp
+      if (pos.y < bounds.minY) {
+        pos.y = bounds.minY;
+        if (vel.y < 0) vel.y = 0;
+      }
+
+      // Ceiling clamp (Maps have ceilings! Deflect downwards with sparks)
+      if (pos.y > bounds.maxY) {
+        pos.y = bounds.maxY;
+        if (vel.y > 0) {
+          vel.y = -Math.abs(vel.y) * 0.35;
+          createSparks(pos, 8, 0xf59e0b, 10);
+        }
+      }
+
+      // Horizontal perimeter clamping (Entities NEVER escape map)
+      if (bounds.type === 'cylinder') {
+        const hPos = new THREE.Vector2(pos.x, pos.z);
+        const dist = hPos.length();
+        const maxR = bounds.radius - radius;
+        if (dist > maxR && dist > 0.001) {
+          hPos.normalize();
+          pos.x = hPos.x * maxR;
+          pos.z = hPos.y * maxR;
+          const normal = new THREE.Vector2(-hPos.x, -hPos.y);
+          const v2 = new THREE.Vector2(vel.x, vel.z);
+          const dot = v2.dot(normal);
+          if (dot < 0) {
+            vel.x -= 1.35 * dot * normal.x;
+            vel.z -= 1.35 * dot * normal.y;
+          }
+        }
+      } else {
+        const minX = bounds.minX + radius;
+        const maxX = bounds.maxX - radius;
+        const minZ = bounds.minZ + radius;
+        const maxZ = bounds.maxZ - radius;
+
+        if (pos.x < minX) {
+          pos.x = minX;
+          if (vel.x < 0) vel.x = -vel.x * 0.35;
+        } else if (pos.x > maxX) {
+          pos.x = maxX;
+          if (vel.x > 0) vel.x = -vel.x * 0.35;
+        }
+
+        if (pos.z < minZ) {
+          pos.z = minZ;
+          if (vel.z < 0) vel.z = -vel.z * 0.35;
+        } else if (pos.z > maxZ) {
+          pos.z = maxZ;
+          if (vel.z > 0) vel.z = -vel.z * 0.35;
+        }
+      }
+    }
+
+    function resolveSolidObstacles(pos, vel, radius = 0.65, height = 1.8) {
+      // 1. Check against colliders (pillars, buttresses, cover)
+      for (let c of colliders) {
+        if (!c.box) continue;
+        const bSizeX = c.box.max.x - c.box.min.x;
+        const bSizeZ = c.box.max.z - c.box.min.z;
+        // Skip map-wide boundary walls/ceilings/floors here (handled by clampEntityToBounds)
+        if (bSizeX > 50 && bSizeZ > 50) continue;
+
+        // Vertical overlap check
+        if (pos.y + height < c.box.min.y || pos.y > c.box.max.y) continue;
+
+        const minX = c.box.min.x - radius;
+        const maxX = c.box.max.x + radius;
+        const minZ = c.box.min.z - radius;
+        const maxZ = c.box.max.z + radius;
+
+        if (pos.x > minX && pos.x < maxX && pos.z > minZ && pos.z < maxZ) {
+          const dx1 = pos.x - minX;
+          const dx2 = maxX - pos.x;
+          const dz1 = pos.z - minZ;
+          const dz2 = maxZ - pos.z;
+          const minPen = Math.min(dx1, dx2, dz1, dz2);
+
+          if (minPen === dx1) {
+            pos.x = minX;
+            if (vel.x > 0) vel.x = 0;
+          } else if (minPen === dx2) {
+            pos.x = maxX;
+            if (vel.x < 0) vel.x = 0;
+          } else if (minPen === dz1) {
+            pos.z = minZ;
+            if (vel.z > 0) vel.z = 0;
+          } else {
+            pos.z = maxZ;
+            if (vel.z < 0) vel.z = 0;
+          }
+        }
+      }
+
+      // 2. Specific circular / square resolution for poles & pillars in arenaPillars
+      for (let p of arenaPillars) {
+        if (p.destroyed) continue;
+        const dx = pos.x - p.x;
+        const dz = pos.z - p.z;
+        const distSq = dx * dx + dz * dz;
+        const minPoleDist = 2.5; // Solid pillar radius + entity radius
+        if (distSq < minPoleDist * minPoleDist && distSq > 0.0001) {
+          const d = Math.sqrt(distSq);
+          const push = (minPoleDist - d);
+          pos.x += (dx / d) * push;
+          pos.z += (dz / d) * push;
+          const dot = vel.x * (dx / d) + vel.z * (dz / d);
+          if (dot < 0) {
+            vel.x -= dot * (dx / d);
+            vel.z -= dot * (dz / d);
+          }
+        }
+      }
+    }
+
     function buildHazardFoundry() {
       clearArena();
       currentMapId = 1;
@@ -6140,13 +6291,62 @@
       createCornerButtress(-ARENA_HALF + 2.5, ARENA_HALF - 2.5, 0);
       createCornerButtress(ARENA_HALF - 2.5, ARENA_HALF - 2.5, 0);
 
-      // Overhead Structural Steel Gantry Trusses (Casts industrial shadows)
+      // Overhead Structural Steel Gantry Trusses & Heavy Industrial Steel Ceiling
+      const ceilingH = 16.0;
+      const ceilingMat = new THREE.MeshStandardMaterial({
+        color: 0x221f1d,
+        map: floorDiffuseTex,
+        normalMap: floorNormalTex,
+        normalScale: new THREE.Vector2(1.5, 1.5),
+        roughness: 0.5,
+        metalness: 0.82
+      });
+      const ceiling = new THREE.Mesh(
+        new THREE.PlaneGeometry(ARENA_SIZE, ARENA_SIZE),
+        ceilingMat
+      );
+      ceiling.rotation.x = Math.PI / 2; // Facing down into arena
+      ceiling.position.set(0, ceilingH, 0);
+      ceiling.receiveShadow = true;
+      arenaRoot.add(ceiling);
+
+      // Industrial Roof Skylight Grating Slits & Steel Girder Grid
+      const girderMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, metalness: 0.9, roughness: 0.25 });
+      for (let gx = -ARENA_HALF + 12; gx <= ARENA_HALF - 12; gx += 16) {
+        const girderX = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, ARENA_SIZE), girderMat);
+        girderX.position.set(gx, ceilingH - 0.6, 0); girderX.castShadow = true;
+        arenaRoot.add(girderX);
+      }
+      for (let gz = -ARENA_HALF + 12; gz <= ARENA_HALF - 12; gz += 16) {
+        const girderZ = new THREE.Mesh(new THREE.BoxGeometry(ARENA_SIZE, 1.2, 1.6), girderMat);
+        girderZ.position.set(0, ceilingH - 0.6, gz); girderZ.castShadow = true;
+        arenaRoot.add(girderZ);
+      }
+
+      // Overhead Industrial Exhaust Vents & Floodlights
+      const ventMat = new THREE.MeshStandardMaterial({ color: 0x292524, metalness: 0.85, roughness: 0.35 });
+      const floodMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfef08a, emissiveIntensity: 2.0 });
+      for (let vx of [-16, 16]) {
+        for (let vz of [-16, 16]) {
+          const vent = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.2, 16), ventMat);
+          vent.position.set(vx, ceilingH - 0.6, vz);
+          const flood = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.2, 12), floodMat);
+          flood.position.set(vx, ceilingH - 1.2, vz);
+          arenaRoot.add(vent, flood);
+        }
+      }
+
+      colliders.push({
+        box: new THREE.Box3(new THREE.Vector3(-ARENA_HALF, ceilingH - 0.2, -ARENA_HALF), new THREE.Vector3(ARENA_HALF, ceilingH + 2.0, ARENA_HALF)),
+        mesh: ceiling
+      });
+
       const trussMat = new THREE.MeshStandardMaterial({ color: 0x292524, metalness: 0.9, roughness: 0.3 });
       const truss1 = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.0, ARENA_SIZE), trussMat);
-      truss1.position.set(-16, wallH + 1, 0); truss1.castShadow = true;
+      truss1.position.set(-16, wallH - 0.5, 0); truss1.castShadow = true;
       const truss2 = truss1.clone(); truss2.position.x = 16;
       const trussCross = new THREE.Mesh(new THREE.BoxGeometry(ARENA_SIZE, 2.0, 2.0), trussMat);
-      trussCross.position.set(0, wallH + 1, 0); trussCross.castShadow = true;
+      trussCross.position.set(0, wallH - 0.5, 0); trussCross.castShadow = true;
       arenaRoot.add(truss1, truss2, trussCross);
 
       // Hanging High-Voltage Conduit / Cable Bundles
@@ -6358,6 +6558,40 @@
         arenaRoot.add(rib);
       }
 
+      // Heavy Industrial Reinforced Dome Ceiling Cap (Bulletstorm The Core)
+      const coreCeilingMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        map: wallDiffuseTex,
+        roughness: 0.45,
+        metalness: 0.85,
+        side: THREE.DoubleSide
+      });
+      const coreCeiling = new THREE.Mesh(
+        new THREE.CylinderGeometry(SILO_RADIUS, SILO_RADIUS, 1.5, 32),
+        coreCeilingMat
+      );
+      coreCeiling.position.set(0, SILO_HEIGHT, 0);
+      coreCeiling.receiveShadow = true;
+      arenaRoot.add(coreCeiling);
+
+      // Central High-Voltage Reactor Core Ceiling Conduit
+      const coreConduit = new THREE.Mesh(
+        new THREE.CylinderGeometry(4.8, 5.2, 3.0, 24),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 })
+      );
+      coreConduit.position.set(0, SILO_HEIGHT - 1.5, 0);
+      const conduitGlow = new THREE.Mesh(
+        new THREE.CylinderGeometry(3.6, 3.6, 0.4, 24),
+        new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.85 })
+      );
+      conduitGlow.position.set(0, SILO_HEIGHT - 3.0, 0);
+      arenaRoot.add(coreConduit, conduitGlow);
+
+      colliders.push({
+        box: new THREE.Box3(new THREE.Vector3(-SILO_RADIUS, SILO_HEIGHT - 1.0, -SILO_RADIUS), new THREE.Vector3(SILO_RADIUS, SILO_HEIGHT + 3.0, SILO_RADIUS)),
+        mesh: coreCeiling
+      });
+
       // Ceiling Industrial Rebar Impaler Grid (Bulletstorm Ceilings)
       const spikeGeo = new THREE.CylinderGeometry(0.08, 0.16, 2.8, 6);
       const spikeMat = new THREE.MeshStandardMaterial({ color: 0x78350f, metalness: 0.88, roughness: 0.3 });
@@ -6509,6 +6743,37 @@
       const crestRail = new THREE.Mesh(new THREE.BoxGeometry(DAM_WIDTH - 8, 1.2, 0.15), damRailMat);
       crestRail.position.set(0, 17.2, -DAM_DEPTH / 2 + 13);
       arenaRoot.add(crestRail);
+
+      // Overhead Canyon Containment Gantry Ceiling (Bulletstorm Stygian Dam)
+      const damCeilingH = 22.0;
+      const damCeilMat = new THREE.MeshStandardMaterial({
+        color: 0x27272a,
+        map: concreteTex,
+        roughness: 0.6,
+        metalness: 0.75,
+        side: THREE.DoubleSide
+      });
+      const damCeiling = new THREE.Mesh(
+        new THREE.PlaneGeometry(DAM_WIDTH, DAM_DEPTH),
+        damCeilMat
+      );
+      damCeiling.rotation.x = Math.PI / 2;
+      damCeiling.position.set(0, damCeilingH, 0);
+      damCeiling.receiveShadow = true;
+      arenaRoot.add(damCeiling);
+
+      // Structural Heavy Overhead Canyon Trusses
+      const damTrussMat = new THREE.MeshStandardMaterial({ color: 0x18181b, metalness: 0.88, roughness: 0.3 });
+      for (let tx = -DAM_WIDTH / 2 + 10; tx <= DAM_WIDTH / 2 - 10; tx += 18) {
+        const dtMesh = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.4, DAM_DEPTH), damTrussMat);
+        dtMesh.position.set(tx, damCeilingH - 0.7, 0);
+        arenaRoot.add(dtMesh);
+      }
+
+      colliders.push({
+        box: new THREE.Box3(new THREE.Vector3(-DAM_WIDTH/2, damCeilingH - 0.2, -DAM_DEPTH/2), new THREE.Vector3(DAM_WIDTH/2, damCeilingH + 2.0, DAM_DEPTH/2)),
+        mesh: damCeiling
+      });
 
       // Central Hydro Spillway Vat / Slag Hazard
       const spillwayVat = new THREE.Mesh(
@@ -10383,7 +10648,11 @@
         player.isGrounded = false;
       }
 
-      // Check high-speed pillar impact
+      // Solid obstacle collisions (pillars, poles, buttresses) & boundary/ceiling clamping
+      resolveSolidObstacles(player.pos, player.vel, 0.65, 1.8);
+      clampEntityToBounds(player.pos, player.vel, 0.65);
+
+      // Check high-speed pillar impact for destructible cover
       if (player.vel.length() > 14.0) {
         for (let pObj of arenaPillars) {
           if (!pObj.destroyed && pObj.collider.box.distanceToPoint(player.pos) < 0.8) {
@@ -10391,16 +10660,6 @@
             break;
           }
         }
-      }
-
-      const wallLimit = ARENA_HALF - 2.0;
-      if (Math.abs(player.pos.x) > wallLimit) {
-        player.pos.x = Math.sign(player.pos.x) * wallLimit;
-        player.vel.x = -player.vel.x * 0.35;
-      }
-      if (Math.abs(player.pos.z) > wallLimit) {
-        player.pos.z = Math.sign(player.pos.z) * wallLimit;
-        player.vel.z = -player.vel.z * 0.35;
       }
 
       if (!isRespawning) {
@@ -10519,11 +10778,9 @@
         botVel.z *= Math.pow(0.88, dt);
         botPos.add(botVel.clone().multiplyScalar(dt));
 
-        // Floor clamping
-        if (currentMapId === 1 && botPos.y <= 1.0) {
-          botPos.y = 1.0;
-          if (botVel.y < 0) botVel.y = 0;
-        }
+        // SOLID PHYSICS FOR BOT: Never go through poles, pillars, or out of map!
+        resolveSolidObstacles(botPos, botVel, 0.65, 1.8);
+        clampEntityToBounds(botPos, botVel, 0.65);
 
         // Aim directly at player
         const toPlayer = player.pos.clone().sub(botPos);
@@ -10549,6 +10806,17 @@
           moveForce.add(toPlayerDir.clone().multiplyScalar(-14.0));
         }
         moveForce.add(strafeVec.clone().multiplyScalar(13.0));
+
+        // Obstacle Avoidance: Steer away from poles & pillars so bot never collides into them
+        for (let p of arenaPillars) {
+          if (p.destroyed) continue;
+          const toPillar = new THREE.Vector3(p.x - botPos.x, 0, p.z - botPos.z);
+          const pDist = toPillar.length();
+          if (pDist < 5.0 && pDist > 0.05) {
+            toPillar.normalize();
+            moveForce.add(toPillar.multiplyScalar(-28.0 * (1.0 - pDist / 5.0)));
+          }
+        }
 
         // Tactical Class Ability usage for Solo AI Bot (NEMESIS-01 Juggernaut)
         if (!botAI.abilityTimer) botAI.abilityTimer = 8.0 + Math.random() * 3.0;
@@ -10581,29 +10849,26 @@
         }
         if (botAI.kickTimer > 0) botAI.kickTimer -= dt;
 
-        // Hazard Avoidance: Spikes & Lava Pit
+        // Hazard & Wall Boundary Steer Away
         if (currentMapId === 1) {
-          const ARENA_HALF_BOUND = 38.0;
-          // Wall Spikes proximity check (within 7m of perimeter)
-          if (Math.abs(botPos.x) > ARENA_HALF_BOUND - 7.0) {
-            moveForce.x = -Math.sign(botPos.x) * 35.0;
-            if (botPos.y <= 1.2) botVel.y = 20.0; // Rocket jump away!
+          const ARENA_BOUND = ARENA_HALF - 3.0;
+          if (Math.abs(botPos.x) > ARENA_BOUND - 5.0) {
+            moveForce.x = -Math.sign(botPos.x) * 45.0; // Push back inwards, do NOT jump over wall!
           }
-          if (Math.abs(botPos.z) > ARENA_HALF_BOUND - 7.0) {
-            moveForce.z = -Math.sign(botPos.z) * 35.0;
-            if (botPos.y <= 1.2) botVel.y = 20.0; // Rocket jump away!
+          if (Math.abs(botPos.z) > ARENA_BOUND - 5.0) {
+            moveForce.z = -Math.sign(botPos.z) * 45.0; // Push back inwards, do NOT jump over wall!
           }
           // Center Lava Pit avoidance
           const distToCenter = new THREE.Vector2(botPos.x, botPos.z).length();
           if (distToCenter < 12.0 && botPos.y < 3.0) {
             const awayFromCenter = new THREE.Vector3(botPos.x, 0, botPos.z).normalize();
             moveForce.add(awayFromCenter.multiplyScalar(28.0));
-            if (botPos.y <= 1.2) botVel.y = 22.0;
+            if (botPos.y <= 1.2) botVel.y = 14.0;
           }
         } else if (currentMapId === 2) {
           // The Core: Avoid falling into plasma abyss below catwalks
           if (botPos.y < 9.0) {
-            botVel.y = 24.0;
+            botVel.y = 16.0;
             const toCenter = new THREE.Vector3(-botPos.x, 0, -botPos.z).normalize();
             moveForce.add(toCenter.multiplyScalar(24.0));
           }
@@ -10612,13 +10877,16 @@
         botVel.x += moveForce.x * dt;
         botVel.z += moveForce.z * dt;
 
-        // Periodic Tactical Rocket Jumps
+        // Periodic Tactical Combat Hops (capped so bot never shoots violently into ceiling)
         botAI.jumpTimer -= dt;
         if (botAI.jumpTimer <= 0 && botPos.y <= 1.2) {
-          botAI.jumpTimer = 3.0 + Math.random() * 2.5;
-          botVel.y = 22.0 + Math.random() * 6.0;
+          botAI.jumpTimer = 3.5 + Math.random() * 2.5;
+          botVel.y = Math.min(13.5, 9.5 + Math.random() * 3.5);
           emitThrusterParticles(botPos, new THREE.Vector3(0, -1, 0), 10, 0xf43f5e);
         }
+
+        resolveSolidObstacles(botPos, botVel, 0.65, 1.8);
+        clampEntityToBounds(botPos, botVel, 0.65);
 
         // --- BOT COMBAT FIRING LOOP ---
         botAI.fireTimer -= dt;
